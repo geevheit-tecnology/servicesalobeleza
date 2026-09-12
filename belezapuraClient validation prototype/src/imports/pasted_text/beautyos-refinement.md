@@ -1,0 +1,477 @@
+REFINAMENTO DO PROTÓTIPO — BEAUTYOS
+
+Não recrie o projeto do zero.
+
+Continue o protótipo atual e preserve a identidade visual, componentes, navegação e estrutura que já foram criados.
+
+Agora faça uma segunda rodada de refinamento focada em VALIDAÇÃO COMERCIAL.
+
+OBJETIVO:
+
+O protótipo deverá permitir que eu apresente o produto para proprietários de salões e demonstre claramente como o sistema funciona do início ao fim.
+
+==================================================
+1. CORRIGIR A LANDING PAGE DO SAAS
+==================================================
+
+Remover números fictícios ou não comprovados como:
+
+2.400+ salões
+180.000+ agendamentos
+R$ 4,2M faturados
+
+Não apresentar métricas que ainda não existem.
+
+Substituir por benefícios reais do produto.
+
+Usar:
+
+"Seu salão. Sua agenda. Seu negócio."
+
+Subtítulo:
+
+"Agende, receba, organize e acompanhe seu salão em um só lugar."
+
+Criar benefícios:
+
+Agendamento online
+Pagamento via PIX
+Gestão de clientes
+Gestão de equipe
+Controle financeiro
+Página profissional
+
+==================================================
+2. MELHORAR A PÁGINA PÚBLICA DO SALÃO
+==================================================
+
+Manter a página atual.
+
+Adicionar uma seção imediatamente após as informações iniciais:
+
+"Nossos serviços"
+
+Criar cards de serviços.
+
+Exemplos:
+
+MANICURE
+45 minutos
+R$ 50
+
+PEDICURE
+50 minutos
+R$ 60
+
+ESCOVA
+60 minutos
+R$ 80
+
+MAQUIAGEM
+90 minutos
+R$ 150
+
+BRONZEAMENTO
+45 minutos
+R$ 100
+
+MASSAGEM RELAXANTE
+60 minutos
+R$ 120
+
+Cada serviço deve possuir botão:
+
+"Agendar"
+
+==================================================
+3. CRIAR O FLUXO COMPLETO DE AGENDAMENTO
+==================================================
+
+Criar protótipo navegável.
+
+Fluxo:
+
+Página do salão
+→ Agendar horário
+
+→ Selecionar serviço
+
+→ Selecionar profissional
+
+→ Selecionar data
+
+→ Selecionar horário
+
+→ Informar dados
+
+→ Revisar reserva
+
+→ Pagamento PIX
+
+→ Confirmação
+
+==================================================
+4. TELA DE SERVIÇO
+==================================================
+
+Criar tela mobile.
+
+Mostrar:
+
+Nome
+Foto
+Descrição
+Duração
+Preço
+
+Profissionais disponíveis.
+
+Botão:
+
+"Continuar"
+
+==================================================
+5. TELA DE PROFISSIONAL
+==================================================
+
+Mostrar:
+
+Foto
+Nome
+Especialidade
+Avaliação
+
+Opção:
+
+"Qualquer profissional disponível"
+
+==================================================
+6. SELEÇÃO DE DATA
+==================================================
+
+Criar calendário mobile.
+
+Mostrar disponibilidade.
+
+Datas indisponíveis devem ficar visualmente bloqueadas.
+
+==================================================
+7. HORÁRIOS
+==================================================
+
+Mostrar somente horários disponíveis.
+
+Exemplo:
+
+09:00
+09:30
+10:00
+10:30
+11:00
+14:00
+14:30
+15:00
+
+Criar estados:
+
+Disponível
+Selecionado
+Ocupado
+
+==================================================
+8. DADOS DO CLIENTE
+==================================================
+
+Campos:
+
+Nome
+WhatsApp
+E-mail opcional
+
+Checkbox:
+
+"Quero receber lembrete do agendamento."
+
+==================================================
+9. RESUMO
+==================================================
+
+Criar resumo elegante.
+
+Mostrar:
+
+Salão
+Serviço
+Profissional
+Data
+Horário
+Valor
+
+Se houver sinal:
+
+Valor do serviço: R$ 150
+Sinal: R$ 30
+Restante: R$ 120
+
+Botão:
+
+"Confirmar e pagar sinal"
+
+==================================================
+10. PIX
+==================================================
+
+Criar tela realista.
+
+Mostrar:
+
+"Pagamento da reserva"
+
+R$ 30,00
+
+QR CODE
+
+PIX copia e cola
+
+Botão:
+
+"Copiar código PIX"
+
+Mensagem:
+
+"Seu horário ficará reservado por 10 minutos."
+
+Criar estados:
+
+Aguardando pagamento
+Pagamento confirmado
+Pagamento expirado
+
+==================================================
+11. CONFIRMAÇÃO
+==================================================
+
+Criar tela:
+
+"Agendamento confirmado!"
+
+Mostrar:
+
+Serviço
+Profissional
+Data
+Horário
+Valor
+Sinal pago
+
+Criar:
+
+"Adicionar ao calendário"
+
+"Enviar pelo WhatsApp"
+
+"Ver meu agendamento"
+
+==================================================
+12. DASHBOARD DO SALÃO
+==================================================
+
+Criar uma tela muito profissional.
+
+Mostrar:
+
+Agendamentos hoje
+Faturamento hoje
+Ocupação
+Novos clientes
+Cancelamentos
+
+Criar:
+
+Agenda de hoje
+
+Próximos agendamentos
+
+Gráfico de faturamento
+
+Gráfico de ocupação
+
+==================================================
+13. AGENDA
+==================================================
+
+Criar visualização:
+
+Dia
+Semana
+Mês
+
+Mostrar profissionais.
+
+Mostrar horários.
+
+Mostrar agendamentos.
+
+Status:
+
+Confirmado
+Aguardando pagamento
+Concluído
+Cancelado
+Não compareceu
+
+==================================================
+14. FINANCEIRO
+==================================================
+
+Criar dashboard:
+
+Receitas
+Despesas
+Saldo
+A receber
+Recebido
+
+Criar gráficos.
+
+Criar:
+
+Contas a receber
+Contas a pagar
+Movimentações
+
+==================================================
+15. MULTIUNIDADE
+==================================================
+
+Adicionar ao painel administrativo um seletor:
+
+"Todas as unidades"
+
+Exemplo:
+
+Salão Centro
+Salão Moema
+Salão Tatuapé
+Salão Campinas
+
+Criar visão consolidada.
+
+Mostrar que o mesmo SaaS pode administrar várias unidades.
+
+==================================================
+16. SUPER ADMIN
+==================================================
+
+Criar painel separado.
+
+Mostrar:
+
+Salões ativos
+Novos salões
+MRR
+Assinaturas
+Inadimplentes
+Agendamentos
+
+Criar:
+
+Gestão de salões
+
+Gestão de planos
+
+Gestão de assinaturas
+
+Gestão de pagamentos
+
+Suporte
+
+==================================================
+17. ONBOARDING
+==================================================
+
+Criar fluxo:
+
+Dados do salão
+→ Logo
+→ Fotos
+→ Serviços
+→ Profissionais
+→ Horários
+→ PIX
+→ Publicar página
+
+Final:
+
+"Seu salão está pronto para receber agendamentos."
+
+Botão:
+
+"Publicar meu salão"
+
+==================================================
+18. PROTÓTIPO COMERCIAL
+==================================================
+
+Garantir que os principais botões estejam conectados.
+
+Criar dois fluxos demonstráveis.
+
+FLUXO 1 — CLIENTE
+
+Página do salão
+→ Serviço
+→ Profissional
+→ Data
+→ Horário
+→ Dados
+→ PIX
+→ Confirmação
+
+FLUXO 2 — PROPRIETÁRIO
+
+Login
+→ Dashboard
+→ Agenda
+→ Agendamento
+→ Cliente
+→ Financeiro
+→ Página pública
+
+==================================================
+19. MOBILE
+==================================================
+
+Priorizar a experiência mobile do cliente.
+
+A página pública deve parecer um aplicativo mesmo sem instalação.
+
+O cliente deve conseguir concluir uma reserva usando apenas o celular.
+
+==================================================
+20. RESULTADO FINAL
+==================================================
+
+Não alterar desnecessariamente a identidade visual já criada.
+
+Aprimorar o protótipo existente.
+
+O objetivo é que um proprietário de salão consiga entender o produto em menos de 2 minutos.
+
+A apresentação deve demonstrar:
+
+"Meu cliente consegue agendar pelo link."
+
+"Meu cliente pode pagar o sinal via PIX."
+
+"Eu consigo controlar minha agenda."
+
+"Eu consigo administrar meus clientes."
+
+"Eu consigo controlar meu financeiro."
+
+"Eu consigo ter minha própria página."
+
+"Se eu tiver várias unidades, consigo administrar todas."
+
+O produto deve parecer um SaaS real pronto para validação comercial.

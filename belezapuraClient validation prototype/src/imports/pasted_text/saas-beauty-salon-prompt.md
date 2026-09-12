@@ -1,0 +1,1324 @@
+Crie um protótipo UI/UX COMPLETO, PROFISSIONAL, MODERNO E COMERCIAL de uma plataforma SaaS para gestão de salões de beleza, estética, bronzeamento e bem-estar.
+
+O produto deve ser projetado desde o início como uma plataforma SaaS MULTI-TENANT, capaz de atender desde uma profissional autônoma até redes com várias unidades.
+
+O protótipo será utilizado para apresentação comercial a proprietários de salões e validação do produto antes do desenvolvimento.
+
+NÃO criar código.
+NÃO criar backend.
+NÃO criar banco de dados.
+NÃO implementar integrações reais.
+
+O objetivo desta etapa é criar um protótipo visual navegável, convincente e comercial no Figma.
+
+==================================================
+CONCEITO DO PRODUTO
+===================
+
+Criar uma plataforma que resolva a operação completa de um salão.
+
+O salão recebe:
+
+* sua própria página profissional
+* seu próprio link de agendamento
+* agenda online
+* cadastro de clientes
+* cadastro de profissionais
+* cadastro de serviços
+* controle de horários
+* pagamentos via PIX
+* controle de sinais/reservas
+* controle financeiro
+* controle de comissões
+* avaliações
+* localização
+* presença digital
+* indicadores de desempenho
+
+O cliente final NÃO precisa instalar aplicativo.
+
+Ele recebe um link pelo WhatsApp, Instagram, Google ou qualquer outro canal e consegue realizar todo o processo pelo navegador do celular.
+
+CONCEITO PRINCIPAL:
+
+LINK DO SALÃO
+→ ESCOLHA DO SERVIÇO
+→ PROFISSIONAL
+→ DATA
+→ HORÁRIO
+→ DADOS DO CLIENTE
+→ PAGAMENTO PIX
+→ CONFIRMAÇÃO
+
+A experiência deve ser extremamente simples.
+
+==================================================
+POSICIONAMENTO
+==============
+
+Não criar aparência de um simples sistema de agenda.
+
+O produto deve parecer uma plataforma completa de gestão digital para negócios de beleza.
+
+Mensagem conceitual:
+
+"Seu salão. Sua agenda. Seu negócio."
+
+Submensagem:
+
+"Agende, receba, organize e acompanhe seu salão em um só lugar."
+
+O design deve transmitir:
+
+* sofisticação
+* confiança
+* beleza
+* organização
+* tecnologia
+* facilidade
+* profissionalismo
+
+==================================================
+IDENTIDADE VISUAL
+=================
+
+Criar identidade visual premium.
+
+Evitar interface excessivamente escura.
+
+Usar base clara e sofisticada, com elementos neutros e detalhes elegantes.
+
+Permitir que a identidade visual seja adaptável para cada salão.
+
+Criar:
+
+* cores
+* tipografia
+* espaçamentos
+* sombras
+* bordas
+* ícones
+* componentes
+
+Usar Auto Layout.
+
+Criar componentes reutilizáveis.
+
+Criar variantes.
+
+Criar Design System.
+
+A interface deve ser elegante sem parecer excessivamente luxuosa ou complicada.
+
+Deve funcionar para:
+
+* salão popular
+* salão premium
+* manicure
+* cabeleireiro
+* estética
+* bronzeamento
+* maquiagem
+* depilação
+* massagem
+* sobrancelhas
+* cílios
+* spa
+* redes de salões
+
+==================================================
+ARQUITETURA DO PRODUTO
+======================
+
+Criar três ambientes independentes.
+
+AMBIENTE 1
+CLIENTE FINAL
+
+AMBIENTE 2
+GESTÃO DO SALÃO
+
+AMBIENTE 3
+SUPER ADMINISTRADOR DA PLATAFORMA
+
+Também considerar estrutura de múltiplas unidades.
+
+==================================================
+ESTRUTURA MULTI-TENANT
+======================
+
+O produto deve ser pensado como SaaS.
+
+Cada empresa possui:
+
+Empresa
+→ Unidades
+→ Usuários
+→ Profissionais
+→ Serviços
+→ Clientes
+→ Agenda
+→ Financeiro
+→ Página pública
+
+Exemplo:
+
+MINHA REDE
+
+Unidade Centro
+Unidade Moema
+Unidade Tatuapé
+Unidade Campinas
+
+Criar seletor:
+
+"Todas as unidades"
+
+ou
+
+"Unidade Centro"
+
+O protótipo deve demonstrar que uma rede pode administrar várias unidades dentro da mesma plataforma.
+
+==================================================
+AMBIENTE 1 — CLIENTE FINAL
+==========================
+
+Criar experiência MOBILE-FIRST.
+
+O cliente acessa:
+
+/salao/nome-do-salao
+
+Não mostrar informações técnicas.
+
+A página deve parecer uma página profissional própria do salão.
+
+==================================================
+LANDING PAGE AUTOMÁTICA DO SALÃO
+================================
+
+Criar página pública gerada automaticamente a partir do cadastro do salão.
+
+Estrutura:
+
+CAPA
+
+Foto principal grande.
+
+Logo.
+
+Nome do salão.
+
+Descrição curta.
+
+Avaliação.
+
+Quantidade de avaliações.
+
+Endereço.
+
+Horário de funcionamento.
+
+Botão principal:
+
+"Agendar horário"
+
+Botão secundário:
+
+"WhatsApp"
+
+Botão:
+
+"Como chegar"
+
+==================================================
+GALERIA
+=======
+
+Criar seção:
+
+"Conheça nosso espaço"
+
+Mostrar fotos reais do salão.
+
+Criar galeria elegante.
+
+==================================================
+SERVIÇOS
+========
+
+Criar:
+
+"Nossos serviços"
+
+Categorias:
+
+Cabelo
+Unhas
+Maquiagem
+Depilação
+Massagem
+Bronzeamento
+Estética
+Sobrancelhas
+Cílios
+Penteados
+
+Cada serviço deve mostrar:
+
+Foto
+Nome
+Descrição
+Duração
+Preço
+
+Exemplo:
+
+ESCOVA
+60 min
+R$ 80
+
+MANICURE
+45 min
+R$ 50
+
+MASSAGEM RELAXANTE
+60 min
+R$ 120
+
+BRONZEAMENTO
+45 min
+R$ 100
+
+Botão:
+
+"Agendar"
+
+==================================================
+PROFISSIONAIS
+=============
+
+Criar:
+
+"Conheça nossos profissionais"
+
+Cada profissional:
+
+Foto
+Nome
+Especialidade
+Avaliação
+
+Exemplo:
+
+Ana
+Especialista em unhas
+
+Mariana
+Cabeleireira
+
+Juliana
+Massoterapeuta
+
+Permitir:
+
+"Qualquer profissional disponível"
+
+==================================================
+AVALIAÇÕES
+==========
+
+Mostrar:
+
+4,9 ★
+
+327 avaliações
+
+Criar depoimentos.
+
+Mostrar:
+
+Nome
+Foto
+Nota
+Comentário
+Data
+
+==================================================
+LOCALIZAÇÃO
+===========
+
+Criar seção:
+
+"Como chegar"
+
+Mostrar:
+
+Mapa visual.
+
+Endereço.
+
+Botão:
+
+"Como chegar"
+
+Criar visualização conceitual de presença no Google.
+
+Mostrar:
+
+Nome do salão
+Avaliação
+Endereço
+Horário
+Telefone
+Botão "Como chegar"
+
+Não implementar integração real.
+
+==================================================
+FLUXO DE AGENDAMENTO
+====================
+
+Criar fluxo extremamente simples.
+
+ETAPA 1 — SERVIÇO
+
+Selecionar serviço.
+
+ETAPA 2 — PROFISSIONAL
+
+Selecionar profissional.
+
+ETAPA 3 — DATA
+
+Calendário.
+
+ETAPA 4 — HORÁRIO
+
+Mostrar somente horários disponíveis.
+
+Exemplo:
+
+09:00
+09:30
+10:00
+10:30
+11:00
+14:00
+14:30
+15:00
+
+Horários ocupados ficam indisponíveis.
+
+ETAPA 5 — DADOS
+
+Nome
+Celular
+E-mail opcional
+
+Checkbox:
+
+"Quero receber lembrete"
+
+ETAPA 6 — RESUMO
+
+Mostrar:
+
+Salão
+Serviço
+Profissional
+Data
+Horário
+Valor
+
+==================================================
+RESERVA COM SINAL
+=================
+
+Criar possibilidade de o salão exigir sinal.
+
+Exemplo:
+
+Serviço
+Massagem Relaxante
+
+Valor total:
+R$ 150
+
+Sinal para reservar:
+R$ 30
+
+Restante no salão:
+R$ 120
+
+Mostrar:
+
+"Para garantir seu horário, pague o sinal via PIX."
+
+==================================================
+PIX
+===
+
+Criar tela de pagamento.
+
+Mostrar:
+
+"Pagamento da reserva"
+
+Valor:
+
+R$ 30,00
+
+QR CODE PIX.
+
+Campo:
+
+"PIX copia e cola"
+
+Botão:
+
+"Copiar código PIX"
+
+Mostrar:
+
+"Seu horário ficará reservado por 10 minutos."
+
+Criar estados:
+
+Pagamento pendente
+Pagamento confirmado
+Pagamento expirado
+
+==================================================
+CONFIRMAÇÃO
+===========
+
+Após pagamento:
+
+"Agendamento confirmado!"
+
+Mostrar:
+
+Número do agendamento
+Salão
+Serviço
+Profissional
+Data
+Horário
+Valor
+Sinal pago
+
+Botões:
+
+"Adicionar ao calendário"
+
+"Enviar pelo WhatsApp"
+
+"Ver agendamento"
+
+==================================================
+ÁREA DO CLIENTE
+===============
+
+Criar:
+
+Meus agendamentos
+Histórico
+Pagamentos
+Dados pessoais
+
+Card:
+
+PRÓXIMO AGENDAMENTO
+
+Serviço
+Profissional
+Data
+Horário
+Status
+
+Botões:
+
+Remarcar
+Cancelar
+Detalhes
+
+==================================================
+AMBIENTE 2 — PAINEL DO SALÃO
+============================
+
+Criar dashboard desktop profissional.
+
+SIDEBAR:
+
+Dashboard
+Agenda
+Agendamentos
+Clientes
+Serviços
+Profissionais
+Horários
+Financeiro
+Comissões
+Página do salão
+Avaliações
+Relatórios
+Configurações
+
+No topo:
+
+Nome da empresa
+Unidade atual
+Notificações
+Usuário
+
+==================================================
+DASHBOARD
+=========
+
+Criar indicadores principais:
+
+AGENDAMENTOS HOJE
+
+FATURAMENTO
+
+OCUPAÇÃO
+
+NOVOS CLIENTES
+
+CANCELAMENTOS
+
+TICKET MÉDIO
+
+Exemplo:
+
+12 agendamentos
+R$ 1.280 faturamento
+78% ocupação
+5 novos clientes
+
+Criar:
+
+Gráfico de faturamento.
+
+Gráfico de agendamentos.
+
+Gráfico de ocupação.
+
+Lista:
+
+"Próximos horários"
+
+==================================================
+AGENDA
+======
+
+Criar agenda:
+
+Dia
+Semana
+Mês
+
+Mostrar profissionais nas colunas.
+
+Horários nas linhas.
+
+Cada agendamento:
+
+Cliente
+Serviço
+Profissional
+Horário
+Valor
+Status
+
+Status:
+
+Confirmado
+Aguardando pagamento
+Concluído
+Cancelado
+Não compareceu
+
+Criar botão:
+
+"+ Novo agendamento"
+
+Criar interação visual de alteração de horário.
+
+==================================================
+AGENDAMENTOS
+============
+
+Criar tabela.
+
+Filtros:
+
+Data
+Unidade
+Profissional
+Serviço
+Status
+Pagamento
+
+Colunas:
+
+Cliente
+Serviço
+Profissional
+Data
+Horário
+Valor
+Pagamento
+Status
+
+==================================================
+CLIENTES
+========
+
+Criar CRM simples.
+
+Mostrar:
+
+Nome
+Telefone
+Último atendimento
+Quantidade de atendimentos
+Total gasto
+
+Criar perfil:
+
+Dados
+Histórico
+Agendamentos
+Pagamentos
+Observações
+
+==================================================
+SERVIÇOS
+========
+
+Criar gerenciamento.
+
+Campos:
+
+Nome
+Categoria
+Descrição
+Duração
+Preço
+Imagem
+Profissionais
+Status
+
+==================================================
+PROFISSIONAIS
+=============
+
+Criar:
+
+Cadastro
+Foto
+Nome
+Telefone
+Especialidade
+Serviços
+Horários
+Comissão
+Status
+
+Criar perfil com:
+
+Agenda
+Faturamento
+Comissões
+Avaliações
+
+==================================================
+HORÁRIOS
+========
+
+Criar configuração:
+
+Dias
+Abertura
+Fechamento
+Intervalos
+Feriados
+Folgas
+Férias
+Bloqueios
+
+Permitir configuração individual por profissional.
+
+==================================================
+FINANCEIRO
+==========
+
+Criar módulo financeiro.
+
+Dashboard:
+
+Receitas
+Despesas
+Saldo
+A receber
+Recebido
+
+Criar gráficos.
+
+Criar:
+
+Contas a receber
+Contas a pagar
+Movimentações
+
+Categorias:
+
+Serviços
+Produtos
+Comissões
+Aluguel
+Energia
+Materiais
+Marketing
+Outros
+
+Formas de pagamento:
+
+PIX
+Dinheiro
+Cartão
+Transferência
+
+==================================================
+COMISSÕES
+=========
+
+Criar controle de comissão.
+
+Mostrar:
+
+Profissional
+Serviços
+Faturamento
+Percentual
+Comissão
+Total a pagar
+
+Filtro por período.
+
+==================================================
+PÁGINA DO SALÃO
+===============
+
+Criar editor visual.
+
+Título:
+
+"Personalize sua página"
+
+Campos:
+
+Logo
+Nome
+Descrição
+Capa
+Fotos
+Cores
+Endereço
+Telefone
+WhatsApp
+Instagram
+Horários
+
+Criar:
+
+Preview desktop
+Preview mobile
+
+Botões:
+
+"Visualizar"
+"Publicar"
+"Copiar link"
+"Compartilhar"
+
+==================================================
+PRESENÇA ONLINE
+===============
+
+Criar seção:
+
+"Faça seu salão ser encontrado"
+
+Mostrar:
+
+Página pública
+Link de agendamento
+Google
+WhatsApp
+Instagram
+
+Criar cards explicativos.
+
+Não implementar integrações reais.
+
+==================================================
+WHATSAPP
+========
+
+Criar configuração de mensagens.
+
+Exemplos:
+
+Novo agendamento
+Confirmação
+Lembrete
+Cancelamento
+Pagamento
+
+Criar botão:
+
+"Compartilhar link"
+
+==================================================
+AVALIAÇÕES
+==========
+
+Dashboard:
+
+Nota média
+Quantidade
+Distribuição
+
+Lista de avaliações.
+
+Botão:
+
+"Responder"
+
+==================================================
+RELATÓRIOS
+==========
+
+Criar:
+
+Faturamento por período
+Serviços mais vendidos
+Profissionais
+Ocupação
+Novos clientes
+Cancelamentos
+Ticket médio
+
+==================================================
+CONFIGURAÇÕES
+=============
+
+Criar:
+
+Dados da empresa
+Usuários
+Permissões
+Unidades
+Pagamentos
+PIX
+Notificações
+WhatsApp
+Página pública
+Preferências
+
+==================================================
+ONBOARDING
+==========
+
+Criar experiência para novo salão.
+
+ETAPA 1
+Dados do salão
+
+ETAPA 2
+Logo e fotos
+
+ETAPA 3
+Serviços
+
+ETAPA 4
+Profissionais
+
+ETAPA 5
+Horários
+
+ETAPA 6
+PIX
+
+ETAPA 7
+Publicação
+
+Tela final:
+
+"Seu salão está pronto para receber agendamentos."
+
+Botão:
+
+"Publicar meu salão"
+
+==================================================
+AMBIENTE 3 — SUPER ADMIN
+========================
+
+Criar painel exclusivo da plataforma SaaS.
+
+SIDEBAR:
+
+Visão geral
+Salões
+Unidades
+Assinaturas
+Planos
+Pagamentos
+Usuários
+Suporte
+Configurações
+
+==================================================
+SUPER ADMIN DASHBOARD
+=====================
+
+Indicadores:
+
+Salões ativos
+Novos salões
+MRR
+Assinaturas ativas
+Inadimplentes
+Agendamentos
+Clientes
+
+Criar gráfico de crescimento.
+
+==================================================
+GESTÃO DE SALÕES
+================
+
+Tabela:
+
+Salão
+Responsável
+Unidades
+Plano
+Status
+Data
+Agendamentos
+Último acesso
+
+Status:
+
+Teste
+Ativo
+Inadimplente
+Bloqueado
+Cancelado
+
+==================================================
+ASSINATURAS
+===========
+
+Criar gerenciamento SaaS.
+
+Mostrar:
+
+Plano
+Salão
+Valor mensal
+Status
+Próxima cobrança
+
+Estados:
+
+Trial
+Ativo
+Atrasado
+Cancelado
+
+==================================================
+PLANOS
+======
+
+Criar:
+
+BÁSICO
+
+PROFISSIONAL
+
+PREMIUM
+
+EMPRESARIAL
+
+Não definir valores finais.
+
+Usar:
+
+R$ XX/mês
+
+Criar tabela comparativa.
+
+==================================================
+PAGAMENTO DA ASSINATURA
+=======================
+
+Criar tela:
+
+"Assinatura"
+
+Plano atual
+Valor
+Próxima cobrança
+Status
+
+Botões:
+
+Alterar plano
+Atualizar pagamento
+Cancelar assinatura
+
+==================================================
+SUPORTE
+=======
+
+Criar central:
+
+Tickets
+Solicitações
+Status
+
+==================================================
+LANDING PAGE DO SaaS
+====================
+
+Criar também a página institucional da própria plataforma.
+
+Hero:
+
+"Seu salão mais organizado. Seus clientes mais conectados."
+
+CTA:
+
+"Começar agora"
+
+Seção:
+
+AGENDAMENTO ONLINE
+
+"Seus clientes agendam de qualquer lugar."
+
+PAGAMENTOS
+
+"Receba sinais e pagamentos via PIX."
+
+GESTÃO
+
+"Agenda, clientes, equipe e financeiro."
+
+PÁGINA PROFISSIONAL
+
+"Tenha sua presença digital com agendamento integrado."
+
+MULTIUNIDADE
+
+"Gerencie várias unidades em um só lugar."
+
+Criar seção:
+
+"Como funciona"
+
+1
+Cadastre seu salão.
+
+2
+Configure seus serviços.
+
+3
+Publique sua página.
+
+4
+Comece a receber agendamentos.
+
+==================================================
+DESIGN SYSTEM
+=============
+
+Criar página exclusiva:
+
+"Design System"
+
+Componentes:
+
+Buttons
+Inputs
+Selects
+Dropdowns
+Cards
+Tables
+Calendar
+Date Picker
+Time Picker
+Modal
+Drawer
+Toast
+Badge
+Avatar
+Tabs
+Charts
+Sidebar
+Navbar
+Appointment Card
+Service Card
+Professional Card
+Customer Card
+Payment Card
+
+Criar variantes:
+
+Default
+Hover
+Active
+Disabled
+Loading
+Success
+Error
+
+==================================================
+ESTADOS
+=======
+
+Criar estados para:
+
+Loading
+Empty
+Error
+Success
+Pagamento pendente
+Pagamento confirmado
+Pagamento expirado
+Agendamento confirmado
+Agendamento cancelado
+Horário indisponível
+Sem clientes
+Sem agenda
+Sem movimentações
+
+==================================================
+RESPONSIVIDADE
+==============
+
+Criar versões:
+
+Desktop
+Tablet
+Mobile
+
+A página pública e o fluxo de agendamento devem ser MOBILE-FIRST.
+
+O painel administrativo deve funcionar em:
+
+Desktop
+Tablet
+Mobile
+
+==================================================
+PROTÓTIPO INTERATIVO
+====================
+
+Conectar as principais telas.
+
+Fluxo cliente:
+
+Landing do salão
+→ Serviços
+→ Profissional
+→ Data
+→ Horário
+→ Dados
+→ Resumo
+→ PIX
+→ Confirmação
+
+Fluxo salão:
+
+Login
+→ Dashboard
+→ Agenda
+→ Agendamento
+→ Cliente
+→ Financeiro
+→ Página do salão
+
+Fluxo Super Admin:
+
+Login
+→ Dashboard
+→ Salões
+→ Assinaturas
+→ Planos
+
+Criar navegação funcional entre as telas.
+
+==================================================
+ORGANIZAÇÃO DO FIGMA
+====================
+
+Organizar em páginas:
+
+01 — SaaS Marketing
+02 — Cliente
+03 — Salão Dashboard
+04 — Agenda
+05 — CRM
+06 — Serviços e Profissionais
+07 — Financeiro
+08 — Página do Salão
+09 — Super Admin
+10 — Onboarding
+11 — Design System
+12 — Prototype Flow
+
+Criar nomes de frames claros.
+
+Usar Auto Layout.
+
+Usar componentes.
+
+Usar Variants.
+
+Usar estilos consistentes.
+
+==================================================
+CRITÉRIO FINAL
+==============
+
+O protótipo NÃO deve parecer um template genérico.
+
+Ele deve parecer um SaaS real que poderia ser vendido imediatamente para proprietários de salões.
+
+A primeira impressão deve ser:
+
+"Isso pode organizar todo o meu salão."
+
+A experiência do cliente deve ser:
+
+"É muito fácil marcar meu horário."
+
+A experiência do proprietário deve ser:
+
+"Consigo administrar meu salão inteiro daqui."
+
+A experiência do administrador SaaS deve ser:
+
+"Consigo administrar dezenas ou centenas de salões."
+
+Priorizar simplicidade, conversão, experiência mobile, aparência premium e escalabilidade.
+
+Criar um protótipo visualmente impressionante, mas prático e comercial.
