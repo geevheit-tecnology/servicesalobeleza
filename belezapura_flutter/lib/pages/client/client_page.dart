@@ -93,7 +93,7 @@ class _SalonView extends StatelessWidget {
                           child: const Icon(LucideIcons.sparkles, color: AppTheme.primary),
                         ),
                         const SizedBox(height: 8),
-                        const Text('Salão Rosé', style: TextStyle(color: Colors.white, fontSize: 24, fontFamily: 'Fraunces')),
+                        Text(controller.salonName, style: const TextStyle(color: Colors.white, fontSize: 24, fontFamily: 'Fraunces')),
                         Text('Cabelo · Unhas · Estética', style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12)),
                       ],
                     ),

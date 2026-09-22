@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// O Dono do Salão (Administrador)
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("owner") // "owner" ou "superadmin"
+  salonId   String?  // Opcional: superadmin não tem salão
+  salon     Salon?    @relation(fields: [salonId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// O Salão (O "Inquilino" do SaaS)
+model Salon {
+  id            String         @id @default(uuid())
+  slug          String         @unique
+  name          String
+  document      String?        // CNPJ ou CPF
+  users         User[]
+  clients       Client[]
+  professionals Professional[]
+  services      Service[]
+  appointments  Appointment[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Client {
+  id           String        @id @default(uuid())
+  salonId      String
+  salon        Salon         @relation(fields: [salonId], references: [id])
+  name         String
+  phone        String?
+  lastVisit    DateTime?
+  visits       Int           @default(0)
+  totalSpent   Decimal       @default(0.0)
+  tags         String[]
+  appointments Appointment[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Professional {
+  id           String        @id @default(uuid())
+  salonId      String
+  salon        Salon         @relation(fields: [salonId], references: [id])
+  name         String
+  specialty    String?
+  commission   Decimal       @default(0.0)
+  status       String        @default("active")
+  appointments Appointment[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Service {
+  id           String        @id @default(uuid())
+  salonId      String
+  salon        Salon         @relation(fields: [salonId], references: [id])
+  name         String
+  price        Decimal
+  duration     Int           // in minutes
+  appointments Appointment[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Appointment {
+  id             String       @id @default(uuid())
+  salonId        String
+  salon          Salon        @relation(fields: [salonId], references: [id])
+  clientId       String
+  client         Client       @relation(fields: [clientId], references: [id])
+  professionalId String
+  professional   Professional @relation(fields: [professionalId], references: [id])
+  serviceId      String
+  service        Service      @relation(fields: [serviceId], references: [id])
+  date           DateTime
+  value          Decimal
+  paymentMethod  String?
+  status         String       @default("waiting") // waiting, confirmed, cancelled, done
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}

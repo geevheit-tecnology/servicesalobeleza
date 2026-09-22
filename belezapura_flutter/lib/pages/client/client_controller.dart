@@ -1,9 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/flutter.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 enum BookingStep { salon, service, professional, date, time, data, summary, pix, confirm }
 
 class ServiceItem {
-  final int id;
+  final String id;
   final String name;
   final String category;
   final String desc;
@@ -15,7 +17,7 @@ class ServiceItem {
 }
 
 class ProfessionalItem {
-  final int id;
+  final String id;
   final String name;
   final String specialty;
   final double rating;
@@ -37,18 +39,42 @@ class ClientController extends ChangeNotifier {
   bool copied = false;
   String paymentState = 'pending'; // 'pending', 'confirmed'
 
-  final List<ServiceItem> services = [
-    ServiceItem(1, "Escova Progressiva", "Cabelo", "Alinhamento com keratina", "120 min", "R\$ 180", "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=200&h=150&fit=crop&auto=format"),
-    ServiceItem(2, "Manicure", "Unhas", "Cutícula + esmaltação gel", "45 min", "R\$ 55", "https://images.unsplash.com/photo-1604654894610-df63bc536371?w=200&h=150&fit=crop&auto=format"),
-    ServiceItem(3, "Corte Feminino", "Cabelo", "Corte + finalização", "60 min", "R\$ 90", "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=200&h=150&fit=crop&auto=format"),
-    ServiceItem(4, "Massagem Relaxante", "Massagem", "60 min corpo inteiro", "60 min", "R\$ 130", "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=200&h=150&fit=crop&auto=format"),
-  ];
+  String salonId = '';
+  String salonName = 'Carregando...';
 
-  final List<ProfessionalItem> professionals = [
-    ProfessionalItem(0, "Qualquer disponível", "", 0),
-    ProfessionalItem(1, "Ana Carvalho", "Especialista em Cabelos", 4.9, "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=80&h=80&fit=crop&auto=format"),
-    ProfessionalItem(2, "Mariana Souza", "Manicure & Pedicure", 4.8, "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=80&h=80&fit=crop&auto=format"),
-  ];
+  List<ServiceItem> services = [];
+  List<ProfessionalItem> professionals = [];
+
+  ClientController() {
+    _loadSalonData();
+  }
+
+  Future<void> _loadSalonData() async {
+    try {
+      final res = await http.get(Uri.parse('http://localhost:3050/api/public/salon/demo'));
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        salonId = data['id'];
+        salonName = data['name'];
+        
+        final List srvs = data['services'];
+        services = srvs.map((s) => ServiceItem(
+          s['id'], s['name'], 'Geral', '', '${s['duration']} min', 'R\$ ${s['price']}', 
+          'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=200&h=150&fit=crop&auto=format'
+        )).toList();
+
+        final List pros = data['professionals'];
+        professionals = pros.map((p) => ProfessionalItem(
+          p['id'], p['name'], p['specialty'] ?? '', 5.0, 
+          'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=80&h=80&fit=crop&auto=format'
+        )).toList();
+        
+        notifyListeners();
+      }
+    } catch (e) {
+      print('Erro ao carregar dados do salão: \$e');
+    }
+  }
 
   void setStep(BookingStep newStep) {
     step = newStep;
@@ -70,9 +96,27 @@ class ClientController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void simulatePayment() {
+  Future<void> simulatePayment() async {
     paymentState = 'confirmed';
     notifyListeners();
+
+    try {
+      await http.post(
+        Uri.parse('http://localhost:3050/api/public/appointments'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'salonId': salonId,
+          'clientName': clientName.isEmpty ? 'Cliente Teste' : clientName,
+          'clientPhone': clientPhone.isEmpty ? '(11) 99999-9999' : clientPhone,
+          'serviceId': selectedService?.id,
+          'professionalId': selectedPro?.id,
+          'date': DateTime.now().add(const Duration(days: 1)).toIso8601String(),
+        }),
+      );
+    } catch (e) {
+      print('Erro ao criar agendamento: \$e');
+    }
+
     Future.delayed(const Duration(milliseconds: 800), () {
       setStep(BookingStep.confirm);
     });
