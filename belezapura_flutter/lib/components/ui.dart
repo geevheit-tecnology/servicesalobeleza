@@ -215,6 +215,7 @@ class AppInput extends StatelessWidget {
   final String? hintText;
   final bool obscureText;
   final TextEditingController? controller;
+  final ValueChanged<String>? onChanged;
 
   const AppInput({
     super.key,
@@ -223,6 +224,7 @@ class AppInput extends StatelessWidget {
     this.hintText,
     this.obscureText = false,
     this.controller,
+    this.onChanged,
   });
 
   @override
@@ -236,6 +238,7 @@ class AppInput extends StatelessWidget {
         ],
         TextField(
           controller: controller,
+          onChanged: onChanged,
           obscureText: obscureText,
           decoration: InputDecoration(
             hintText: hintText,

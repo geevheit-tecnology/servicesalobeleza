@@ -122,23 +122,33 @@ function StatCard({ label, value, sub, icon: Icon, trend, color = "primary" }: {
 }
 
 function DashboardView({ onNewAppointment }: { onNewAppointment: () => void }) {
+  const [stats, setStats] = useState<any>(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    fetch('http://localhost:3050/api/salon/dashboard', { headers: { 'Authorization': `Bearer ${token}` } })
+      .then(res => res.json())
+      .then(setStats)
+      .catch(console.error);
+  }, []);
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-serif text-2xl font-medium">Bom dia, Rosé ✨</h1>
-          <p className="text-muted-foreground text-sm">Terça-feira, 15 de outubro de 2024</p>
+          <h1 className="font-serif text-2xl font-medium">Painel de Controle ✨</h1>
+          <p className="text-muted-foreground text-sm">{new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
         </div>
         <Button size="sm" onClick={onNewAppointment}><Plus className="w-4 h-4" /> Novo agendamento</Button>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        <StatCard label="Agendamentos hoje" value="12" sub="4 restantes" icon={Calendar} trend={8} color="primary" />
-        <StatCard label="Faturamento hoje" value="R$ 1.280" sub="meta: R$ 1.500" icon={DollarSign} trend={12} color="emerald" />
-        <StatCard label="Ocupação" value="78%" sub="das 3 profissionais" icon={BarChart3} trend={5} color="sky" />
-        <StatCard label="Novos clientes" value="5" sub="este mês: 18" icon={Users} trend={15} color="purple" />
-        <StatCard label="Cancelamentos" value="1" sub="taxa: 8%" icon={X} trend={-3} color="rose" />
-        <StatCard label="Ticket médio" value="R$ 107" sub="mês anterior: R$ 98" icon={TrendingUp} trend={9} color="amber" />
+        <StatCard label="Agendamentos hoje" value={stats ? String(stats.appointmentsToday) : "0"} icon={Calendar} color="primary" />
+        <StatCard label="Faturamento" value={stats ? `R$ ${stats.revenue}` : "R$ 0"} icon={DollarSign} color="emerald" />
+        <StatCard label="Total Agendamentos" value={stats ? String(stats.totalAppointments) : "0"} icon={BarChart3} color="sky" />
+        <StatCard label="Total Clientes" value={stats ? String(stats.clientsCount) : "0"} icon={Users} color="purple" />
+        <StatCard label="Profissionais" value={stats ? String(stats.prosCount) : "0"} icon={UserCheck} color="rose" />
+        <StatCard label="Serviços" value={stats ? String(stats.servicesCount) : "0"} icon={Scissors} color="amber" />
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
@@ -760,10 +770,39 @@ const allServices = [
 ];
 
 function ServicosView() {
-  const [services, setServices] = useState(allServices);
+  const [services, setServices] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [filterCat, setFilterCat] = useState("Todos");
+  const [newSvc, setNewSvc] = useState({ name: "", duration: "", price: "" });
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    fetch('http://localhost:3050/api/salon/details', { headers: { 'Authorization': `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => {
+        if (d.services) {
+          setServices(d.services.map((s: any) => ({ ...s, cat: 'Serviço', pros: ['Geral'], status: 'active' })));
+        }
+      })
+      .catch(console.error);
+  }, []);
+
+  const handleSave = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch('http://localhost:3050/api/services', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(newSvc)
+      });
+      const data = await res.json();
+      setServices([...services, { ...data, cat: 'Serviço', pros: ['Geral'], status: 'active' }]);
+      setShowForm(false);
+      setNewSvc({ name: "", duration: "", price: "" });
+    } catch(e) { console.error(e) }
+  };
+
   const cats = ["Todos", "Cabelo", "Unhas", "Massagem", "Estética", "Sobrancelhas", "Maquiagem"];
+  const [filterCat, setFilterCat] = useState("Todos");
   const filtered = filterCat === "Todos" ? services : services.filter(s => s.cat === filterCat);
 
   return (
@@ -780,15 +819,15 @@ function ServicosView() {
             <button onClick={() => setShowForm(false)} className="p-1 rounded hover:bg-muted"><X className="w-4 h-4 text-muted-foreground" /></button>
           </div>
           <div className="grid sm:grid-cols-2 gap-3">
-            <input placeholder="Nome do serviço" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
+            <input value={newSvc.name} onChange={e => setNewSvc({...newSvc, name: e.target.value})} placeholder="Nome do serviço" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
             <select className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card appearance-none">
               {cats.slice(1).map(c => <option key={c}>{c}</option>)}
             </select>
           </div>
           <div className="grid grid-cols-3 gap-3">
-            <input placeholder="Duração (min)" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
-            <input placeholder="Preço (R$)" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
-            <Button size="sm" className="h-10" onClick={() => setShowForm(false)}>Salvar</Button>
+            <input value={newSvc.duration} onChange={e => setNewSvc({...newSvc, duration: e.target.value})} placeholder="Duração (min)" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
+            <input value={newSvc.price} onChange={e => setNewSvc({...newSvc, price: e.target.value})} placeholder="Preço (R$)" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
+            <Button size="sm" className="h-10" onClick={handleSave}>Salvar</Button>
           </div>
         </div>
       )}

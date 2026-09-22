@@ -61,7 +61,7 @@ export class OnboardingController {
 
       // Generate JWT for auto-login
       const token = jwt.sign(
-        { userId: salon.users[0].id, salonId: salon.id },
+        { userId: salon.users[0]?.id, salonId: salon.id },
         process.env.JWT_SECRET || 'secret123',
         { expiresIn: '1d' }
       );

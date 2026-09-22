@@ -47,7 +47,7 @@ export class SuperAdminController {
       const formatted = salons.map(s => ({
         id: s.id,
         name: s.name,
-        owner: s.users.length > 0 ? s.users[0].name : 'Sem dono',
+        owner: s.users.length > 0 ? s.users[0]?.name : 'Sem dono',
         units: 1,
         plan: 'Profissional', // Mock
         status: 'active', // Mock

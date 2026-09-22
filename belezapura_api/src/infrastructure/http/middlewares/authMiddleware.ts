@@ -17,9 +17,13 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
 
   const [, token] = authHeader.split(' ');
 
+  if (!token) {
+    return res.status(401).json({ error: 'Token malformado.' });
+  }
+
   try {
     const secret = process.env.JWT_SECRET || 'super-secret-key-belezapura';
-    const decoded = jwt.verify(token, secret) as { userId: string; salonId: string };
+    const decoded = jwt.verify(token, secret) as unknown as { userId: string; salonId: string };
     
     // Injeta os dados do usuário na requisição para isolarmos os dados por Salão!
     req.user = decoded;

@@ -11,7 +11,7 @@ export class PublicController {
       const { slug } = req.params;
       
       const salon = await db.salon.findUnique({
-        where: { slug },
+        where: { slug: slug as string },
         include: {
           services: true,
           professionals: {

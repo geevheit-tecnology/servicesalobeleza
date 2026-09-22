@@ -112,7 +112,7 @@ class _SalonView extends StatelessWidget {
                 label: 'Agendar horário',
                 icon: LucideIcons.calendar,
                 size: AppButtonSize.lg,
-                onPressed: () => controller.setStep(BookingStep.service),
+                onPressed: () => controller.setStep(BookingStep.selection),
               ),
               const SizedBox(height: 8),
               Row(
@@ -144,7 +144,7 @@ class _SalonView extends StatelessWidget {
                       children: [
                         Text(s.price, style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primary)),
                         InkWell(
-                          onTap: () { controller.selectedService = s; controller.setStep(BookingStep.professional); },
+                          onTap: () { controller.selectedService = s; controller.setStep(BookingStep.selection); },
                           child: const Text('Agendar', style: TextStyle(color: AppTheme.primary, fontSize: 12, decoration: TextDecoration.underline)),
                         ),
                       ],
@@ -154,7 +154,7 @@ class _SalonView extends StatelessWidget {
               )),
               Center(
                 child: TextButton(
-                  onPressed: () => controller.setStep(BookingStep.service),
+                  onPressed: () => controller.setStep(BookingStep.selection),
                   child: const Text('Ver todos →', style: TextStyle(color: AppTheme.primary)),
                 ),
               ),
@@ -174,13 +174,9 @@ class _BookingFlow extends StatelessWidget {
   Widget build(BuildContext context) {
     String title = '';
     switch (controller.step) {
-      case BookingStep.service: title = 'Escolha o serviço'; break;
-      case BookingStep.professional: title = 'Profissional'; break;
-      case BookingStep.date: title = 'Data'; break;
-      case BookingStep.time: title = 'Horário'; break;
-      case BookingStep.data: title = 'Seus dados'; break;
-      case BookingStep.summary: title = 'Resumo'; break;
-      case BookingStep.pix: title = 'Pagamento PIX'; break;
+      case BookingStep.selection: title = 'Serviço e Profissional'; break;
+      case BookingStep.datetime: title = 'Data e Horário'; break;
+      case BookingStep.checkout: title = 'Finalizar Agendamento'; break;
       case BookingStep.confirm: title = 'Confirmado!'; break;
       default: break;
     }
@@ -218,149 +214,202 @@ class _BookingFlow extends StatelessWidget {
 
   Widget _buildStepContent(BuildContext context) {
     switch (controller.step) {
-      case BookingStep.service:
+      case BookingStep.selection:
         return Column(
-          children: controller.services.map((s) => InkWell(
-            onTap: () { controller.selectedService = s; controller.setStep(BookingStep.professional); },
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                border: Border.all(color: AppTheme.border),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.network(s.img, width: 64, height: 64, fit: BoxFit.cover)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(s.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        Text(s.desc, style: const TextStyle(fontSize: 12, color: AppTheme.mutedForeground)),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(s.duration, style: const TextStyle(fontSize: 12, color: AppTheme.mutedForeground)),
-                            Text(s.price, style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primary)),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          )).toList(),
-        );
-      case BookingStep.professional:
-        return Column(
-          children: controller.professionals.map((p) => InkWell(
-            onTap: () { controller.selectedPro = p; controller.setStep(BookingStep.date); },
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(border: Border.all(color: AppTheme.border), borderRadius: BorderRadius.circular(12)),
-              child: Row(
-                children: [
-                  p.id == 0 
-                    ? Container(width: 48, height: 48, decoration: const BoxDecoration(shape: BoxShape.circle, color: AppTheme.secondary), child: const Icon(LucideIcons.user))
-                    : AppAvatar(name: p.name, src: p.img, radius: 24),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        if (p.specialty.isNotEmpty) Text(p.specialty, style: const TextStyle(fontSize: 12, color: AppTheme.mutedForeground)),
-                      ],
-                    ),
-                  ),
-                  const Icon(LucideIcons.chevronRight, size: 16, color: AppTheme.mutedForeground),
-                ],
-              ),
-            ),
-          )).toList(),
-        );
-      case BookingStep.date:
-        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Selecione uma data para simplificar o protótipo.'),
-            const SizedBox(height: 16),
-            AppButton(label: 'Dia 15 de Outubro', onPressed: () { controller.selectedDate = 15; controller.setStep(BookingStep.time); }),
+            const Text('1. Qual serviço?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 12),
+            ...controller.services.map((s) => InkWell(
+              onTap: () { 
+                controller.selectedService = s; 
+                controller.updateUI();
+              },
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: controller.selectedService == s ? AppTheme.primary : AppTheme.border, 
+                    width: controller.selectedService == s ? 2 : 1
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.network(s.img, width: 48, height: 48, fit: BoxFit.cover)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(s.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                          Text('${s.duration} • ${s.price}', style: const TextStyle(fontSize: 12, color: AppTheme.mutedForeground)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )),
+            const SizedBox(height: 24),
+            const Text('2. Com quem?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 12),
+            ...controller.professionals.map((p) => InkWell(
+              onTap: () { 
+                controller.selectedPro = p; 
+                controller.updateUI();
+              },
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: controller.selectedPro == p ? AppTheme.primary : AppTheme.border, 
+                    width: controller.selectedPro == p ? 2 : 1
+                  ),
+                  borderRadius: BorderRadius.circular(12)
+                ),
+                child: Row(
+                  children: [
+                    p.id == '0' 
+                      ? Container(width: 48, height: 48, decoration: const BoxDecoration(shape: BoxShape.circle, color: AppTheme.secondary), child: const Icon(LucideIcons.user))
+                      : AppAvatar(name: p.name, src: p.img, radius: 24),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+              ),
+            )),
+            const SizedBox(height: 24),
+            AppButton(
+              label: 'Continuar', 
+              onPressed: (controller.selectedService != null && controller.selectedPro != null) 
+                  ? () => controller.setStep(BookingStep.datetime) 
+                  : () {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Selecione um serviço e um profissional')));
+                  }
+            ),
           ],
         );
-      case BookingStep.time:
+      
+      case BookingStep.datetime:
         return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Horários disponíveis para 15 de Outubro'),
-            const SizedBox(height: 16),
+            const Text('1. Qual data?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 12),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [15, 16, 17, 18, 19].map((day) => InkWell(
+                  onTap: () { 
+                    controller.selectedDate = day; 
+                    controller.updateUI();
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    decoration: BoxDecoration(
+                      color: controller.selectedDate == day ? AppTheme.primary : Colors.transparent,
+                      border: Border.all(color: controller.selectedDate == day ? AppTheme.primary : AppTheme.border), 
+                      borderRadius: BorderRadius.circular(12)
+                    ),
+                    child: Column(
+                      children: [
+                        Text('Out', style: TextStyle(fontSize: 12, color: controller.selectedDate == day ? Colors.white : AppTheme.mutedForeground)),
+                        Text('$day', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: controller.selectedDate == day ? Colors.white : AppTheme.foreground)),
+                      ],
+                    ),
+                  ),
+                )).toList(),
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text('2. Qual horário?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 12),
             Wrap(
               spacing: 8, runSpacing: 8,
               children: ['09:00', '10:00', '11:00', '14:00', '15:00'].map((t) => InkWell(
-                onTap: () { controller.selectedTime = t; controller.setStep(BookingStep.data); },
+                onTap: () { 
+                  controller.selectedTime = t; 
+                  controller.updateUI();
+                },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(border: Border.all(color: AppTheme.border), borderRadius: BorderRadius.circular(12)),
-                  child: Text(t),
+                  decoration: BoxDecoration(
+                    color: controller.selectedTime == t ? AppTheme.primary : Colors.transparent,
+                    border: Border.all(color: controller.selectedTime == t ? AppTheme.primary : AppTheme.border), 
+                    borderRadius: BorderRadius.circular(12)
+                  ),
+                  child: Text(t, style: TextStyle(color: controller.selectedTime == t ? Colors.white : AppTheme.foreground)),
                 ),
               )).toList(),
             ),
+            const SizedBox(height: 32),
+            AppButton(
+              label: 'Continuar', 
+              onPressed: (controller.selectedDate != null && controller.selectedTime != null) 
+                  ? () => controller.setStep(BookingStep.checkout) 
+                  : () {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Selecione data e horário')));
+                  }
+            ),
           ],
         );
-      case BookingStep.data:
+      
+      case BookingStep.checkout:
         return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const AppInput(label: 'Nome completo'),
+            const Text('1. Seus Dados', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 12),
-            const AppInput(label: 'Celular / WhatsApp'),
+            AppInput(
+              label: 'Nome completo', 
+              onChanged: (val) => controller.clientName = val,
+            ),
             const SizedBox(height: 12),
-            const AppInput(label: 'E-mail (opcional)'),
+            AppInput(
+              label: 'Celular / WhatsApp',
+              onChanged: (val) => controller.clientPhone = val,
+            ),
             const SizedBox(height: 24),
-            AppButton(label: 'Continuar', onPressed: () => controller.setStep(BookingStep.summary)),
-          ],
-        );
-      case BookingStep.summary:
-        return Column(
-          children: [
+            const Text('2. Resumo e Pagamento', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(color: AppTheme.secondary, borderRadius: BorderRadius.circular(16)),
               child: Column(
                 children: [
-                  const Text('Resumo do agendamento', style: TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 12),
                   Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('Serviço'), Text(controller.selectedService?.name ?? '')]),
                   const SizedBox(height: 8),
-                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('Total'), Text(controller.selectedService?.price ?? '', style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold))]),
+                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('Profissional'), Text(controller.selectedPro?.name ?? '')]),
+                  const SizedBox(height: 8),
+                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('Data/Hora'), Text('Out ${controller.selectedDate} às ${controller.selectedTime}')]),
+                  const Divider(height: 24),
+                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('Sinal (PIX)'), Text('R\$ 30,00', style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold, fontSize: 16))]),
                 ],
               ),
             ),
             const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.orange.shade200)),
-              child: const Column(
-                children: [
-                  Text('Sinal para reservar', style: TextStyle(color: Colors.orange)),
-                  Text('R\$ 30,00', style: TextStyle(fontFamily: 'Fraunces', fontSize: 24, color: Colors.deepOrange)),
-                ],
-              ),
+            if (controller.paymentState == 'confirmed')
+              AppBadge(text: 'Pagamento confirmado', variant: AppBadgeVariant.success)
+            else
+              const Text('Ao confirmar, você simulará o pagamento PIX no protótipo.', style: TextStyle(fontSize: 12, color: AppTheme.mutedForeground)),
+            
+            const SizedBox(height: 24),
+            AppButton(
+              label: controller.paymentState == 'confirmed' ? 'Finalizando...' : 'Pagar R\$ 30,00 e Confirmar', 
+              onPressed: () {
+                if (controller.clientName.isEmpty || controller.clientPhone.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Preencha seu nome e celular')));
+                  return;
+                }
+                controller.simulatePayment();
+              }
             ),
-            const SizedBox(height: 24),
-            AppButton(label: 'Pagar sinal e confirmar', onPressed: () => controller.setStep(BookingStep.pix)),
-          ],
-        );
-      case BookingStep.pix:
-        return Column(
-          children: [
-            AppBadge(text: controller.paymentState == 'pending' ? 'Aguardando pagamento' : 'Pagamento confirmado', variant: AppBadgeVariant.warning),
-            const SizedBox(height: 16),
-            const Text('R\$ 30,00', style: TextStyle(fontFamily: 'Fraunces', fontSize: 32, color: AppTheme.primary)),
-            const SizedBox(height: 24),
-            AppButton(label: controller.paymentState == 'confirmed' ? 'Confirmado!' : 'Simular pagamento', onPressed: controller.simulatePayment),
           ],
         );
       case BookingStep.confirm:

@@ -1,33 +1,37 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, MapPin, Clock, Phone, MessageCircle, Check, Copy, ChevronRight, Calendar, User, Scissors, Sparkles, X } from "lucide-react";
-import { Button, Avatar, Stars } from "@/components/ui";
+import { ArrowLeft, MapPin, Search, ChevronLeft, ChevronRight, Check } from "lucide-react";
 
-const SALON_HERO = "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&h=500&fit=crop&auto=format";
-const SALON_1 = "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=400&h=300&fit=crop&auto=format";
-const SALON_2 = "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=400&h=300&fit=crop&auto=format";
+// Imagens de placeholder para dar vida ao app
+const SALON_HERO = "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&h=800&fit=crop&auto=format";
+const PRO_IMGS = [
+  "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop",
+  "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=200&h=200&fit=crop",
+  "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200&h=200&fit=crop"
+];
+const SERVICE_IMGS = [
+  "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=200&h=200&fit=crop",
+  "https://images.unsplash.com/photo-1516975080661-46bce0aa8610?w=200&h=200&fit=crop",
+  "https://images.unsplash.com/photo-1512496015851-a1fbbfc6146a?w=200&h=200&fit=crop"
+];
 
 const TIMES = ["09:00", "09:30", "10:00", "10:30", "11:00", "14:00", "14:30", "15:00", "15:30", "16:00", "17:00", "17:30"];
-const UNAVAILABLE = ["09:30", "11:00", "15:00"];
 
-type BookingStep = "salon" | "service" | "professional" | "date" | "time" | "data" | "summary" | "pix" | "confirm";
+type BookingStep = "home" | "booking" | "data" | "confirm";
 
-function QRCode() {
+// Componente da curva SVG para separar a foto do conteúdo
+function WaveCurve() {
   return (
-    <svg viewBox="0 0 200 200" className="w-48 h-48" fill="none">
-      <rect width="200" height="200" fill="white" />
-      {Array.from({ length: 10 }).map((_, r) =>
-        Array.from({ length: 10 }).map((_, c) => {
-          const filled = (r + c) % 3 !== 0 && !((r < 3 && c < 3) || (r < 3 && c > 6) || (r > 6 && c < 3));
-          return filled ? <rect key={`${r}-${c}`} x={20 + c * 16} y={20 + r * 16} width={14} height={14} rx={1} fill="#1C1714" /> : null;
-        })
-      )}
-      <rect x="20" y="20" width="52" height="52" rx="4" fill="none" stroke="#1C1714" strokeWidth="4" />
-      <rect x="30" y="30" width="32" height="32" rx="2" fill="#1C1714" />
-      <rect x="128" y="20" width="52" height="52" rx="4" fill="none" stroke="#1C1714" strokeWidth="4" />
-      <rect x="138" y="30" width="32" height="32" rx="2" fill="#1C1714" />
-      <rect x="20" y="128" width="52" height="52" rx="4" fill="none" stroke="#1C1714" strokeWidth="4" />
-      <rect x="30" y="138" width="32" height="32" rx="2" fill="#1C1714" />
+    <svg viewBox="0 0 1440 320" className="absolute -bottom-1 left-0 w-full z-10" preserveAspectRatio="none" style={{ height: '80px' }}>
+      <path fill="#ffffff" fillOpacity="1" d="M0,192L48,197.3C96,203,192,213,288,197.3C384,181,480,139,576,144C672,149,768,203,864,213.3C960,224,1056,192,1152,165.3C1248,139,1344,117,1392,106.7L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+    </svg>
+  );
+}
+
+function WaveCurvePink() {
+  return (
+    <svg viewBox="0 0 1440 320" className="absolute -bottom-1 left-0 w-full z-10" preserveAspectRatio="none" style={{ height: '120px' }}>
+      <path fill="#ffffff" fillOpacity="1" d="M0,128L60,144C120,160,240,192,360,181.3C480,171,600,117,720,112C840,107,960,149,1080,176C1200,203,1320,213,1380,218.7L1440,224L1440,320L1380,320C1320,320,1200,320,1080,320C960,320,840,320,720,320C600,320,480,320,360,320C240,320,120,320,60,320L0,320Z"></path>
     </svg>
   );
 }
@@ -39,61 +43,64 @@ export default function ClientView() {
   const [salonData, setSalonData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  const [step, setStep] = useState<BookingStep>("salon");
+  const [step, setStep] = useState<BookingStep>("home");
   const [selectedService, setSelectedService] = useState<any>(null);
   const [selectedPro, setSelectedPro] = useState<any>(null);
-  const [selectedDate, setSelectedDate] = useState<number | null>(null);
+  
+  // Lógica do Calendário Real
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-  const [paymentState, setPaymentState] = useState<"pending" | "confirmed">("pending");
+  
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
 
   useEffect(() => {
-    if (!slug) {
-      setLoading(false);
-      return;
-    }
-    
+    if (!slug) { setLoading(false); return; }
     fetch(`http://localhost:3050/api/public/salons/${slug}`)
       .then(res => res.json())
-      .then(data => {
-        if (!data.error) {
-          setSalonData(data);
-        }
-      })
+      .then(data => { if (!data.error) setSalonData(data); })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [slug]);
 
-  if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Carregando página do salão...</div>;
-  }
-
-  if (!salonData && slug) {
-    return <div className="flex items-center justify-center min-h-screen text-red-500">Salão não encontrado (URL: {slug})</div>;
-  }
-
-  const goBack = () => {
-    const prev: Record<BookingStep, BookingStep | null> = {
-      salon: null, service: "salon", professional: "service", date: "professional",
-      time: "date", data: "time", summary: "data", pix: "summary", confirm: "pix",
-    };
-    const p = prev[step];
-    if (p) setStep(p);
-  };
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-500">Carregando...</div>;
+  if (!salonData && slug) return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-red-500">Salão não encontrado</div>;
 
   const services = salonData?.services || [];
   const professionals = salonData?.professionals || [];
 
-  const stepLabel: Record<BookingStep, string> = {
-    salon: "Salão", service: "Escolha o serviço", professional: "Profissional",
-    date: "Data", time: "Horário", data: "Seus dados", summary: "Resumo",
-    pix: "Pagamento PIX", confirm: "Confirmado!",
+  // Funções de Calendário
+  const changeMonth = (offset: number) => {
+    const newDate = new Date(currentDate);
+    newDate.setMonth(newDate.getMonth() + offset);
+    setCurrentDate(newDate);
   };
 
-  const bookingSteps: BookingStep[] = ["service", "professional", "date", "time", "data", "summary", "pix", "confirm"];
-  const currentBookingIdx = bookingSteps.indexOf(step);
+  const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
+  
+  const generateCalendarDays = () => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const daysCount = getDaysInMonth(year, month);
+    const days = [];
+    
+    for (let i = 1; i <= daysCount; i++) {
+      const date = new Date(year, month, i);
+      const weekDays = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
+      const monthsStr = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
+      days.push({
+        dateObj: date,
+        day: i,
+        weekStr: weekDays[date.getDay()],
+        monthStr: monthsStr[month]
+      });
+    }
+    return days;
+  };
+
+  const calendarDays = generateCalendarDays();
+  const currentMonthName = currentDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
 
   const confirmBooking = async () => {
     try {
@@ -103,248 +110,284 @@ export default function ClientView() {
         body: JSON.stringify({
           salonId: salonData.id,
           clientName: clientName || "Cliente Web",
-          clientPhone: clientPhone,
+          clientPhone,
           serviceId: selectedService.id,
           professionalId: selectedPro.id,
-          date: new Date(2024, 9, selectedDate || 1, parseInt(selectedTime?.split(':')[0] || "9"), parseInt(selectedTime?.split(':')[1] || "0")).toISOString(),
+          date: selectedDate?.toISOString(),
           value: parseFloat(selectedService.price)
         })
       });
-      if (res.ok) {
-        setStep("confirm");
-      }
+      if (res.ok) setStep("confirm");
     } catch (e) {
-      console.error(e);
       alert('Erro ao confirmar agendamento.');
     }
   };
 
+  // Tema Pink vibrante da referência
+  const COLOR_PINK = "bg-[#FF4B72]";
+  const TEXT_PINK = "text-[#FF4B72]";
+  const BORDER_PINK = "border-[#FF4B72]";
+
   return (
-    <div className="flex flex-col items-center bg-muted/30 min-h-full py-8 px-4">
-      <div className="w-full max-w-sm bg-background rounded-3xl overflow-hidden shadow-2xl border border-border" style={{ minHeight: 700 }}>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 font-sans">
+      <div className="relative w-full max-w-md h-[100dvh] sm:h-[850px] bg-white sm:rounded-[3rem] overflow-hidden shadow-2xl flex flex-col">
         
-        {/* Salon Page */}
-        {step === "salon" && (
-          <div className="flex flex-col">
-            <div className="relative h-56 bg-muted">
-              <img src={SALON_HERO} alt="Capa do salão" className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-              <div className="absolute bottom-4 left-4 right-4">
-                <div className="flex items-end justify-between">
-                  <div>
-                    <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow mb-2">
-                      <Sparkles className="w-6 h-6 text-primary" />
-                    </div>
-                    <h1 className="text-white font-serif text-2xl font-medium">{salonData?.name || "Salão Demo"}</h1>
-                  </div>
-                  <Stars rating={4.9} count={12} />
+        {step === "home" && (
+          <div className="flex-1 flex flex-col overflow-y-auto pb-6 bg-[#FAFAFA]">
+            {/* Header com Imagem e Curva Branca */}
+            <div className="relative h-64 shrink-0">
+              <img src={SALON_HERO} alt="Salão" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-black/20" />
+              <div className="absolute top-12 left-6 right-6 flex items-center justify-between text-white">
+                <div>
+                  <h1 className="text-2xl font-bold shadow-sm">{salonData?.name || "Studio Hair"}</h1>
+                  <p className="text-sm font-medium opacity-90 drop-shadow-md flex items-center gap-1 mt-1">
+                    <MapPin className="w-4 h-4" /> Centro, SP
+                  </p>
                 </div>
               </div>
+              <WaveCurve />
             </div>
 
-            <div className="p-4 space-y-4">
-              <Button size="lg" className="w-full" onClick={() => setStep("service")}>
-                <Calendar className="w-4 h-4" /> Agendar horário
-              </Button>
-              
-              <div className="bg-secondary rounded-xl p-3 space-y-2 text-sm">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Clock className="w-4 h-4 shrink-0" />
-                  <span>Seg–Sáb: 9h–19h</span>
-                </div>
-              </div>
+            {/* Menu Tabs */}
+            <div className="flex justify-around px-6 mb-8 mt-2">
+              <button className={`font-bold text-sm pb-2 border-b-2 ${BORDER_PINK} ${TEXT_PINK}`}>Serviços</button>
+              <button className="font-bold text-sm pb-2 text-gray-400">Profissionais</button>
+              <button className="font-bold text-sm pb-2 text-gray-400">Fotos</button>
+            </div>
 
-              <div>
-                <h3 className="font-semibold text-sm mb-3">Serviços</h3>
-                <div className="space-y-2">
-                  {services.slice(0, 3).map((s: any) => (
-                    <div key={s.id} className="flex items-center justify-between p-3 bg-secondary rounded-xl">
-                      <div>
-                        <div className="font-medium text-sm">{s.name}</div>
-                        <div className="text-muted-foreground text-xs">{s.duration} min</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-semibold text-sm text-primary">R$ {s.price}</div>
-                        <button onClick={() => { setSelectedService(s); setStep("professional"); }} className="text-xs text-primary hover:underline">Agendar</button>
-                      </div>
+            {/* Serviços em Cards Verticais Vibrantes */}
+            <div className="px-6 space-y-6">
+              <div className="flex justify-between items-end mb-2">
+                <h2 className="text-xl font-bold text-gray-800">Top Serviços</h2>
+              </div>
+              
+              {services.map((s: any, idx: number) => (
+                <div key={s.id} onClick={() => { setSelectedService(s); setStep("booking"); }} className="relative bg-white rounded-3xl shadow-md p-4 flex gap-4 cursor-pointer hover:shadow-lg transition-all border border-gray-100">
+                  <div className={`w-24 h-24 rounded-2xl overflow-hidden shrink-0 ${COLOR_PINK}`}>
+                    <img src={SERVICE_IMGS[idx % SERVICE_IMGS.length]} alt="Serviço" className="w-full h-full object-cover opacity-90 mix-blend-multiply" />
+                  </div>
+                  <div className="flex-1 flex flex-col justify-center">
+                    <h3 className="font-bold text-gray-800 text-lg mb-1">{s.name}</h3>
+                    <p className="text-xs text-gray-500 mb-3">{s.duration} min de puro cuidado.</p>
+                    <div className="flex justify-between items-center mt-auto">
+                      <span className={`font-bold text-lg ${TEXT_PINK}`}>R$ {s.price}</span>
                     </div>
-                  ))}
-                  {services.length > 3 && (
-                    <Button variant="ghost" size="sm" className="w-full mt-2" onClick={() => setStep("service")}>
-                      Ver todos os serviços
-                    </Button>
-                  )}
+                  </div>
+                  <button className={`absolute right-0 bottom-0 ${COLOR_PINK} text-white px-5 py-3 rounded-tl-3xl rounded-br-3xl font-bold text-sm shadow-md`}>
+                    Agendar ➔
+                  </button>
                 </div>
+              ))}
+            </div>
+
+            {/* Profissionais */}
+            <div className="px-6 pt-10 pb-10">
+              <h2 className="text-xl font-bold text-gray-800 mb-6">Nossos Profissionais</h2>
+              <div className="space-y-4">
+                {professionals.map((p: any, idx: number) => (
+                  <div key={p.id} className="flex items-center gap-4 bg-white p-4 rounded-[2rem] shadow-sm border border-gray-100">
+                    <img src={PRO_IMGS[idx % PRO_IMGS.length]} alt="Profissional" className="w-16 h-16 rounded-full object-cover shadow-sm border-2 border-white" />
+                    <div className="flex-1">
+                      <h3 className="font-bold text-gray-800">{p.name}</h3>
+                      <p className="text-xs text-gray-400">Especialista</p>
+                      <div className="flex text-amber-400 text-[10px] mt-1">★★★★★</div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         )}
 
-        {/* Booking Flow */}
-        {step !== "salon" && (
-          <div className="flex flex-col h-full">
-            <div className="flex items-center gap-3 p-4 border-b border-border">
-              {step !== "confirm" && (
-                <button onClick={goBack} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+        {/* Step: Booking (Agendamento completo com Onda Pink) */}
+        {step === "booking" && (
+          <div className="flex-1 flex flex-col bg-white overflow-y-auto">
+            
+            {/* Header curvo rosa gigante */}
+            <div className={`relative w-full ${COLOR_PINK} pt-12 pb-24 px-6 shrink-0`}>
+              <div className="flex items-center gap-4 mb-4">
+                <button onClick={goBack} className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white">
                   <ArrowLeft className="w-5 h-5" />
                 </button>
-              )}
-              <div className="flex-1">
-                <div className="font-semibold text-sm">{stepLabel[step]}</div>
+                <h2 className="text-2xl font-bold text-white">Minha Agenda</h2>
               </div>
-              <button onClick={() => setStep("salon")} className="p-1.5 rounded-lg hover:bg-muted">
-                <X className="w-4 h-4 text-muted-foreground" />
-              </button>
+              <p className="text-white/80 font-medium ml-14">Escolha a melhor data e horário para o serviço <strong className="text-white">{selectedService?.name}</strong>.</p>
+              <WaveCurvePink />
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="px-6 flex-1 -mt-16 relative z-20 pb-24">
               
-              {/* Step: Service */}
-              {step === "service" && (
-                <div className="space-y-3">
-                  {services.map((s: any) => (
-                    <div
-                      key={s.id}
-                      onClick={() => { setSelectedService(s); setStep("professional"); }}
-                      className="flex gap-3 p-3 rounded-xl border cursor-pointer transition-all hover:border-primary/40 bg-card"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm">{s.name}</div>
-                        <div className="flex items-center justify-between mt-2">
-                          <span className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Clock className="w-3 h-3" /> {s.duration} min
-                          </span>
-                          <span className="font-semibold text-primary text-sm">R$ {s.price}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+              {/* Calendário: Scroll Horizontal de Cards Gigantes */}
+              <div className="mb-10">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-gray-800 font-bold text-lg capitalize">{currentMonthName}</h3>
+                  <div className="flex gap-3">
+                    <button onClick={() => changeMonth(-1)} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600"><ChevronLeft className="w-4 h-4" /></button>
+                    <button onClick={() => changeMonth(1)} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600"><ChevronRight className="w-4 h-4" /></button>
+                  </div>
                 </div>
-              )}
 
-              {/* Step: Professional */}
-              {step === "professional" && (
-                <div className="space-y-3">
-                  {professionals.map((p: any) => (
-                    <div
-                      key={p.id}
-                      onClick={() => { setSelectedPro(p); setStep("date"); }}
-                      className="flex items-center gap-3 p-3 rounded-xl border cursor-pointer hover:border-primary/40 bg-card"
-                    >
-                      <Avatar name={p.name} />
-                      <div className="flex-1">
-                        <div className="font-medium text-sm">{p.name}</div>
-                        <div className="text-xs text-muted-foreground">{p.specialty || "Profissional"}</div>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                    </div>
-                  ))}
-                  {professionals.length === 0 && (
-                    <div className="text-sm text-center text-muted-foreground">
-                      Nenhum profissional cadastrado.
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Step: Date */}
-              {step === "date" && (
-                <div>
-                  <div className="mb-4"><h3 className="font-semibold">Novembro 2024</h3></div>
-                  <div className="grid grid-cols-7 gap-1">
-                    {[null, null, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((d, i) => (
-                      <button
+                <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide pt-2">
+                  {calendarDays.map((d, i) => {
+                    const isSelected = selectedDate?.getDate() === d.day && selectedDate?.getMonth() === d.dateObj.getMonth();
+                    return (
+                      <button 
                         key={i}
-                        disabled={!d}
-                        onClick={() => d && setSelectedDate(d)}
-                        className={`aspect-square rounded-xl text-sm font-medium transition-all ${
-                          !d ? "invisible" : selectedDate === d ? "bg-primary text-primary-foreground shadow" : "hover:bg-secondary text-foreground"
+                        onClick={() => setSelectedDate(d.dateObj)}
+                        className={`shrink-0 w-[85px] h-[110px] rounded-[2rem] flex flex-col items-center justify-center transition-all ${
+                          isSelected 
+                            ? `${COLOR_PINK} text-white shadow-lg shadow-pink-200/50 scale-105` 
+                            : "bg-white text-gray-400 border border-gray-100 hover:border-pink-200"
                         }`}
                       >
-                        {d}
+                        <span className={`text-xs font-bold mb-1 ${isSelected ? "text-white/80" : "text-gray-400"}`}>{d.monthStr}</span>
+                        <span className={`text-3xl font-bold mb-1 ${isSelected ? "text-white" : "text-gray-800"}`}>{d.day}</span>
+                        <span className={`text-[10px] font-bold ${isSelected ? "text-white/80" : "text-gray-400"}`}>{d.weekStr}</span>
                       </button>
-                    ))}
-                  </div>
-                  {selectedDate && (
-                    <Button className="w-full mt-4" onClick={() => setStep("time")}>
-                      Continuar
-                    </Button>
-                  )}
+                    );
+                  })}
                 </div>
-              )}
+              </div>
 
-              {/* Step: Time */}
-              {step === "time" && (
-                <div>
-                  <p className="text-sm text-muted-foreground mb-4">Horários disponíveis</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {TIMES.map(t => (
-                      <button
-                        key={t}
-                        onClick={() => { setSelectedTime(t); setStep("data"); }}
-                        className={`py-2.5 rounded-xl text-sm font-medium border ${selectedTime === t ? "bg-primary text-white" : "hover:border-primary"}`}
-                      >
-                        {t}
-                      </button>
-                    ))}
-                  </div>
+              {/* Profissional Select (Horizontal Circular) */}
+              <div className="mb-10">
+                <h3 className="text-gray-800 font-bold text-lg mb-4">Com quem?</h3>
+                <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+                  {professionals.map((p: any, idx: number) => (
+                    <div key={p.id} className="flex flex-col items-center flex-shrink-0 cursor-pointer" onClick={() => setSelectedPro(p)}>
+                      <div className={`w-[70px] h-[70px] rounded-full p-1 mb-2 transition-all ${selectedPro?.id === p.id ? "bg-gradient-to-tr from-pink-400 to-orange-300 shadow-md" : "bg-transparent"}`}>
+                        <img src={PRO_IMGS[idx % PRO_IMGS.length]} alt="Profissional" className="w-full h-full rounded-full object-cover border-2 border-white" />
+                      </div>
+                      <span className={`text-xs font-bold ${selectedPro?.id === p.id ? "text-gray-800" : "text-gray-400"}`}>{p.name.split(' ')[0]}</span>
+                    </div>
+                  ))}
                 </div>
-              )}
+              </div>
 
-              {/* Step: Data */}
-              {step === "data" && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium block mb-1.5">Seu nome</label>
-                    <input value={clientName} onChange={e => setClientName(e.target.value)} className="w-full h-11 border rounded-xl px-3 text-sm outline-none focus:border-primary" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium block mb-1.5">WhatsApp</label>
-                    <input value={clientPhone} onChange={e => setClientPhone(e.target.value)} className="w-full h-11 border rounded-xl px-3 text-sm outline-none focus:border-primary" />
-                  </div>
-                  <Button className="w-full" onClick={() => setStep("summary")}>Revisar agendamento</Button>
+              {/* Horários */}
+              <div className="mb-8">
+                <h3 className="text-gray-800 font-bold text-lg mb-4">Que horas?</h3>
+                <div className="grid grid-cols-3 gap-3">
+                  {TIMES.map(t => (
+                    <button 
+                      key={t}
+                      onClick={() => setSelectedTime(t)}
+                      className={`py-3.5 rounded-[1.5rem] text-sm font-bold transition-all ${
+                        selectedTime === t 
+                          ? `${COLOR_PINK} text-white shadow-md shadow-pink-200/50 border-transparent` 
+                          : "bg-gray-50 text-gray-500 border border-transparent hover:bg-pink-50 hover:text-pink-500"
+                      }`}
+                    >
+                      {t}
+                    </button>
+                  ))}
                 </div>
-              )}
+              </div>
+            </div>
 
-              {/* Step: Summary */}
-              {step === "summary" && (
-                <div>
-                  <div className="bg-secondary rounded-2xl p-4 space-y-3 mb-4">
-                    <h3 className="font-semibold">Resumo</h3>
-                    <div className="flex justify-between text-sm"><span className="text-muted-foreground">Serviço</span><span>{selectedService?.name}</span></div>
-                    <div className="flex justify-between text-sm"><span className="text-muted-foreground">Profissional</span><span>{selectedPro?.name}</span></div>
-                    <div className="flex justify-between text-sm"><span className="text-muted-foreground">Data/Hora</span><span>{selectedDate}/11 às {selectedTime}</span></div>
-                    <div className="border-t pt-3 flex justify-between font-medium"><span>Valor total</span><span className="text-primary">R$ {selectedService?.price}</span></div>
-                  </div>
-                  <Button className="w-full" onClick={() => setStep("pix")}>Pagar via PIX e Reservar</Button>
-                </div>
-              )}
-
-              {/* Step: PIX */}
-              {step === "pix" && (
-                <div className="text-center">
-                  <h3 className="font-semibold mb-1">Pagamento da reserva</h3>
-                  <div className="flex justify-center mb-4"><div className="p-3 bg-white rounded-2xl border shadow-sm"><QRCode /></div></div>
-                  <Button className="w-full" onClick={() => { setPaymentState("confirmed"); setTimeout(confirmBooking, 1000); }}>
-                    {paymentState === "confirmed" ? "Confirmando..." : "Simular Pagamento Confirmado"}
-                  </Button>
-                </div>
-              )}
-
-              {/* Step: Confirm */}
-              {step === "confirm" && (
-                <div className="text-center py-4">
-                  <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
-                    <Check className="w-10 h-10 text-emerald-600" />
-                  </div>
-                  <h2 className="font-serif text-2xl font-medium text-emerald-700 mb-6">Confirmado!</h2>
-                  <Button size="sm" className="w-full" onClick={() => setStep("salon")}>Voltar ao início</Button>
-                </div>
-              )}
-
+            {/* Bottom Bar fixada */}
+            <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-white via-white to-transparent pt-12">
+              <button 
+                disabled={!selectedDate || !selectedTime || !selectedService || !selectedPro}
+                onClick={() => setStep("data")}
+                className={`w-full h-14 rounded-full ${COLOR_PINK} disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold text-lg shadow-lg shadow-pink-300 transition-all`}
+              >
+                Confirmar Horário
+              </button>
             </div>
           </div>
         )}
+
+        {/* Step: Dados e Pagamento integrados */}
+        {step === "data" && (
+          <div className="flex-1 flex flex-col bg-white overflow-y-auto">
+            <div className={`relative w-full ${COLOR_PINK} pt-12 pb-24 px-6 shrink-0`}>
+              <div className="flex items-center gap-4 mb-4">
+                <button onClick={goBack} className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white">
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <h2 className="text-2xl font-bold text-white">Finalizar</h2>
+              </div>
+              <WaveCurvePink />
+            </div>
+
+            <div className="px-6 flex-1 -mt-16 relative z-20 pb-24">
+              <div className="bg-white rounded-[2rem] shadow-xl shadow-gray-200/50 p-6 mb-8 border border-gray-50">
+                <h3 className="font-bold text-gray-800 mb-6 text-lg">Seus Dados</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-xs font-bold text-gray-400 mb-2 block uppercase tracking-wider">Nome Completo</label>
+                    <input 
+                      value={clientName} onChange={e => setClientName(e.target.value)}
+                      className="w-full h-14 rounded-2xl bg-gray-50 border-none px-4 outline-none focus:ring-2 focus:ring-pink-400 transition-all text-gray-800 font-bold"
+                      placeholder="Ex: Issys Helena"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-gray-400 mb-2 block uppercase tracking-wider">WhatsApp</label>
+                    <input 
+                      value={clientPhone} onChange={e => setClientPhone(e.target.value)}
+                      className="w-full h-14 rounded-2xl bg-gray-50 border-none px-4 outline-none focus:ring-2 focus:ring-pink-400 transition-all text-gray-800 font-bold"
+                      placeholder="(00) 00000-0000"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-[2rem] shadow-xl shadow-gray-200/50 p-6 mb-8 border border-gray-50">
+                <h3 className="font-bold text-gray-800 mb-4 text-lg">Resumo</h3>
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-gray-500 font-medium">Serviço</span>
+                  <span className="text-gray-800 font-bold">{selectedService?.name}</span>
+                </div>
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-gray-500 font-medium">Profissional</span>
+                  <span className="text-gray-800 font-bold">{selectedPro?.name}</span>
+                </div>
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-gray-500 font-medium">Data</span>
+                  <span className="text-gray-800 font-bold">{selectedDate?.toLocaleDateString('pt-BR')} às {selectedTime}</span>
+                </div>
+                <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-100">
+                  <span className="font-bold text-gray-800 text-lg">Total</span>
+                  <span className={`font-bold text-2xl ${TEXT_PINK}`}>R$ {selectedService?.price}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="absolute bottom-0 left-0 right-0 p-6 bg-white border-t border-gray-100">
+              <button 
+                disabled={!clientName || !clientPhone}
+                onClick={confirmBooking}
+                className={`w-full h-14 rounded-full ${COLOR_PINK} disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold text-lg shadow-lg shadow-pink-300 transition-all`}
+              >
+                Pagar e Agendar
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === "confirm" && (
+          <div className={`p-8 flex-1 flex flex-col items-center justify-center text-center ${COLOR_PINK}`}>
+            <div className={`w-28 h-28 rounded-full bg-white/20 flex items-center justify-center mb-8 backdrop-blur-md`}>
+              <div className={`w-20 h-20 rounded-full bg-white flex items-center justify-center ${TEXT_PINK} shadow-2xl`}>
+                <Check className="w-10 h-10" />
+              </div>
+            </div>
+            <h2 className="text-3xl font-bold text-white mb-4">Confirmado!</h2>
+            <p className="text-white/90 font-medium leading-relaxed mb-12 text-lg">
+              Sua reserva no <strong className="text-white">{salonData?.name}</strong> foi realizada.
+            </p>
+            <button 
+              onClick={() => setStep("home")}
+              className="w-full h-14 rounded-full bg-white text-pink-500 font-bold text-lg shadow-xl"
+            >
+              Voltar ao início
+            </button>
+          </div>
+        )}
+
       </div>
     </div>
   );

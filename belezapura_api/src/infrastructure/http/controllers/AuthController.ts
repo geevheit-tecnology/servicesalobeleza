@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { LoginUseCase } from '../../../../domain/auth/useCases/LoginUseCase';
+import { LoginUseCase } from '../../../domain/auth/useCases/LoginUseCase';
 
 export class AuthController {
   async login(req: Request, res: Response): Promise<void> {

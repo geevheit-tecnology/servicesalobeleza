@@ -1,3 +1,4 @@
+import { Response } from 'express';
 import { CreateAppointmentUseCase } from '../../../domain/appointments/useCases/CreateAppointment';
 import { PrismaAppointmentRepository } from '../../database/prisma/repositories/PrismaAppointmentRepository';
 import { AuthRequest } from '../middlewares/authMiddleware';
