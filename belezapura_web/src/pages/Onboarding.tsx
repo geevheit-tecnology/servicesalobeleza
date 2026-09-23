@@ -89,7 +89,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
           pixKey
         };
 
-        const res = await fetch('http://localhost:3050/api/public/onboarding', {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)

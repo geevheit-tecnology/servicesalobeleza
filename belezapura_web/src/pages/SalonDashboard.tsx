@@ -126,7 +126,7 @@ function DashboardView({ onNewAppointment }: { onNewAppointment: () => void }) {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    fetch('http://localhost:3050/api/salon/dashboard', { headers: { 'Authorization': `Bearer ${token}` } })
+    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}`, { headers: { 'Authorization': `Bearer ${token}` } })
       .then(res => res.json())
       .then(setStats)
       .catch(console.error);
@@ -311,7 +311,7 @@ function AppointmentsView({ onNewAppointment }: { onNewAppointment: () => void }
     const token = localStorage.getItem('token');
     if (!token) return;
 
-    fetch('http://localhost:3050/api/appointments', {
+    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -776,7 +776,7 @@ function ServicosView() {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    fetch('http://localhost:3050/api/salon/details', { headers: { 'Authorization': `Bearer ${token}` } })
+    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}`, { headers: { 'Authorization': `Bearer ${token}` } })
       .then(r => r.json())
       .then(d => {
         if (d.services) {
@@ -789,7 +789,7 @@ function ServicosView() {
   const handleSave = async () => {
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:3050/api/services', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(newSvc)
@@ -1529,7 +1529,7 @@ function LoginScreen({ onLogin }: { onLogin: (token: string) => void }) {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch("http://localhost:3050/api/auth/login", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

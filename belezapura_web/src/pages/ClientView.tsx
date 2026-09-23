@@ -104,7 +104,7 @@ export default function ClientView() {
 
   const confirmBooking = async () => {
     try {
-      const res = await fetch('http://localhost:3050/api/public/appointments', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
