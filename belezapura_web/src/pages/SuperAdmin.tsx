@@ -649,12 +649,18 @@ export default function SuperAdmin() {
   const [salonsData, setSalonsData] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/superadmin/overview`)
+    const token = localStorage.getItem('token');
+    
+    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/superadmin/overview`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
       .then(res => res.json())
       .then(data => setOverviewData(data))
       .catch(console.error);
 
-    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/superadmin/salons`)
+    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/superadmin/salons`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
       .then(res => res.json())
       .then(data => setSalonsData(data))
       .catch(console.error);
