@@ -126,6 +126,8 @@ const statusConfig: Record<string, { label: string; variant: "success" | "warnin
 
 function OverviewView({ overviewData }: { overviewData: any }) {
   if (!overviewData) return <div>Carregando...</div>;
+  if (overviewData.error) return <div className="p-6 text-red-500 font-medium">Erro ao carregar os dados: {overviewData.error}. Verifique o banco de dados.</div>;
+  
   const { totalSalons, totalAppointments, totalClients, mrrData, mrrValue } = overviewData;
 
   return (
@@ -209,7 +211,13 @@ function OverviewView({ overviewData }: { overviewData: any }) {
   );
 }
 
-function SaloesView({ salonsData }: { salonsData: any[] }) {
+function SaloesView({ salonsData }: { salonsData: any }) {
+  if (salonsData && salonsData.error) {
+    return <div className="p-6 text-red-500 font-medium">Erro ao carregar salões: {salonsData.error}. Verifique o banco de dados.</div>;
+  }
+  
+  const dataToUse = Array.isArray(salonsData) && salonsData.length > 0 ? salonsData : saloes;
+
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
@@ -241,7 +249,7 @@ function SaloesView({ salonsData }: { salonsData: any[] }) {
             </tr>
           </thead>
           <tbody>
-            {(salonsData.length > 0 ? salonsData : saloes).map(s => (
+            {dataToUse.map(s => (
               <tr key={s.name} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
@@ -253,10 +261,10 @@ function SaloesView({ salonsData }: { salonsData: any[] }) {
                 <td className="px-4 py-3 text-sm text-center">{s.units}</td>
                 <td className="px-4 py-3"><Badge variant="outline" className="text-xs">{s.plan}</Badge></td>
                 <td className="px-4 py-3">
-                  <Badge variant={statusConfig[s.status].variant}>{statusConfig[s.status].label}</Badge>
+                  <Badge variant={statusConfig[s.status]?.variant || "outline"}>{statusConfig[s.status]?.label || s.status}</Badge>
                 </td>
                 <td className="px-4 py-3 text-sm text-muted-foreground">{s.since}</td>
-                <td className="px-4 py-3 text-sm font-medium">{s.appointments.toLocaleString("pt-BR")}</td>
+                <td className="px-4 py-3 text-sm font-medium">{s.appointments?.toLocaleString("pt-BR")}</td>
                 <td className="px-4 py-3 text-sm text-muted-foreground">{s.lastAccess}</td>
                 <td className="px-4 py-3">
                   <button className="p-1.5 rounded-lg hover:bg-muted"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
