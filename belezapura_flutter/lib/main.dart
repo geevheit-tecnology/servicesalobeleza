@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+
 import 'package:belezapura_flutter/theme/app_theme.dart';
 import 'package:belezapura_flutter/pages/marketing/marketing_page.dart';
 import 'package:belezapura_flutter/pages/onboarding/onboarding_page.dart';
@@ -36,14 +36,6 @@ class PrototypeHost extends StatefulWidget {
 
 class _PrototypeHostState extends State<PrototypeHost> {
   AppView _currentView = AppView.marketing;
-
-  final Map<AppView, Map<String, dynamic>> _tabs = {
-    AppView.marketing: {'label': 'Landing Page', 'sub': 'SaaS', 'icon': LucideIcons.sparkles},
-    AppView.client: {'label': 'Cliente Final', 'sub': 'Mobile', 'icon': LucideIcons.globe},
-    AppView.salon: {'label': 'Painel do Salão', 'sub': 'Dashboard', 'icon': LucideIcons.layoutDashboard},
-    AppView.superadmin: {'label': 'Super Admin', 'sub': 'Plataforma', 'icon': LucideIcons.shieldCheck},
-    AppView.onboarding: {'label': 'Onboarding', 'sub': 'Novo salão', 'icon': LucideIcons.rocket},
-  };
 
   Widget _buildContent() {
     switch (_currentView) {
