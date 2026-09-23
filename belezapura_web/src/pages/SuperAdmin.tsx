@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import {
   LayoutDashboard, Store, Building2, CreditCard, Package, Users, HeadphonesIcon,
   Settings, TrendingUp, ArrowUpRight, ArrowDownRight, Bell, ChevronDown, MoreHorizontal,
-  CheckCircle, AlertCircle, XCircle, Clock, Sparkles, Plus, Search, Filter
+  CheckCircle, AlertCircle, XCircle, Clock, Sparkles, Plus, Search, Filter, LogOut
 } from "lucide-react";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line
@@ -735,6 +735,16 @@ export default function SuperAdmin() {
               <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
             </button>
             <Avatar name="Admin beautyOS" size="sm" />
+            <button 
+              onClick={() => {
+                localStorage.removeItem('token');
+                window.location.href = '/login';
+              }}
+              className="p-2 rounded-lg hover:bg-red-50 text-red-500 flex items-center transition-colors ml-2"
+              title="Sair da conta"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </header>
 
