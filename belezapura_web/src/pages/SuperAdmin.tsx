@@ -641,12 +641,12 @@ export default function SuperAdmin() {
   const [salonsData, setSalonsData] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch('http://localhost:3050/api/superadmin/overview')
+    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/superadmin/overview`)
       .then(res => res.json())
       .then(data => setOverviewData(data))
       .catch(console.error);
 
-    fetch('http://localhost:3050/api/superadmin/salons')
+    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/superadmin/salons`)
       .then(res => res.json())
       .then(data => setSalonsData(data))
       .catch(console.error);

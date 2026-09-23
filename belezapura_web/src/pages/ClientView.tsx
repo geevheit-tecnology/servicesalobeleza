@@ -57,7 +57,7 @@ export default function ClientView() {
 
   useEffect(() => {
     if (!slug) { setLoading(false); return; }
-    fetch(`http://localhost:3050/api/public/salons/${slug}`)
+    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/public/salons/${slug}`)
       .then(res => res.json())
       .then(data => { if (!data.error) setSalonData(data); })
       .catch(console.error)
@@ -104,7 +104,7 @@ export default function ClientView() {
 
   const confirmBooking = async () => {
     try {
-      const res = await fetch('http://localhost:3050/api/public/appointments', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/public/appointments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
