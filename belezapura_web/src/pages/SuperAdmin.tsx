@@ -48,6 +48,7 @@ const saloes = [
 ];
 
 const subscriptions = [
+  { salon: "Studio Beauty Prime", plan: "Profissional", value: "R$ 149", status: "pending", next: "Aguardando aprovação" },
   { salon: "Salão Rosé", plan: "Empresarial", value: "R$ 499", status: "active", next: "01/11/2024" },
   { salon: "Studio Carla", plan: "Profissional", value: "R$ 149", status: "active", next: "15/11/2024" },
   { salon: "Bella Estética", plan: "Premium", value: "R$ 299", status: "active", next: "20/11/2024" },
@@ -57,24 +58,24 @@ const subscriptions = [
 
 const plans = [
   {
-    name: "Básico", price: "R$ XX", period: "/mês", color: "#E8E0D8",
+    name: "Básico", price: "R$ 59,90", period: "/mês", color: "#E8E0D8",
     features: ["1 profissional", "50 agendamentos/mês", "Agenda online", "Página do salão", "PIX básico"],
-    users: 180, revenue: "R$ XX.XXX",
+    users: 180, revenue: "R$ 10.782",
   },
   {
-    name: "Profissional", price: "R$ XX", period: "/mês", color: "#9B7EA8",
-    features: ["Até 5 profissionais", "Ilimitado", "Financeiro", "Comissões", "Relatórios", "WhatsApp"],
-    users: 620, revenue: "R$ XX.XXX",
+    name: "Profissional", price: "R$ 149,90", period: "/mês", color: "#9B7EA8",
+    features: ["Até 5 profissionais", "Ilimitado", "Financeiro", "Comissões", "Relatórios", "Lembretes WhatsApp"],
+    users: 620, revenue: "R$ 92.938",
   },
   {
-    name: "Premium", price: "R$ XX", period: "/mês", color: "#B8614A",
-    features: ["Até 15 profissionais", "3 unidades", "CRM avançado", "Personalização", "Tudo do Pro"],
-    users: 280, revenue: "R$ XX.XXX",
+    name: "Premium", price: "R$ 299,90", period: "/mês", color: "#B8614A",
+    features: ["Até 15 profissionais", "Até 3 unidades", "CRM avançado", "Personalização", "Tudo do Pro"],
+    users: 280, revenue: "R$ 83.972",
   },
   {
     name: "Empresarial", price: "Sob consulta", period: "", color: "#1C1714",
-    features: ["Ilimitado", "Unidades ilimitadas", "API + integrações", "Suporte dedicado", "SLA"],
-    users: 42, revenue: "R$ XX.XXX",
+    features: ["Ilimitado", "Unidades ilimitadas", "API + integrações", "Gerente de Conta", "SLA"],
+    users: 42, revenue: "R$ 126.000",
   },
 ];
 
@@ -122,6 +123,7 @@ const statusConfig: Record<string, { label: string; variant: "success" | "warnin
   late: { label: "Inadimplente", variant: "warning" },
   blocked: { label: "Bloqueado", variant: "danger" },
   cancelled: { label: "Cancelado", variant: "outline" },
+  pending: { label: "Em Análise", variant: "warning" },
 };
 
 function OverviewView({ overviewData }: { overviewData: any }) {
@@ -213,16 +215,36 @@ function OverviewView({ overviewData }: { overviewData: any }) {
 
 function SaloesView({ salonsData }: { salonsData: any }) {
   const [filter, setFilter] = useState("Todos");
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+
+  const initialData = Array.isArray(salonsData) && salonsData.length > 0 ? salonsData : saloes;
+  const [localSalons, setLocalSalons] = useState<any[]>(initialData);
+
+  useEffect(() => {
+    setLocalSalons(Array.isArray(salonsData) && salonsData.length > 0 ? salonsData : saloes);
+  }, [salonsData]);
 
   if (salonsData && salonsData.error) {
     return <div className="p-6 text-red-500 font-medium">Erro ao carregar salões: {salonsData.error}. Verifique o banco de dados.</div>;
   }
   
-  const baseData = Array.isArray(salonsData) && salonsData.length > 0 ? salonsData : saloes;
-  
+  const handleAction = (salonName: string, action: string) => {
+    setOpenMenu(null);
+    if (action === 'block') {
+      const confirm = window.confirm(`Tem certeza que deseja bloquear o salão ${salonName}?`);
+      if (confirm) {
+        setLocalSalons(prev => prev.map(s => s.name === salonName ? { ...s, status: 'blocked' } : s));
+      }
+    } else if (action === 'history') {
+      alert(`Histórico de ${salonName}:\n\n- Criado em: 10/01/2023\n- Último pagamento: Há 5 dias\n- Status: Regular`);
+    } else if (action === 'edit') {
+      alert(`Abrindo painel de edição para ${salonName}...`);
+    }
+  };
+
   const dataToUse = filter === "Todos" 
-    ? baseData 
-    : baseData.filter((s: any) => {
+    ? localSalons 
+    : localSalons.filter((s: any) => {
         if (filter === "Ativos") return s.status === "active";
         if (filter === "Trial") return s.status === "trial";
         if (filter === "Inadimplentes") return s.status === "late";
@@ -278,8 +300,15 @@ function SaloesView({ salonsData }: { salonsData: any }) {
                 <td className="px-4 py-3 text-sm text-muted-foreground">{s.since}</td>
                 <td className="px-4 py-3 text-sm font-medium">{s.appointments?.toLocaleString("pt-BR")}</td>
                 <td className="px-4 py-3 text-sm text-muted-foreground">{s.lastAccess}</td>
-                <td className="px-4 py-3">
-                  <button className="p-1.5 rounded-lg hover:bg-muted"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
+                <td className="px-4 py-3 relative">
+                  <button onClick={() => setOpenMenu(openMenu === s.name ? null : s.name)} className="p-1.5 rounded-lg hover:bg-muted"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
+                  {openMenu === s.name && (
+                    <div className="absolute right-8 top-10 w-40 bg-white border border-gray-200 rounded-xl shadow-lg py-1 z-50">
+                      <button onClick={() => handleAction(s.name, 'history')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700">Ver histórico</button>
+                      <button onClick={() => handleAction(s.name, 'edit')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700">Editar dados</button>
+                      <button onClick={() => handleAction(s.name, 'block')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-red-600">Bloquear</button>
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}
@@ -291,15 +320,51 @@ function SaloesView({ salonsData }: { salonsData: any }) {
 }
 
 function AssinaturasView() {
+  const [localSubs, setLocalSubs] = useState<any[]>(subscriptions);
+  const [filter, setFilter] = useState("Todos");
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+
+  const handleAction = (salonName: string, action: string) => {
+    setOpenMenu(null);
+    if (action === 'analyze') {
+      alert(`Iniciando análise de ${salonName}...\n\n- Checando dados cadastrais...\n- Validando informações de endereço...\n- Integrando com operadora de pagamento (Cartão/PIX)...\n\nAcesso aprovado com sucesso! Salão ativado.`);
+      setLocalSubs(prev => prev.map(s => s.salon === salonName ? { ...s, status: 'active', next: 'Daqui a 30 dias' } : s));
+    } else if (action === 'cancel') {
+      const confirm = window.confirm(`Deseja cancelar a assinatura de ${salonName}?`);
+      if (confirm) {
+        setLocalSubs(prev => prev.map(s => s.salon === salonName ? { ...s, status: 'cancelled' } : s));
+      }
+    }
+  };
+
+  const dataToUse = filter === "Todos" 
+    ? localSubs 
+    : localSubs.filter((s: any) => {
+        if (filter === "Em Análise") return s.status === "pending";
+        if (filter === "Ativas") return s.status === "active";
+        if (filter === "Inadimplentes") return s.status === "late";
+        return true;
+      });
+
   return (
     <div className="p-6 space-y-4">
-      <h1 className="font-serif text-2xl font-medium">Assinaturas</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="font-serif text-2xl font-medium">Assinaturas</h1>
+      </div>
 
       <div className="grid grid-cols-4 gap-4">
-        <StatCard label="Ativas" value="2.241" icon={CheckCircle} color="emerald" />
-        <StatCard label="Trial" value="134" icon={Clock} color="sky" />
-        <StatCard label="Atrasadas" value="87" icon={AlertCircle} color="amber" />
-        <StatCard label="Canceladas (mês)" value="11" icon={XCircle} color="rose" />
+        <StatCard label="Em Análise" value={localSubs.filter(s => s.status === 'pending').length.toString()} icon={Clock} color="amber" />
+        <StatCard label="Ativas" value={localSubs.filter(s => s.status === 'active').length.toString()} icon={CheckCircle} color="emerald" />
+        <StatCard label="Inadimplentes" value={localSubs.filter(s => s.status === 'late').length.toString()} icon={AlertCircle} color="rose" />
+        <StatCard label="Canceladas" value={localSubs.filter(s => s.status === 'cancelled').length.toString()} icon={XCircle} color="slate" />
+      </div>
+
+      <div className="flex gap-2 my-4">
+        {["Todos", "Em Análise", "Ativas", "Inadimplentes"].map(f => (
+          <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${filter === f ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"}`}>
+            {f}
+          </button>
+        ))}
       </div>
 
       <div className="bg-card border border-border rounded-2xl overflow-hidden">
@@ -312,7 +377,7 @@ function AssinaturasView() {
             </tr>
           </thead>
           <tbody>
-            {subscriptions.map(s => (
+            {dataToUse.map(s => (
               <tr key={s.salon} className="border-b border-border last:border-0 hover:bg-muted/20">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
@@ -328,8 +393,16 @@ function AssinaturasView() {
                   </Badge>
                 </td>
                 <td className="px-4 py-3 text-sm text-muted-foreground">{s.next}</td>
-                <td className="px-4 py-3">
-                  <button className="p-1.5 rounded-lg hover:bg-muted"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
+                <td className="px-4 py-3 relative">
+                  <button onClick={() => setOpenMenu(openMenu === s.salon ? null : s.salon)} className="p-1.5 rounded-lg hover:bg-muted"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
+                  {openMenu === s.salon && (
+                    <div className="absolute right-8 top-10 w-48 bg-white border border-gray-200 rounded-xl shadow-lg py-1 z-50">
+                      {s.status === 'pending' && (
+                        <button onClick={() => handleAction(s.salon, 'analyze')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-emerald-600 font-medium">Realizar Análise & Aprovar</button>
+                      )}
+                      <button onClick={() => handleAction(s.salon, 'cancel')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-red-600">Cancelar assinatura</button>
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}
@@ -414,13 +487,27 @@ function PlanosView() {
 }
 
 function SuporteView() {
+  const [localTickets, setLocalTickets] = useState(tickets);
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+
+  const handleAction = (id: string, action: string) => {
+    setOpenMenu(null);
+    if (action === 'resolve') {
+      setLocalTickets(prev => prev.map(t => t.id === id ? { ...t, status: 'resolved' } : t));
+    } else if (action === 'view') {
+      alert(`Abrindo detalhes do ticket ${id}...`);
+    } else if (action === 'escalate') {
+      setLocalTickets(prev => prev.map(t => t.id === id ? { ...t, priority: 'alta' } : t));
+    }
+  };
+
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="font-serif text-2xl font-medium">Suporte</h1>
         <div className="flex gap-2">
-          <Badge variant="danger">2 urgentes</Badge>
-          <Badge variant="warning">10 abertos</Badge>
+          <Badge variant="danger">{localTickets.filter(t => t.priority === 'alta' && t.status === 'open').length} urgentes</Badge>
+          <Badge variant="warning">{localTickets.filter(t => t.status === 'open').length} abertos</Badge>
         </div>
       </div>
 
@@ -434,7 +521,7 @@ function SuporteView() {
             </tr>
           </thead>
           <tbody>
-            {tickets.map(t => (
+            {localTickets.map(t => (
               <tr key={t.id} className="border-b border-border last:border-0 hover:bg-muted/20">
                 <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{t.id}</td>
                 <td className="px-4 py-3 text-sm font-medium">{t.salon}</td>
@@ -450,8 +537,19 @@ function SuporteView() {
                   </Badge>
                 </td>
                 <td className="px-4 py-3 text-sm text-muted-foreground">{t.time}</td>
-                <td className="px-4 py-3">
-                  <button className="p-1.5 rounded-lg hover:bg-muted"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
+                <td className="px-4 py-3 relative">
+                  <button onClick={() => setOpenMenu(openMenu === t.id ? null : t.id)} className="p-1.5 rounded-lg hover:bg-muted"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
+                  {openMenu === t.id && (
+                    <div className="absolute right-8 top-10 w-40 bg-white border border-gray-200 rounded-xl shadow-lg py-1 z-50">
+                      <button onClick={() => handleAction(t.id, 'view')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700">Ver detalhes</button>
+                      {t.status === 'open' && (
+                        <>
+                          <button onClick={() => handleAction(t.id, 'escalate')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-amber-600">Escalar prioridade</button>
+                          <button onClick={() => handleAction(t.id, 'resolve')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-emerald-600">Marcar resolvido</button>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}
@@ -471,12 +569,28 @@ const unidades = [
 ];
 
 function UnidadesView() {
+  const [localUnidades, setLocalUnidades] = useState(unidades);
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+
+  const handleAction = (name: string, action: string) => {
+    setOpenMenu(null);
+    if (action === 'toggle') {
+      setLocalUnidades(prev => prev.map(u => u.name === name ? { ...u, status: u.status === 'active' ? 'inactive' : 'active' } : u));
+    } else if (action === 'edit') {
+      alert(`Abrindo formulário de edição para ${name}...`);
+    } else if (action === 'delete') {
+      if(window.confirm(`Tem certeza que deseja excluir ${name}?`)) {
+        setLocalUnidades(prev => prev.filter(u => u.name !== name));
+      }
+    }
+  };
+
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="font-serif text-2xl font-medium">Unidades</h1>
         <div className="flex items-center gap-2 text-sm text-muted-foreground bg-secondary px-3 py-1.5 rounded-lg">
-          <Building2 className="w-4 h-4" /> {unidades.length} unidades cadastradas
+          <Building2 className="w-4 h-4" /> {localUnidades.length} unidades cadastradas
         </div>
       </div>
 
@@ -490,7 +604,7 @@ function UnidadesView() {
             </tr>
           </thead>
           <tbody>
-            {unidades.map(u => (
+            {localUnidades.map(u => (
               <tr key={u.name} className="border-b border-border last:border-0 hover:bg-muted/20">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
@@ -507,8 +621,15 @@ function UnidadesView() {
                 <td className="px-4 py-3">
                   <Badge variant={u.status === "active" ? "success" : "outline"}>{u.status === "active" ? "Ativa" : "Inativa"}</Badge>
                 </td>
-                <td className="px-4 py-3">
-                  <button className="p-1.5 rounded-lg hover:bg-muted"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
+                <td className="px-4 py-3 relative">
+                  <button onClick={() => setOpenMenu(openMenu === u.name ? null : u.name)} className="p-1.5 rounded-lg hover:bg-muted"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
+                  {openMenu === u.name && (
+                    <div className="absolute right-8 top-10 w-40 bg-white border border-gray-200 rounded-xl shadow-lg py-1 z-50">
+                      <button onClick={() => handleAction(u.name, 'edit')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700">Editar</button>
+                      <button onClick={() => handleAction(u.name, 'toggle')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700">{u.status === 'active' ? 'Desativar' : 'Ativar'}</button>
+                      <button onClick={() => handleAction(u.name, 'delete')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-red-600">Excluir</button>
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}
@@ -528,6 +649,19 @@ const pagamentos = [
 ];
 
 function PagamentosView() {
+  const [localPagamentos, setLocalPagamentos] = useState(pagamentos);
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+
+  const handleAction = (salon: string, action: string) => {
+    setOpenMenu(null);
+    if (action === 'receipt') {
+      alert(`Gerando 2ª via do recibo para ${salon}...`);
+    } else if (action === 'charge') {
+      alert(`Enviando cobrança manual para ${salon}...`);
+      setLocalPagamentos(prev => prev.map(p => p.salon === salon ? { ...p, status: 'paid' } : p));
+    }
+  };
+
   return (
     <div className="p-6 space-y-4">
       <h1 className="font-serif text-2xl font-medium">Pagamentos</h1>
@@ -548,7 +682,7 @@ function PagamentosView() {
             </tr>
           </thead>
           <tbody>
-            {pagamentos.map(p => (
+            {localPagamentos.map(p => (
               <tr key={p.salon} className="border-b border-border last:border-0 hover:bg-muted/20">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
@@ -565,8 +699,16 @@ function PagamentosView() {
                     {p.status === "paid" ? "Pago" : p.status === "failed" ? "Falhou" : "Trial"}
                   </Badge>
                 </td>
-                <td className="px-4 py-3">
-                  <button className="p-1.5 rounded-lg hover:bg-muted"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
+                <td className="px-4 py-3 relative">
+                  <button onClick={() => setOpenMenu(openMenu === p.salon ? null : p.salon)} className="p-1.5 rounded-lg hover:bg-muted"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
+                  {openMenu === p.salon && (
+                    <div className="absolute right-8 top-10 w-44 bg-white border border-gray-200 rounded-xl shadow-lg py-1 z-50">
+                      <button onClick={() => handleAction(p.salon, 'receipt')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700">Ver recibo</button>
+                      {p.status === 'failed' && (
+                        <button onClick={() => handleAction(p.salon, 'charge')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-amber-600">Reenviar cobrança</button>
+                      )}
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}
@@ -585,11 +727,32 @@ const adminUsers = [
 ];
 
 function UsuariosView() {
+  const [localUsers, setLocalUsers] = useState(adminUsers);
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+
+  const handleAction = (name: string, action: string) => {
+    setOpenMenu(null);
+    if (action === 'toggle') {
+      setLocalUsers(prev => prev.map(u => u.name === name ? { ...u, status: u.status === 'active' ? 'inactive' : 'active' } : u));
+    } else if (action === 'delete') {
+      if(window.confirm(`Excluir usuário ${name}?`)) {
+        setLocalUsers(prev => prev.filter(u => u.name !== name));
+      }
+    }
+  };
+
+  const handleNewUser = () => {
+    const name = window.prompt("Nome do novo usuário:");
+    if (name) {
+      setLocalUsers([...localUsers, { name, role: "Suporte N1", email: `${name.split(' ')[0].toLowerCase()}@beautyos.app`, last: "Nunca", status: "active" }]);
+    }
+  };
+
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="font-serif text-2xl font-medium">Usuários da plataforma</h1>
-        <Button size="sm"><Plus className="w-4 h-4" /> Novo usuário</Button>
+        <Button size="sm" onClick={handleNewUser}><Plus className="w-4 h-4" /> Novo usuário</Button>
       </div>
 
       <div className="bg-card border border-border rounded-2xl overflow-hidden">
@@ -602,7 +765,7 @@ function UsuariosView() {
             </tr>
           </thead>
           <tbody>
-            {adminUsers.map(u => (
+            {localUsers.map(u => (
               <tr key={u.name} className="border-b border-border last:border-0 hover:bg-muted/20">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
@@ -618,8 +781,14 @@ function UsuariosView() {
                 <td className="px-4 py-3">
                   <Badge variant={u.status === "active" ? "success" : "outline"}>{u.status === "active" ? "Ativo" : "Inativo"}</Badge>
                 </td>
-                <td className="px-4 py-3">
-                  <button className="p-1.5 rounded-lg hover:bg-muted"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
+                <td className="px-4 py-3 relative">
+                  <button onClick={() => setOpenMenu(openMenu === u.name ? null : u.name)} className="p-1.5 rounded-lg hover:bg-muted"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
+                  {openMenu === u.name && (
+                    <div className="absolute right-8 top-10 w-36 bg-white border border-gray-200 rounded-xl shadow-lg py-1 z-50">
+                      <button onClick={() => handleAction(u.name, 'toggle')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700">{u.status === 'active' ? 'Suspender' : 'Reativar'}</button>
+                      <button onClick={() => handleAction(u.name, 'delete')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-red-600">Excluir</button>
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}
@@ -631,25 +800,63 @@ function UsuariosView() {
 }
 
 function ConfiguracoesAdminView() {
+  const [platformData, setPlatformData] = useState({
+    nome: "beautyOS",
+    dominio: "beautyos.app",
+    email: "suporte@beautyos.app"
+  });
+
+  const [trialData, setTrialData] = useState({
+    trialDuration: "14 dias",
+    defaultPlan: "Profissional",
+    notification: "3 dias antes"
+  });
+
+  const handleSavePlatform = () => {
+    alert(`Configurações da plataforma salvas com sucesso!\n\nNome: ${platformData.nome}\nDomínio: ${platformData.dominio}\nE-mail: ${platformData.email}`);
+  };
+
+  const handleSaveTrial = () => {
+    alert(`Configurações de Trial e planos salvas com sucesso!\n\nDuração: ${trialData.trialDuration}\nPlano Padrão: ${trialData.defaultPlan}\nNotificação: ${trialData.notification}`);
+  };
+
   return (
     <div className="p-6 space-y-5">
       <h1 className="font-serif text-2xl font-medium">Configurações da plataforma</h1>
       <div className="grid lg:grid-cols-2 gap-5 max-w-3xl">
-        {[
-          { title: "Dados da plataforma", fields: [{ label: "Nome", value: "beautyOS" }, { label: "Domínio", value: "beautyos.app" }, { label: "E-mail suporte", value: "suporte@beautyos.app" }] },
-          { title: "Trial e planos", fields: [{ label: "Duração do trial", value: "14 dias" }, { label: "Plano padrão no trial", value: "Profissional" }, { label: "Notificação de vencimento", value: "3 dias antes" }] },
-        ].map(s => (
-          <div key={s.title} className="bg-card border border-border rounded-2xl p-5 space-y-3">
-            <h3 className="font-semibold">{s.title}</h3>
-            {s.fields.map(f => (
-              <div key={f.label}>
-                <label className="text-xs font-medium text-muted-foreground block mb-1">{f.label}</label>
-                <input defaultValue={f.value} className="w-full h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-background" />
-              </div>
-            ))}
-            <Button size="sm" className="mt-1">Salvar</Button>
+        <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
+          <h3 className="font-semibold">Dados da plataforma</h3>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground block mb-1">Nome</label>
+            <input value={platformData.nome} onChange={(e) => setPlatformData({...platformData, nome: e.target.value})} className="w-full h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-background" />
           </div>
-        ))}
+          <div>
+            <label className="text-xs font-medium text-muted-foreground block mb-1">Domínio</label>
+            <input value={platformData.dominio} onChange={(e) => setPlatformData({...platformData, dominio: e.target.value})} className="w-full h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-background" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground block mb-1">E-mail suporte</label>
+            <input value={platformData.email} onChange={(e) => setPlatformData({...platformData, email: e.target.value})} className="w-full h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-background" />
+          </div>
+          <Button size="sm" className="mt-1" onClick={handleSavePlatform}>Salvar</Button>
+        </div>
+
+        <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
+          <h3 className="font-semibold">Trial e planos</h3>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground block mb-1">Duração do trial</label>
+            <input value={trialData.trialDuration} onChange={(e) => setTrialData({...trialData, trialDuration: e.target.value})} className="w-full h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-background" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground block mb-1">Plano padrão no trial</label>
+            <input value={trialData.defaultPlan} onChange={(e) => setTrialData({...trialData, defaultPlan: e.target.value})} className="w-full h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-background" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground block mb-1">Notificação de vencimento</label>
+            <input value={trialData.notification} onChange={(e) => setTrialData({...trialData, notification: e.target.value})} className="w-full h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-background" />
+          </div>
+          <Button size="sm" className="mt-1" onClick={handleSaveTrial}>Salvar</Button>
+        </div>
       </div>
     </div>
   );

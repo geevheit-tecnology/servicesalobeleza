@@ -73,6 +73,54 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
   const [done, setDone] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const [tipoConta, setTipoConta] = useState("PJ");
+  const [documento, setDocumento] = useState("");
+  const [cep, setCep] = useState("");
+  const [endereco, setEndereco] = useState("");
+  const [numero, setNumero] = useState("");
+  const [bairro, setBairro] = useState("");
+  const [cidade, setCidade] = useState("");
+  const [estado, setEstado] = useState("");
+
+  const consultarCNPJ = async () => {
+    const limpo = documento.replace(/\D/g, '');
+    if (limpo.length !== 14) return alert("CNPJ inválido. Digite 14 números.");
+    try {
+      setLoading(true);
+      const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${limpo}`);
+      const data = await res.json();
+      
+      if (data.nome_fantasia || data.razao_social) {
+        setSalonName(data.nome_fantasia || data.razao_social);
+      }
+      
+      if (data.cep) {
+        setCep(data.cep);
+        buscarCEP(data.cep);
+        setNumero(data.numero || "");
+      }
+    } catch (e) {
+      alert("Erro ao consultar CNPJ. Verifique se o número está correto.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const buscarCEP = async (cepInput: string) => {
+    const limpo = cepInput.replace(/\D/g, '');
+    if (limpo.length !== 8) return;
+    try {
+      const res = await fetch(`https://brasilapi.com.br/api/cep/v1/${limpo}`);
+      const data = await res.json();
+      if (data.street) setEndereco(data.street);
+      if (data.neighborhood) setBairro(data.neighborhood);
+      if (data.city) setCidade(data.city);
+      if (data.state) setEstado(data.state);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const next = async () => {
     if (step < 7) {
       setStep(s => s + 1);
@@ -192,20 +240,41 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
         {/* Step 1: Salon data */}
         {step === 1 && (
           <div className="space-y-4">
+            <div className="flex gap-6 mb-2 bg-secondary/50 p-3 rounded-xl border border-border">
+              <label className="flex items-center gap-2 cursor-pointer text-sm font-medium">
+                <input type="radio" name="tipo" checked={tipoConta === 'PJ'} onChange={() => setTipoConta('PJ')} className="accent-primary" /> Pessoa Jurídica (CNPJ)
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer text-sm font-medium">
+                <input type="radio" name="tipo" checked={tipoConta === 'PF'} onChange={() => setTipoConta('PF')} className="accent-primary" /> Pessoa Física (CPF)
+              </label>
+            </div>
+
             <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium block mb-1.5">{tipoConta === 'PJ' ? 'CNPJ' : 'CPF'} *</label>
+                <div className="flex gap-2">
+                  <input
+                    value={documento}
+                    onChange={e => setDocumento(e.target.value)}
+                    placeholder={tipoConta === 'PJ' ? '00.000.000/0000-00' : '000.000.000-00'}
+                    className="w-full h-11 rounded-xl border border-border px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-card"
+                  />
+                  {tipoConta === 'PJ' && (
+                    <Button type="button" onClick={consultarCNPJ} disabled={loading} className="shrink-0 h-11 px-4">Consultar</Button>
+                  )}
+                </div>
+              </div>
               <div>
                 <label className="text-sm font-medium block mb-1.5">Nome do salão *</label>
                 <input
                   value={salonName}
                   onChange={e => setSalonName(e.target.value)}
+                  placeholder="Nome do seu negócio"
                   className="w-full h-11 rounded-xl border border-border px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-card"
                 />
               </div>
-              <div>
-                <label className="text-sm font-medium block mb-1.5">Telefone / WhatsApp *</label>
-                <input placeholder="(11) 99999-0000" className="w-full h-11 rounded-xl border border-border px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-card" />
-              </div>
             </div>
+
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium block mb-1.5">E-mail (Seu login) *</label>
@@ -218,25 +287,54 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium block mb-1.5">Senha *</label>
-                <input 
-                  type="password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="Sua senha" 
-                  className="w-full h-11 rounded-xl border border-border px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-card" 
-                />
+                <label className="text-sm font-medium block mb-1.5">Telefone / WhatsApp *</label>
+                <input placeholder="(11) 99999-0000" className="w-full h-11 rounded-xl border border-border px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-card" />
               </div>
             </div>
-            <div>
-              <label className="text-sm font-medium block mb-1.5">Descrição curta</label>
-              <textarea rows={3} placeholder="Ex: Salão especializado em cabelos e unhas. Atendemos com hora marcada." className="w-full rounded-xl border border-border px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-card resize-none" />
+
+            <div className="pt-2 border-t border-border mt-2">
+              <h3 className="text-sm font-semibold mb-3">Endereço</h3>
+              <div className="grid sm:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label className="text-sm font-medium block mb-1.5">CEP</label>
+                  <input 
+                    value={cep} 
+                    onChange={e => {
+                      setCep(e.target.value); 
+                      if(e.target.value.replace(/\D/g, '').length === 8) buscarCEP(e.target.value);
+                    }} 
+                    onBlur={e => buscarCEP(e.target.value)} 
+                    placeholder="00000-000" 
+                    className="w-full h-11 rounded-xl border border-border px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-card" 
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="text-sm font-medium block mb-1.5">Logradouro</label>
+                  <input value={endereco} onChange={e => setEndereco(e.target.value)} placeholder="Rua, Avenida..." className="w-full h-11 rounded-xl border border-border px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-card" />
+                </div>
+              </div>
+
+              <div className="grid sm:grid-cols-4 gap-4">
+                <div>
+                  <label className="text-sm font-medium block mb-1.5">Número</label>
+                  <input value={numero} onChange={e => setNumero(e.target.value)} placeholder="123" className="w-full h-11 rounded-xl border border-border px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-card" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium block mb-1.5">Bairro</label>
+                  <input value={bairro} onChange={e => setBairro(e.target.value)} placeholder="Bairro" className="w-full h-11 rounded-xl border border-border px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-card" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium block mb-1.5">Cidade</label>
+                  <input value={cidade} onChange={e => setCidade(e.target.value)} placeholder="Cidade" className="w-full h-11 rounded-xl border border-border px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-card" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium block mb-1.5">UF</label>
+                  <input value={estado} onChange={e => setEstado(e.target.value)} placeholder="SP" className="w-full h-11 rounded-xl border border-border px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-card" />
+                </div>
+              </div>
             </div>
-            <div>
-              <label className="text-sm font-medium block mb-1.5">Endereço completo</label>
-              <input placeholder="Rua, número, bairro, cidade" className="w-full h-11 rounded-xl border border-border px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-card" />
-            </div>
-            <div className="grid sm:grid-cols-2 gap-4">
+
+            <div className="grid sm:grid-cols-2 gap-4 pt-2 border-t border-border mt-2">
               <div>
                 <label className="text-sm font-medium block mb-1.5">Instagram</label>
                 <input placeholder="@seusalao" className="w-full h-11 rounded-xl border border-border px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-card" />
