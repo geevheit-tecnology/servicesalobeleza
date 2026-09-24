@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, MapPin, Search, ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { ArrowLeft, MapPin, Search, ChevronLeft, ChevronRight, Check, Copy } from "lucide-react";
 
 // Imagens de placeholder para dar vida ao app
 const SALON_HERO = "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&h=800&fit=crop&auto=format";
@@ -17,7 +17,7 @@ const SERVICE_IMGS = [
 
 const TIMES = ["09:00", "09:30", "10:00", "10:30", "11:00", "14:00", "14:30", "15:00", "15:30", "16:00", "17:00", "17:30"];
 
-type BookingStep = "home" | "booking" | "data" | "confirm";
+type BookingStep = "home" | "booking" | "data" | "pix" | "confirm";
 
 // Componente da curva SVG para separar a foto do conteúdo
 function WaveCurve() {
@@ -207,7 +207,7 @@ export default function ClientView() {
             {/* Header curvo rosa gigante */}
             <div className={`relative w-full ${COLOR_PINK} pt-12 pb-24 px-6 shrink-0`}>
               <div className="flex items-center gap-4 mb-4">
-                <button onClick={goBack} className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white">
+                <button onClick={() => setStep("home")} className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white">
                   <ArrowLeft className="w-5 h-5" />
                 </button>
                 <h2 className="text-2xl font-bold text-white">Minha Agenda</h2>
@@ -304,7 +304,7 @@ export default function ClientView() {
           <div className="flex-1 flex flex-col bg-white overflow-y-auto">
             <div className={`relative w-full ${COLOR_PINK} pt-12 pb-24 px-6 shrink-0`}>
               <div className="flex items-center gap-4 mb-4">
-                <button onClick={goBack} className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white">
+                <button onClick={() => setStep("booking")} className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white">
                   <ArrowLeft className="w-5 h-5" />
                 </button>
                 <h2 className="text-2xl font-bold text-white">Finalizar</h2>
@@ -349,9 +349,13 @@ export default function ClientView() {
                   <span className="text-gray-500 font-medium">Data</span>
                   <span className="text-gray-800 font-bold">{selectedDate?.toLocaleDateString('pt-BR')} às {selectedTime}</span>
                 </div>
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-gray-500 font-medium">Valor do serviço</span>
+                  <span className="text-gray-800 font-bold">R$ {selectedService?.price}</span>
+                </div>
                 <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-100">
-                  <span className="font-bold text-gray-800 text-lg">Total</span>
-                  <span className={`font-bold text-2xl ${TEXT_PINK}`}>R$ {selectedService?.price}</span>
+                  <span className="font-bold text-gray-800 text-lg">Sinal (20%)</span>
+                  <span className={`font-bold text-2xl ${TEXT_PINK}`}>R$ {(parseFloat(selectedService?.price || "0") * 0.2).toFixed(2).replace('.', ',')}</span>
                 </div>
               </div>
             </div>
@@ -359,10 +363,49 @@ export default function ClientView() {
             <div className="absolute bottom-0 left-0 right-0 p-6 bg-white border-t border-gray-100">
               <button 
                 disabled={!clientName || !clientPhone}
-                onClick={confirmBooking}
+                onClick={() => setStep("pix")}
                 className={`w-full h-14 rounded-full ${COLOR_PINK} disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold text-lg shadow-lg shadow-pink-300 transition-all`}
               >
-                Pagar e Agendar
+                Continuar para o PIX
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === "pix" && (
+          <div className="flex-1 flex flex-col bg-white overflow-y-auto">
+            <div className={`relative w-full ${COLOR_PINK} pt-12 pb-24 px-6 shrink-0`}>
+              <div className="flex items-center gap-4 mb-4">
+                <button onClick={() => setStep("data")} className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white">
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <h2 className="text-2xl font-bold text-white">Pagamento da Reserva</h2>
+              </div>
+              <WaveCurvePink />
+            </div>
+            <div className="px-6 flex-1 -mt-16 relative z-20 pb-24 text-center flex flex-col items-center">
+              <div className="bg-white rounded-[2rem] shadow-xl shadow-gray-200/50 p-8 mb-8 border border-gray-50 w-full max-w-sm">
+                <h3 className="font-bold text-gray-800 mb-2 text-lg">Sinal da Reserva</h3>
+                <div className={`font-bold text-4xl mb-6 ${TEXT_PINK}`}>
+                  R$ {(parseFloat(selectedService?.price || "0") * 0.2).toFixed(2).replace('.', ',')}
+                </div>
+                
+                <div className="w-48 h-48 bg-gray-100 mx-auto rounded-2xl mb-6 flex items-center justify-center border-2 border-dashed border-gray-300 p-2">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg" alt="QR Code" className="w-full h-full opacity-80" />
+                </div>
+                
+                <button className="flex items-center justify-center gap-2 w-full h-12 rounded-xl bg-gray-100 text-gray-700 font-bold mb-4 hover:bg-gray-200 transition-all">
+                  <Copy className="w-4 h-4" /> Copiar código PIX
+                </button>
+                <p className="text-xs text-gray-400 font-medium">Seu horário ficará reservado por 10 minutos.</p>
+              </div>
+            </div>
+            <div className="absolute bottom-0 left-0 right-0 p-6 bg-white border-t border-gray-100">
+              <button 
+                onClick={confirmBooking}
+                className={`w-full h-14 rounded-full ${COLOR_PINK} text-white font-bold text-lg shadow-lg shadow-pink-300 transition-all`}
+              >
+                Simular Pagamento Realizado
               </button>
             </div>
           </div>

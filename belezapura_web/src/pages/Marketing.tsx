@@ -90,11 +90,11 @@ export default function Marketing() {
             <Sparkles className="w-3 h-3" /> Nova plataforma para salões de beleza
           </Badge>
           <h1 className="font-serif text-4xl md:text-6xl font-medium text-white leading-tight max-w-2xl mb-6">
-            Seu salão mais organizado.<br />
-            <em className="italic font-light">Seus clientes mais conectados.</em>
+            Seu salão. Sua agenda.<br />
+            <em className="italic font-light">Seu negócio.</em>
           </h1>
           <p className="text-white/80 text-lg max-w-xl mb-8 leading-relaxed">
-            Agende, receba, organize e acompanhe seu salão em um só lugar. Sem aplicativo para instalar.
+            Agende, receba, organize e acompanhe seu salão em um só lugar.
           </p>
           <div className="flex flex-wrap gap-3">
             <Button size="lg" onClick={() => navigate("/onboarding")} className="bg-white text-foreground! hover:bg-white/95 shadow-lg font-semibold">
@@ -261,7 +261,7 @@ export default function Marketing() {
             <em className="italic font-light text-primary">Seu negócio.</em>
           </h2>
           <p className="text-muted-foreground text-lg mb-8">
-            Junte-se a mais de 2.400 salões que já usam o beautyOS.
+            Faça parte dos salões que já usam o beautyOS.
           </p>
           <Button size="lg" onClick={() => navigate("/onboarding")}>
             Começar grátis por 14 dias <ArrowRight className="w-4 h-4" />

@@ -212,11 +212,23 @@ function OverviewView({ overviewData }: { overviewData: any }) {
 }
 
 function SaloesView({ salonsData }: { salonsData: any }) {
+  const [filter, setFilter] = useState("Todos");
+
   if (salonsData && salonsData.error) {
     return <div className="p-6 text-red-500 font-medium">Erro ao carregar salões: {salonsData.error}. Verifique o banco de dados.</div>;
   }
   
-  const dataToUse = Array.isArray(salonsData) && salonsData.length > 0 ? salonsData : saloes;
+  const baseData = Array.isArray(salonsData) && salonsData.length > 0 ? salonsData : saloes;
+  
+  const dataToUse = filter === "Todos" 
+    ? baseData 
+    : baseData.filter((s: any) => {
+        if (filter === "Ativos") return s.status === "active";
+        if (filter === "Trial") return s.status === "trial";
+        if (filter === "Inadimplentes") return s.status === "late";
+        if (filter === "Bloqueados") return s.status === "blocked";
+        return true;
+      });
 
   return (
     <div className="p-6 space-y-4">
@@ -233,7 +245,7 @@ function SaloesView({ salonsData }: { salonsData: any }) {
 
       <div className="flex gap-2">
         {["Todos", "Ativos", "Trial", "Inadimplentes", "Bloqueados"].map(f => (
-          <button key={f} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${f === "Todos" ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"}`}>
+          <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${filter === f ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"}`}>
             {f}
           </button>
         ))}

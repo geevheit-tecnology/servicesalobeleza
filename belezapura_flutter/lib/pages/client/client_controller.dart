@@ -77,7 +77,7 @@ class ClientController extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      print('Erro ao carregar dados do salão: \$e');
+      debugPrint('Erro ao carregar dados do salão: $e');
     }
   }
 
@@ -115,7 +115,7 @@ class ClientController extends ChangeNotifier {
         }),
       );
     } catch (e) {
-      print('Erro ao criar agendamento: \$e');
+      debugPrint('Erro ao criar agendamento: $e');
     }
 
     Future.delayed(const Duration(milliseconds: 800), () {
