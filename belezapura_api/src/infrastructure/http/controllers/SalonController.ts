@@ -66,4 +66,23 @@ export class SalonController {
       res.status(400).json({ error: error.message });
     }
   }
+
+  async getClients(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const salonId = req.user?.salonId;
+      if (!salonId) {
+        res.status(401).json({ error: 'Acesso negado: Salon ID não encontrado.' });
+        return;
+      }
+
+      const clients = await prisma.client.findMany({
+        where: { salonId },
+        orderBy: { updatedAt: 'desc' }
+      });
+
+      res.status(200).json(clients);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  }
 }

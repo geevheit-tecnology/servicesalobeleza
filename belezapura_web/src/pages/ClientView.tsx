@@ -15,8 +15,6 @@ const SERVICE_IMGS = [
   "https://images.unsplash.com/photo-1512496015851-a1fbbfc6146a?w=200&h=200&fit=crop"
 ];
 
-const TIMES = ["09:00", "09:30", "10:00", "10:30", "11:00", "14:00", "14:30", "15:00", "15:30", "16:00", "17:00", "17:30"];
-
 type BookingStep = "home" | "booking" | "data" | "pix" | "confirm";
 
 // Componente da curva SVG para separar a foto do conteúdo
@@ -55,6 +53,9 @@ export default function ClientView() {
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
 
+  const [availableTimes, setAvailableTimes] = useState<string[]>([]);
+  const [pixCode, setPixCode] = useState<string | null>(null);
+
   useEffect(() => {
     if (!slug) { setLoading(false); return; }
     fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/public/salons/${slug}`)
@@ -63,6 +64,25 @@ export default function ClientView() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [slug]);
+
+  useEffect(() => {
+    if (selectedDate && selectedPro && selectedService) {
+      // Ajusta data
+      const dateStr = selectedDate.toISOString();
+      fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/public/availability?date=${dateStr}&professionalId=${selectedPro.id}&serviceId=${selectedService.id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.slots) {
+            const times = data.slots.map((s: string) => {
+               const d = new Date(s);
+               return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            });
+            setAvailableTimes(times);
+          }
+        })
+        .catch(console.error);
+    }
+  }, [selectedDate, selectedPro, selectedService]);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-500">Carregando...</div>;
   if (!salonData && slug) return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-red-500">Salão não encontrado</div>;
@@ -102,8 +122,13 @@ export default function ClientView() {
   const calendarDays = generateCalendarDays();
   const currentMonthName = currentDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
 
-  const confirmBooking = async () => {
+  const handleReserveAndGeneratePix = async () => {
     try {
+      // Combina a data e a hora selecionada
+      const finalDate = new Date(selectedDate!);
+      const [hours, minutes] = selectedTime!.split(':');
+      finalDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
       const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/public/appointments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -113,11 +138,17 @@ export default function ClientView() {
           clientPhone,
           serviceId: selectedService.id,
           professionalId: selectedPro.id,
-          date: selectedDate?.toISOString(),
+          date: finalDate.toISOString(),
           value: parseFloat(selectedService.price)
         })
       });
-      if (res.ok) setStep("confirm");
+      const data = await res.json();
+      if (res.ok && data.pixCode) {
+        setPixCode(data.pixCode);
+        setStep("pix");
+      } else {
+        alert(data.error || 'Erro ao gerar PIX.');
+      }
     } catch (e) {
       alert('Erro ao confirmar agendamento.');
     }
@@ -265,11 +296,10 @@ export default function ClientView() {
                 </div>
               </div>
 
-              {/* Horários */}
               <div className="mb-8">
                 <h3 className="text-gray-800 font-bold text-lg mb-4">Que horas?</h3>
                 <div className="grid grid-cols-3 gap-3">
-                  {TIMES.map(t => (
+                  {availableTimes.length > 0 ? availableTimes.map(t => (
                     <button 
                       key={t}
                       onClick={() => setSelectedTime(t)}
@@ -281,7 +311,9 @@ export default function ClientView() {
                     >
                       {t}
                     </button>
-                  ))}
+                  )) : (
+                    <div className="col-span-3 text-center text-sm text-gray-400 py-4">Selecione data e profissional para ver os horários.</div>
+                  )}
                 </div>
               </div>
             </div>
@@ -363,7 +395,7 @@ export default function ClientView() {
             <div className="absolute bottom-0 left-0 right-0 p-6 bg-white border-t border-gray-100">
               <button 
                 disabled={!clientName || !clientPhone}
-                onClick={() => setStep("pix")}
+                onClick={handleReserveAndGeneratePix}
                 className={`w-full h-14 rounded-full ${COLOR_PINK} disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold text-lg shadow-lg shadow-pink-300 transition-all`}
               >
                 Continuar para o PIX
@@ -391,10 +423,13 @@ export default function ClientView() {
                 </div>
                 
                 <div className="w-48 h-48 bg-gray-100 mx-auto rounded-2xl mb-6 flex items-center justify-center border-2 border-dashed border-gray-300 p-2">
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg" alt="QR Code" className="w-full h-full opacity-80" />
+                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${pixCode || ''}`} alt="QR Code" className="w-full h-full opacity-80" />
                 </div>
                 
-                <button className="flex items-center justify-center gap-2 w-full h-12 rounded-xl bg-gray-100 text-gray-700 font-bold mb-4 hover:bg-gray-200 transition-all">
+                <button 
+                  onClick={() => { navigator.clipboard.writeText(pixCode || ""); alert("Copiado!"); }}
+                  className="flex items-center justify-center gap-2 w-full h-12 rounded-xl bg-gray-100 text-gray-700 font-bold mb-4 hover:bg-gray-200 transition-all"
+                >
                   <Copy className="w-4 h-4" /> Copiar código PIX
                 </button>
                 <p className="text-xs text-gray-400 font-medium">Seu horário ficará reservado por 10 minutos.</p>
@@ -402,7 +437,7 @@ export default function ClientView() {
             </div>
             <div className="absolute bottom-0 left-0 right-0 p-6 bg-white border-t border-gray-100">
               <button 
-                onClick={confirmBooking}
+                onClick={() => setStep("confirm")}
                 className={`w-full h-14 rounded-full ${COLOR_PINK} text-white font-bold text-lg shadow-lg shadow-pink-300 transition-all`}
               >
                 Simular Pagamento Realizado

@@ -37,12 +37,25 @@ const testimonials = [
   { name: "Patricia Souza", role: "Rede Bella — 4 unidades", rating: 5, text: "Com o multi-unidade consigo ver o faturamento de todas as lojas em tempo real. Incrível.", avatar: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=80&h=80&fit=crop&auto=format" },
 ];
 
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function Marketing() {
   const navigate = useNavigate();
   const [mobileMenu, setMobileMenu] = useState(false);
   const [activePlan, setActivePlan] = useState(1);
+  const [plansList, setPlansList] = useState<any[]>(plans);
+
+  useEffect(() => {
+    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/public/plans`)
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.length > 0) {
+          setPlansList(data);
+        }
+      })
+      .catch(console.error);
+  }, []);
 
   return (
     <div className="min-h-full bg-background font-sans">
@@ -214,7 +227,7 @@ export default function Marketing() {
             <p className="text-muted-foreground">Comece grátis. Sem cartão. Cancele quando quiser.</p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {plans.map((p, i) => (
+            {plansList.map((p, i) => (
               <div
                 key={p.name}
                 onClick={() => setActivePlan(i)}
@@ -229,11 +242,13 @@ export default function Marketing() {
                 )}
                 <div className={`text-sm font-medium mb-1 ${p.highlight ? "text-primary-foreground/80" : "text-muted-foreground"}`}>{p.name}</div>
                 <div className="flex items-end gap-1 mb-4">
-                  <span className={`font-serif text-3xl font-medium ${p.highlight ? "text-primary-foreground" : "text-foreground"}`}>{p.price}</span>
-                  <span className={`text-sm mb-1 ${p.highlight ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{p.per}</span>
+                  <span className={`font-serif text-3xl font-medium ${p.highlight ? "text-primary-foreground" : "text-foreground"}`}>
+                    {p.price.toString().startsWith('R$') || p.price.toString().startsWith('Sob') ? p.price : `R$ ${p.price}`}
+                  </span>
+                  <span className={`text-sm mb-1 ${p.highlight ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{p.period || p.per || '/mês'}</span>
                 </div>
                 <ul className="space-y-2 mb-6">
-                  {p.features.map(f => (
+                  {(p.features || []).map((f: string) => (
                     <li key={f} className={`flex items-start gap-2 text-sm ${p.highlight ? "text-primary-foreground/90" : "text-foreground"}`}>
                       <Check className={`w-4 h-4 shrink-0 mt-0.5 ${p.highlight ? "text-white" : "text-emerald-500"}`} />
                       {f}
@@ -249,6 +264,61 @@ export default function Marketing() {
                 </button>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Utilidade Pública & Newsletter */}
+      <section className="py-20 bg-card border-y border-border">
+        <div className="max-w-6xl mx-auto px-5 grid md:grid-cols-2 gap-12 items-center">
+          {/* Telefones e Dicas */}
+          <div className="space-y-8">
+            <div>
+              <Badge className="mb-3 bg-secondary text-muted-foreground border-border">Conteúdo Exclusivo</Badge>
+              <h3 className="font-serif text-2xl font-medium mb-3">Dicas de Negócios & Beleza</h3>
+              <p className="text-muted-foreground text-sm">Ofereça um ambiente seguro e de excelência. Fique por dentro das últimas tendências do mercado, normas de biossegurança e gestão de equipes.</p>
+            </div>
+            <div className="bg-secondary/50 rounded-2xl p-6 border border-border">
+              <h4 className="font-medium text-foreground mb-4 flex items-center gap-2">
+                <Store className="w-4 h-4 text-primary" /> Telefones Úteis (Orgãos Públicos)
+              </h4>
+              <ul className="space-y-3 text-sm text-muted-foreground">
+                <li className="flex justify-between items-center border-b border-border pb-2">
+                  <span>Vigilância Sanitária (ANVISA)</span>
+                  <span className="font-medium text-foreground">0800 642 9782</span>
+                </li>
+                <li className="flex justify-between items-center border-b border-border pb-2">
+                  <span>Defesa do Consumidor (PROCON)</span>
+                  <span className="font-medium text-foreground">151</span>
+                </li>
+                <li className="flex justify-between items-center">
+                  <span>Corpo de Bombeiros (Vistorias)</span>
+                  <span className="font-medium text-foreground">193</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Newsletter */}
+          <div className="bg-primary text-primary-foreground rounded-2xl p-8 shadow-xl">
+            <h3 className="font-serif text-3xl font-medium mb-2">beautyNews</h3>
+            <p className="text-primary-foreground/80 text-sm mb-6 leading-relaxed">
+              Assine nossa newsletter semanal. Receba gratuitamente estratégias para lotar sua agenda, dicas de marketing para salões e novidades do mundo da estética diretamente no seu e-mail.
+            </p>
+            <form className="flex flex-col sm:flex-row gap-3" onSubmit={(e) => { e.preventDefault(); alert('E-mail cadastrado com sucesso!'); }}>
+              <input 
+                type="email" 
+                placeholder="Digite seu e-mail" 
+                required
+                className="flex-1 h-12 px-4 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-white/50 outline-none focus:border-white/50 transition-colors"
+              />
+              <Button type="submit" className="h-12 px-6 bg-white text-primary hover:bg-white/90 font-semibold">
+                Assinar grátis
+              </Button>
+            </form>
+            <p className="text-primary-foreground/50 text-xs mt-4 flex items-center gap-1.5">
+              <Check className="w-3 h-3" /> Prometemos não enviar spam.
+            </p>
           </div>
         </div>
       </section>

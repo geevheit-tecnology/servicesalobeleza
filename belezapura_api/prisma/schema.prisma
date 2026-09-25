@@ -32,6 +32,7 @@ model Salon {
   professionals Professional[]
   services      Service[]
   appointments  Appointment[]
+  subscriptions Subscription[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 }
@@ -92,4 +93,40 @@ model Appointment {
   status         String       @default("waiting") // waiting, confirmed, cancelled, done
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
+}
+
+model SystemSettings {
+  id            String   @id @default(uuid())
+  platformName  String   @default("beautyOS")
+  domain        String   @default("beautyos.app")
+  supportEmail  String   @default("suporte@beautyos.app")
+  trialDays     Int      @default(14)
+  defaultPlanId String?
+  updatedAt     DateTime @updatedAt
+}
+
+model Subscription {
+  id        String   @id @default(uuid())
+  salonId   String
+  planId    String
+  plan      Plan?    @relation(fields: [planId], references: [id])
+  status    String   @default("TRIAL") // "ACTIVE", "CANCELED", "TRIAL"
+  price     Decimal  @default(0.0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  salon     Salon    @relation(fields: [salonId], references: [id])
+}
+
+model Plan {
+  id               String         @id @default(uuid())
+  name             String
+  price            Decimal
+  period           String         @default("/mês")
+  highlight        Boolean        @default(false)
+  features         String[]
+  maxProfessionals Int            @default(0) // 0 means unlimited
+  color            String         @default("#000000")
+  subscriptions    Subscription[]
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
 }

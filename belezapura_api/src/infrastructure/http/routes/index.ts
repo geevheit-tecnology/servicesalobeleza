@@ -26,6 +26,8 @@ routes.post('/public/onboarding', (req, res) => onboardingController.register(re
 
 routes.get('/public/salons/:slug', (req, res) => publicController.getSalonBySlug(req, res));
 routes.post('/public/appointments', (req, res) => publicController.createAppointment(req, res));
+routes.get('/public/availability', (req, res) => publicController.getAvailability(req, res));
+routes.get('/public/plans', (req, res) => superAdminController.getPlans(req, res));
 
 // Rotas Protegidas (Exigem JWT de um usuário logado)
 routes.use(authMiddleware as any); // Protege as rotas abaixo
@@ -37,9 +39,16 @@ routes.get('/appointments', (req, res) => appointmentController.listAll(req, res
 // Rotas do Salão (Dono)
 routes.get('/salon/dashboard', (req, res) => salonController.getDashboard(req, res));
 routes.get('/salon/details', (req, res) => salonController.getDetails(req, res));
+routes.get('/salon/clients', (req, res) => salonController.getClients(req, res));
 routes.post('/services', (req, res) => serviceController.create(req, res));
 routes.post('/professionals', (req, res) => professionalController.create(req, res));
 
 // Rotas do Super Admin
 routes.get('/superadmin/overview', (req, res) => superAdminController.getOverview(req, res));
 routes.get('/superadmin/salons', (req, res) => superAdminController.getSalons(req, res));
+routes.get('/superadmin/settings', (req, res) => superAdminController.getSettings(req, res));
+routes.put('/superadmin/settings', (req, res) => superAdminController.updateSettings(req, res));
+routes.get('/superadmin/plans', (req, res) => superAdminController.getPlans(req, res));
+routes.post('/superadmin/plans', (req, res) => superAdminController.createPlan(req, res));
+routes.put('/superadmin/plans/:id', (req, res) => superAdminController.updatePlan(req, res));
+routes.delete('/superadmin/plans/:id', (req, res) => superAdminController.deletePlan(req, res));

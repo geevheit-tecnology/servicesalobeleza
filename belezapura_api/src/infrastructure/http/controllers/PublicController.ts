@@ -72,11 +72,82 @@ export class PublicController {
           serviceId,
           date: new Date(date),
           value: service.price,
-          status: 'waiting', // aguardando confirmação/pagamento
+          status: 'PENDING_PAYMENT', // Modificado para exigir pagamento
         }
       });
 
-      res.status(201).json(appointment);
+      // 4. Mock de Geração de PIX (Gateway Simulator)
+      const pixCode = `00020126360014br.gov.bcb.pix0114+55119999999995204000053039865405${service.price}5802BR5910BeautyOS6009SaoPaulo62070503***6304ABCD`;
+
+      res.status(201).json({ appointment, pixCode });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+
+  // Verifica a disponibilidade do profissional em uma data específica
+  async getAvailability(req: Request, res: Response): Promise<void> {
+    try {
+      const { date, professionalId, serviceId } = req.query;
+
+      if (!date || !professionalId || !serviceId) {
+        res.status(400).json({ error: 'Faltam parâmetros (date, professionalId, serviceId)' });
+        return;
+      }
+
+      const service = await db.service.findUnique({ where: { id: String(serviceId) } });
+      if (!service) {
+        res.status(404).json({ error: 'Serviço não encontrado' });
+        return;
+      }
+
+      const startOfDay = new Date(String(date));
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(String(date));
+      endOfDay.setHours(23, 59, 59, 999);
+
+      // Busca todos os agendamentos do profissional no dia
+      const appointments = await db.appointment.findMany({
+        where: {
+          professionalId: String(professionalId),
+          date: { gte: startOfDay, lte: endOfDay },
+          status: { notIn: ['CANCELED'] }
+        },
+        include: { service: true }
+      });
+
+      // Horário de funcionamento do salão (Hardcoded 09:00 - 18:00 para MVP)
+      const slots: string[] = [];
+      let currentHour = 9;
+      let currentMinute = 0;
+
+      while (currentHour < 18) {
+        const slotStart = new Date(startOfDay);
+        slotStart.setHours(currentHour, currentMinute, 0, 0);
+        
+        const slotEnd = new Date(slotStart.getTime() + service.duration * 60000);
+
+        // Verifica colisão
+        const hasConflict = appointments.some(app => {
+          const appStart = app.date;
+          const appEnd = new Date(appStart.getTime() + app.service.duration * 60000);
+          return (slotStart < appEnd && slotEnd > appStart);
+        });
+
+        // Se terminar antes das 18h e não houver conflito, adiciona
+        if (!hasConflict && slotEnd.getHours() <= 18 && (slotEnd.getHours() < 18 || slotEnd.getMinutes() === 0)) {
+          slots.push(slotStart.toISOString());
+        }
+
+        // Avança 30 minutos
+        currentMinute += 30;
+        if (currentMinute >= 60) {
+          currentHour++;
+          currentMinute -= 60;
+        }
+      }
+
+      res.status(200).json({ slots });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }

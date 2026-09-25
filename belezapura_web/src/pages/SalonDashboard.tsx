@@ -23,6 +23,7 @@ const NAV = [
   { id: "comissoes", label: "Comissões", icon: Percent },
   { id: "pagina", label: "Página do Salão", icon: Globe },
   { id: "avaliacoes", label: "Avaliações", icon: Star },
+  { id: "marketing", label: "Marketing & Zap", icon: MessageCircle },
   { id: "relatorios", label: "Relatórios", icon: BarChart3 },
   { id: "configuracoes", label: "Configurações", icon: Settings },
 ];
@@ -398,7 +399,26 @@ function AppointmentsView({ onNewAppointment }: { onNewAppointment: () => void }
 }
 
 function ClientsView() {
-  const [selected, setSelected] = useState<typeof clients[0] | null>(null);
+  const [data, setData] = useState<any[]>([]);
+  const [selected, setSelected] = useState<any | null>(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/salon/clients`, { headers: { 'Authorization': `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(json => {
+        const formatted = json.map((c: any) => ({
+          name: c.name,
+          phone: c.phone || "Não informado",
+          lastVisit: c.lastVisit ? new Date(c.lastVisit).toLocaleDateString('pt-BR') : "Nunca",
+          visits: c.visits || 0,
+          total: `R$ ${c.totalSpent || "0"}`,
+          tags: c.tags || []
+        }));
+        setData(formatted);
+      })
+      .catch(console.error);
+  }, []);
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
@@ -422,14 +442,14 @@ function ClientsView() {
               </tr>
             </thead>
             <tbody>
-              {clients.map(c => (
+              {(data.length > 0 ? data : clients).map((c: any) => (
                 <tr key={c.name} onClick={() => setSelected(c)} className="border-b border-border last:border-0 hover:bg-muted/30 cursor-pointer transition-colors">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <Avatar name={c.name} size="sm" />
                       <div>
                         <div className="text-sm font-medium">{c.name}</div>
-                        {c.tags.map(t => <Badge key={t} variant="purple" className="text-xs mr-1">{t}</Badge>)}
+                        {c.tags.map((t: string) => <Badge key={t} variant="purple" className="text-xs mr-1">{t}</Badge>)}
                       </div>
                     </div>
                   </td>
@@ -883,19 +903,72 @@ const weekDaysShort = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 const defaultSchedule = weekDaysShort.map((d, i) => ({ day: d, open: i < 6, start: "09:00", end: i === 5 ? "17:00" : "19:00" }));
 
 function ProfissionaisView() {
-  const [selected, setSelected] = useState<typeof professionals[0] | null>(null);
+  const [data, setData] = useState<any[]>([]);
+  const [selected, setSelected] = useState<any | null>(null);
   const [tab, setTab] = useState<"agenda" | "faturamento" | "comissoes" | "avaliacoes">("agenda");
+  const [showForm, setShowForm] = useState(false);
+  const [newPro, setNewPro] = useState({ name: "", specialty: "", commission: "" });
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/salon/details`, { headers: { 'Authorization': `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => {
+        if (d.professionals) {
+          const formatted = d.professionals.map((p: any) => ({
+             ...p,
+             appointments: 0,
+             revenue: "R$ 0",
+             commission: `${p.commission || 0}%`,
+          }));
+          setData(formatted);
+        }
+      })
+      .catch(console.error);
+  }, []);
+
+  const handleSave = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/professionals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(newPro)
+      });
+      const resData = await res.json();
+      setData([...data, { ...resData, appointments: 0, revenue: "R$ 0", commission: `${resData.commission}%` }]);
+      setShowForm(false);
+      setNewPro({ name: "", specialty: "", commission: "" });
+    } catch(e) { console.error(e) }
+  };
 
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="font-serif text-2xl font-medium">Profissionais</h1>
-        <Button size="sm"><Plus className="w-4 h-4" /> Novo profissional</Button>
+        <Button size="sm" onClick={() => setShowForm(v => !v)}><Plus className="w-4 h-4" /> Novo profissional</Button>
       </div>
+
+      {showForm && (
+        <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-sm">Novo profissional</h3>
+            <button onClick={() => setShowForm(false)} className="p-1 rounded hover:bg-muted"><X className="w-4 h-4 text-muted-foreground" /></button>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <input value={newPro.name} onChange={e => setNewPro({...newPro, name: e.target.value})} placeholder="Nome completo" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
+            <input value={newPro.specialty} onChange={e => setNewPro({...newPro, specialty: e.target.value})} placeholder="Especialidade (ex: Cabelos)" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
+          </div>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <input value={newPro.commission} onChange={e => setNewPro({...newPro, commission: e.target.value})} placeholder="Comissão (%)" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
+            <Button size="sm" className="h-10" onClick={handleSave}>Salvar</Button>
+          </div>
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 space-y-3">
-          {professionals.map(p => (
+          {(data.length > 0 ? data : professionals).map((p: any) => (
             <div key={p.name} onClick={() => setSelected(p)}
               className={`flex items-center gap-4 p-4 rounded-2xl border cursor-pointer transition-all ${selected?.name === p.name ? "border-primary bg-primary/5" : "border-border bg-card hover:border-primary/30"}`}>
               <Avatar name={p.name} size="lg" />

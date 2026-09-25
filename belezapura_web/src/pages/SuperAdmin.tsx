@@ -414,32 +414,71 @@ function AssinaturasView() {
 }
 
 function PlanosView() {
+  const [plansList, setPlansList] = useState<any[]>([]);
+  const [newPlan, setNewPlan] = useState({ name: "", price: "", features: "" });
+
+  useEffect(() => {
+    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/superadmin/plans`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    })
+      .then(res => res.json())
+      .then(setPlansList)
+      .catch(console.error);
+  }, []);
+
+  const handleCreate = async () => {
+    const data = {
+      name: newPlan.name,
+      price: parseFloat(newPlan.price) || 0,
+      features: newPlan.features.split(',').map(f => f.trim())
+    };
+    await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/superadmin/plans`, {
+      method: 'POST',
+      headers: { 
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json' 
+      },
+      body: JSON.stringify(data)
+    });
+    setNewPlan({ name: "", price: "", features: "" });
+    const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/superadmin/plans`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }});
+    setPlansList(await res.json());
+  };
+
   return (
     <div className="p-6 space-y-6">
-      <h1 className="font-serif text-2xl font-medium">Planos</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="font-serif text-2xl font-medium">Planos</h1>
+      </div>
+
+      {/* Form to create plan */}
+      <div className="bg-card border border-border rounded-2xl p-5 space-y-3 max-w-3xl">
+        <h3 className="font-semibold">Cadastrar Novo Plano</h3>
+        <div className="flex gap-4">
+          <input value={newPlan.name} onChange={e => setNewPlan({...newPlan, name: e.target.value})} placeholder="Nome do plano" className="flex-1 h-10 rounded-lg border border-border px-3 text-sm outline-none bg-background" />
+          <input value={newPlan.price} onChange={e => setNewPlan({...newPlan, price: e.target.value})} placeholder="Preço (ex: 49.90)" className="w-32 h-10 rounded-lg border border-border px-3 text-sm outline-none bg-background" />
+        </div>
+        <input value={newPlan.features} onChange={e => setNewPlan({...newPlan, features: e.target.value})} placeholder="Funcionalidades (separadas por vírgula)" className="w-full h-10 rounded-lg border border-border px-3 text-sm outline-none bg-background" />
+        <Button size="sm" onClick={handleCreate}>Cadastrar</Button>
+      </div>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {plans.map(p => (
-          <div key={p.name} className="bg-card border border-border rounded-2xl overflow-hidden">
-            <div className="h-2" style={{ background: p.color }} />
+        {plansList.map(p => (
+          <div key={p.id} className="bg-card border border-border rounded-2xl overflow-hidden relative">
+            <div className="h-2" style={{ background: p.color || '#000' }} />
             <div className="p-5">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-semibold">{p.name}</h3>
-                <Badge variant="outline">{p.users} salões</Badge>
               </div>
-              <div className="font-serif text-3xl font-medium mb-1">{p.price}</div>
-              <div className="text-muted-foreground text-sm mb-4">{p.period || "Negociado"}</div>
+              <div className="font-serif text-3xl font-medium mb-1">R$ {p.price}</div>
+              <div className="text-muted-foreground text-sm mb-4">{p.period || "/mês"}</div>
               <ul className="space-y-2 mb-4">
-                {p.features.map(f => (
+                {(p.features || []).map((f: string) => (
                   <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground">
                     <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> {f}
                   </li>
                 ))}
               </ul>
-              <div className="pt-3 border-t border-border">
-                <div className="text-xs text-muted-foreground mb-1">Receita do plano</div>
-                <div className="font-semibold text-primary">{p.revenue}</div>
-              </div>
             </div>
           </div>
         ))}
@@ -801,63 +840,101 @@ function UsuariosView() {
 
 function ConfiguracoesAdminView() {
   const [platformData, setPlatformData] = useState({
-    nome: "beautyOS",
-    dominio: "beautyos.app",
-    email: "suporte@beautyos.app"
+    platformName: "",
+    domain: "",
+    supportEmail: ""
   });
 
   const [trialData, setTrialData] = useState({
-    trialDuration: "14 dias",
-    defaultPlan: "Profissional",
-    notification: "3 dias antes"
+    trialDays: 14,
+    defaultPlanId: ""
   });
 
-  const handleSavePlatform = () => {
-    alert(`Configurações da plataforma salvas com sucesso!\n\nNome: ${platformData.nome}\nDomínio: ${platformData.dominio}\nE-mail: ${platformData.email}`);
+  const [toast, setToast] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
   };
 
-  const handleSaveTrial = () => {
-    alert(`Configurações de Trial e planos salvas com sucesso!\n\nDuração: ${trialData.trialDuration}\nPlano Padrão: ${trialData.defaultPlan}\nNotificação: ${trialData.notification}`);
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/superadmin/settings`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        setPlatformData({
+          platformName: data.platformName || "beautyOS",
+          domain: data.domain || "beautyos.app",
+          supportEmail: data.supportEmail || "suporte@beautyos.app"
+        });
+        setTrialData({
+          trialDays: data.trialDays || 14,
+          defaultPlanId: data.defaultPlanId || ""
+        });
+      })
+      .catch(console.error);
+  }, []);
+
+  const handleSave = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/superadmin/settings`, {
+        method: 'PUT',
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ ...platformData, ...trialData })
+      });
+      showToast("Configurações salvas com sucesso!");
+    } catch (e) {
+      showToast("Erro ao salvar configurações.");
+    }
   };
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="p-6 space-y-5 relative">
       <h1 className="font-serif text-2xl font-medium">Configurações da plataforma</h1>
       <div className="grid lg:grid-cols-2 gap-5 max-w-3xl">
         <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
           <h3 className="font-semibold">Dados da plataforma</h3>
           <div>
             <label className="text-xs font-medium text-muted-foreground block mb-1">Nome</label>
-            <input value={platformData.nome} onChange={(e) => setPlatformData({...platformData, nome: e.target.value})} className="w-full h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-background" />
+            <input value={platformData.platformName} onChange={(e) => setPlatformData({...platformData, platformName: e.target.value})} className="w-full h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-background" />
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground block mb-1">Domínio</label>
-            <input value={platformData.dominio} onChange={(e) => setPlatformData({...platformData, dominio: e.target.value})} className="w-full h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-background" />
+            <input value={platformData.domain} onChange={(e) => setPlatformData({...platformData, domain: e.target.value})} className="w-full h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-background" />
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground block mb-1">E-mail suporte</label>
-            <input value={platformData.email} onChange={(e) => setPlatformData({...platformData, email: e.target.value})} className="w-full h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-background" />
+            <input value={platformData.supportEmail} onChange={(e) => setPlatformData({...platformData, supportEmail: e.target.value})} className="w-full h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-background" />
           </div>
-          <Button size="sm" className="mt-1" onClick={handleSavePlatform}>Salvar</Button>
+          <Button size="sm" className="mt-1" onClick={handleSave}>Salvar</Button>
         </div>
 
         <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
           <h3 className="font-semibold">Trial e planos</h3>
           <div>
-            <label className="text-xs font-medium text-muted-foreground block mb-1">Duração do trial</label>
-            <input value={trialData.trialDuration} onChange={(e) => setTrialData({...trialData, trialDuration: e.target.value})} className="w-full h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-background" />
+            <label className="text-xs font-medium text-muted-foreground block mb-1">Duração do trial (dias)</label>
+            <input type="number" value={trialData.trialDays} onChange={(e) => setTrialData({...trialData, trialDays: parseInt(e.target.value) || 0})} className="w-full h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-background" />
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground block mb-1">Plano padrão no trial</label>
-            <input value={trialData.defaultPlan} onChange={(e) => setTrialData({...trialData, defaultPlan: e.target.value})} className="w-full h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-background" />
+            <label className="text-xs font-medium text-muted-foreground block mb-1">ID do Plano padrão</label>
+            <input value={trialData.defaultPlanId} onChange={(e) => setTrialData({...trialData, defaultPlanId: e.target.value})} className="w-full h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-background" />
           </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground block mb-1">Notificação de vencimento</label>
-            <input value={trialData.notification} onChange={(e) => setTrialData({...trialData, notification: e.target.value})} className="w-full h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-background" />
-          </div>
-          <Button size="sm" className="mt-1" onClick={handleSaveTrial}>Salvar</Button>
+          <Button size="sm" className="mt-1" onClick={handleSave}>Salvar</Button>
         </div>
       </div>
+      
+      {toast && (
+        <div className="fixed bottom-10 right-10 bg-primary text-primary-foreground px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-bottom-5 z-50">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <span className="text-sm font-medium">{toast}</span>
+        </div>
+      )}
     </div>
   );
 }

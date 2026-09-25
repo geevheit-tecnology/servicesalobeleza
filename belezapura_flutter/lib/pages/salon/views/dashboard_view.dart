@@ -3,9 +3,44 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:belezapura_flutter/theme/app_theme.dart';
 import 'package:belezapura_flutter/components/ui.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class DashboardView extends StatelessWidget {
+class DashboardView extends StatefulWidget {
   const DashboardView({super.key});
+
+  @override
+  State<DashboardView> createState() => _DashboardViewState();
+}
+
+class _DashboardViewState extends State<DashboardView> {
+  Map<String, dynamic>? stats;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token') ?? '';
+      
+      final res = await http.get(
+        Uri.parse('http://localhost:3050/api/salon/dashboard'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (res.statusCode == 200) {
+        setState(() {
+          stats = jsonDecode(res.body);
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading stats: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,13 +67,13 @@ class DashboardView extends StatelessWidget {
           // Stats Row
           Row(
             children: [
-              Expanded(child: _StatCard(title: 'Agendamentos', value: '12', sub: '4 restantes', icon: LucideIcons.calendar, trend: 8, color: Colors.blue)),
+              Expanded(child: _StatCard(title: 'Agendamentos', value: stats != null ? stats!['appointmentsToday'].toString() : '...', sub: 'hoje', icon: LucideIcons.calendar, trend: 8, color: Colors.blue)),
               const SizedBox(width: 16),
-              Expanded(child: _StatCard(title: 'Faturamento', value: 'R\$ 1.280', sub: 'meta: R\$ 1.500', icon: LucideIcons.dollarSign, trend: 12, color: Colors.green)),
+              Expanded(child: _StatCard(title: 'Faturamento', value: stats != null ? 'R\$ ${stats!["revenue"]}' : '...', sub: 'meta: R\$ 1.500', icon: LucideIcons.dollarSign, trend: 12, color: Colors.green)),
               const SizedBox(width: 16),
-              Expanded(child: _StatCard(title: 'Ocupação', value: '78%', sub: 'das 3 profissionais', icon: LucideIcons.barChart3, trend: 5, color: Colors.purple)),
+              Expanded(child: _StatCard(title: 'Serviços Cad.', value: stats != null ? stats!['servicesCount'].toString() : '...', sub: 'disponíveis', icon: LucideIcons.scissors, trend: 5, color: Colors.purple)),
               const SizedBox(width: 16),
-              Expanded(child: _StatCard(title: 'Novos clientes', value: '5', sub: 'este mês: 18', icon: LucideIcons.users, trend: 15, color: Colors.orange)),
+              Expanded(child: _StatCard(title: 'Total de Clientes', value: stats != null ? stats!['clientsCount'].toString() : '...', sub: 'base total', icon: LucideIcons.users, trend: 15, color: Colors.orange)),
             ],
           ),
           const SizedBox(height: 32),
