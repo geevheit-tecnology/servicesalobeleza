@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import {
   LayoutDashboard, Store, Building2, CreditCard, Package, Users, HeadphonesIcon,
   Settings, TrendingUp, ArrowUpRight, ArrowDownRight, Bell, ChevronDown, MoreHorizontal,
-  CheckCircle, AlertCircle, XCircle, Clock, Sparkles, Plus, Search, Filter, LogOut
+  CheckCircle, AlertCircle, XCircle, Clock, Sparkles, Plus, Search, Filter, LogOut,
+  X, Moon, Sun, Megaphone, Shield, Download
 } from "lucide-react";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line
@@ -16,8 +17,10 @@ const NAV = [
   { id: "assinaturas", label: "Assinaturas", icon: CreditCard },
   { id: "planos", label: "Planos", icon: Package },
   { id: "pagamentos", label: "Pagamentos", icon: CreditCard },
-  { id: "usuarios", label: "Usuários", icon: Users },
+  { id: "usuarios", label: "Usuários & Permissões", icon: Users },
+  { id: "auditoria", label: "Auditoria", icon: Shield },
   { id: "suporte", label: "Suporte", icon: HeadphonesIcon },
+  { id: "comunicacao", label: "Comunicação", icon: Megaphone },
   { id: "configuracoes", label: "Configurações", icon: Settings },
 ];
 
@@ -209,6 +212,55 @@ function OverviewView({ overviewData }: { overviewData: any }) {
           </LineChart>
         </ResponsiveContainer>
       </div>
+
+      <div className="bg-card border border-border rounded-2xl p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="font-semibold">Análise de Cohort (Retenção)</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">Comportamento de retenção por mês de ativação</p>
+          </div>
+          <Button variant="outline" size="sm"><Download className="w-4 h-4 mr-2" />Exportar CSV</Button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="py-2 text-left font-medium text-muted-foreground w-32">Mês (Ativação)</th>
+                <th className="py-2 text-left font-medium text-muted-foreground w-20">Salões</th>
+                {[1, 2, 3, 4, 5, 6].map(m => (
+                  <th key={m} className="py-2 text-center font-medium text-muted-foreground w-16">Mês {m}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { month: "Jan 2024", total: 120, data: [100, 95, 90, 85, 80, 78] },
+                { month: "Fev 2024", total: 145, data: [100, 96, 92, 88, 85, "-"] },
+                { month: "Mar 2024", total: 180, data: [100, 98, 93, 90, "-", "-"] },
+                { month: "Abr 2024", total: 210, data: [100, 94, 91, "-", "-", "-"] },
+              ].map(row => (
+                <tr key={row.month} className="border-b border-border/50 last:border-0">
+                  <td className="py-2.5 font-medium">{row.month}</td>
+                  <td className="py-2.5 text-muted-foreground">{row.total}</td>
+                  {row.data.map((val, idx) => {
+                    const isNum = typeof val === "number";
+                    const bgOpacity = isNum ? Math.max(0.1, (val - 70) / 30) : 0;
+                    return (
+                      <td key={idx} className="py-2.5 px-1 text-center">
+                        {isNum ? (
+                          <div className="py-1 rounded font-medium text-emerald-800" style={{ backgroundColor: `rgba(16, 185, 129, ${bgOpacity})` }}>
+                            {val}%
+                          </div>
+                        ) : <span className="text-muted-foreground/30">{val}</span>}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
@@ -216,6 +268,7 @@ function OverviewView({ overviewData }: { overviewData: any }) {
 function SaloesView({ salonsData }: { salonsData: any }) {
   const [filter, setFilter] = useState("Todos");
   const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [drawerInfo, setDrawerInfo] = useState<{ salonName: string, type: 'history' | 'edit' } | null>(null);
 
   const initialData = Array.isArray(salonsData) && salonsData.length > 0 ? salonsData : saloes;
   const [localSalons, setLocalSalons] = useState<any[]>(initialData);
@@ -235,10 +288,8 @@ function SaloesView({ salonsData }: { salonsData: any }) {
       if (confirm) {
         setLocalSalons(prev => prev.map(s => s.name === salonName ? { ...s, status: 'blocked' } : s));
       }
-    } else if (action === 'history') {
-      alert(`Histórico de ${salonName}:\n\n- Criado em: 10/01/2023\n- Último pagamento: Há 5 dias\n- Status: Regular`);
-    } else if (action === 'edit') {
-      alert(`Abrindo painel de edição para ${salonName}...`);
+    } else if (action === 'history' || action === 'edit') {
+      setDrawerInfo({ salonName, type: action as 'history' | 'edit' });
     }
   };
 
@@ -256,12 +307,13 @@ function SaloesView({ salonsData }: { salonsData: any }) {
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="font-serif text-2xl font-medium">Salões</h1>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 bg-card border border-border rounded-lg px-3 h-9 text-sm text-muted-foreground">
             <Search className="w-4 h-4" />
             <input placeholder="Buscar salão..." className="bg-transparent outline-none placeholder:text-muted-foreground" />
           </div>
-          <Button size="sm"><Filter className="w-4 h-4" /> Filtrar</Button>
+          <Button variant="outline" size="sm"><Filter className="w-4 h-4 mr-2" /> Filtrar</Button>
+          <Button variant="outline" size="sm"><Download className="w-4 h-4 mr-2" /> Exportar CSV</Button>
         </div>
       </div>
 
@@ -315,6 +367,70 @@ function SaloesView({ salonsData }: { salonsData: any }) {
           </tbody>
         </table>
       </div>
+
+      {drawerInfo && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-sm animate-in fade-in" onClick={() => setDrawerInfo(null)}>
+          <div className="w-[400px] sm:w-[450px] bg-background h-full shadow-2xl flex flex-col animate-in slide-in-from-right" onClick={e => e.stopPropagation()}>
+            <div className="h-14 border-b border-border flex items-center justify-between px-6 shrink-0">
+              <h3 className="font-medium font-serif">{drawerInfo.type === 'history' ? 'Histórico do Salão' : 'Editar Dados'}</h3>
+              <button onClick={() => setDrawerInfo(null)} className="p-2 hover:bg-muted rounded-lg text-muted-foreground transition-colors"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="p-6 flex-1 overflow-y-auto">
+              <div className="flex items-center gap-4 mb-6">
+                <Avatar name={drawerInfo.salonName} size="md" />
+                <div>
+                  <div className="font-semibold text-lg">{drawerInfo.salonName}</div>
+                  <Badge variant="outline" className="mt-1">Desde 10/01/2023</Badge>
+                </div>
+              </div>
+              
+              {drawerInfo.type === 'history' ? (
+                <div className="space-y-4">
+                  <h4 className="font-medium text-sm text-muted-foreground mb-4">Últimas Atividades</h4>
+                  <div className="border-l-2 border-border ml-3 pl-4 py-2 space-y-6">
+                    <div className="relative">
+                      <div className="absolute -left-[23px] top-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-background"></div>
+                      <p className="text-sm font-medium">Pagamento Confirmado</p>
+                      <p className="text-xs text-muted-foreground">Há 5 dias - Plano Profissional</p>
+                    </div>
+                    <div className="relative">
+                      <div className="absolute -left-[23px] top-1 w-3 h-3 bg-primary rounded-full border-2 border-background"></div>
+                      <p className="text-sm font-medium">Acesso ao sistema</p>
+                      <p className="text-xs text-muted-foreground">Hoje às 10:30</p>
+                    </div>
+                    <div className="relative">
+                      <div className="absolute -left-[23px] top-1 w-3 h-3 bg-amber-500 rounded-full border-2 border-background"></div>
+                      <p className="text-sm font-medium">Ticket de Suporte aberto</p>
+                      <p className="text-xs text-muted-foreground">Há 2 semanas - Status: Resolvido</p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-5">
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground block mb-1">Nome do Salão</label>
+                    <input defaultValue={drawerInfo.salonName} className="w-full h-10 rounded-lg border border-border px-3 text-sm bg-background outline-none focus:border-primary transition-colors" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground block mb-1">Responsável</label>
+                    <input defaultValue={localSalons.find(s => s.name === drawerInfo.salonName)?.owner} className="w-full h-10 rounded-lg border border-border px-3 text-sm bg-background outline-none focus:border-primary transition-colors" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground block mb-1">Plano Atual</label>
+                    <select defaultValue={localSalons.find(s => s.name === drawerInfo.salonName)?.plan} className="w-full h-10 rounded-lg border border-border px-3 text-sm bg-background outline-none focus:border-primary transition-colors">
+                      <option>Básico</option>
+                      <option>Profissional</option>
+                      <option>Premium</option>
+                      <option>Empresarial</option>
+                    </select>
+                  </div>
+                  <Button className="w-full mt-4" onClick={() => setDrawerInfo(null)}>Salvar Alterações</Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -323,17 +439,29 @@ function AssinaturasView() {
   const [localSubs, setLocalSubs] = useState<any[]>(subscriptions);
   const [filter, setFilter] = useState("Todos");
   const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [kycDrawer, setKycDrawer] = useState<string | null>(null);
 
   const handleAction = (salonName: string, action: string) => {
     setOpenMenu(null);
     if (action === 'analyze') {
-      alert(`Iniciando análise de ${salonName}...\n\n- Checando dados cadastrais...\n- Validando informações de endereço...\n- Integrando com operadora de pagamento (Cartão/PIX)...\n\nAcesso aprovado com sucesso! Salão ativado.`);
-      setLocalSubs(prev => prev.map(s => s.salon === salonName ? { ...s, status: 'active', next: 'Daqui a 30 dias' } : s));
+      setKycDrawer(salonName);
     } else if (action === 'cancel') {
       const confirm = window.confirm(`Deseja cancelar a assinatura de ${salonName}?`);
       if (confirm) {
         setLocalSubs(prev => prev.map(s => s.salon === salonName ? { ...s, status: 'cancelled' } : s));
       }
+    }
+  };
+
+  const handleApproveKYC = () => {
+    setLocalSubs(prev => prev.map(s => s.salon === kycDrawer ? { ...s, status: 'active', next: 'Daqui a 30 dias' } : s));
+    setKycDrawer(null);
+  };
+
+  const handleRejectKYC = () => {
+    if(window.confirm("Rejeitar este salão permanentemente?")) {
+      setLocalSubs(prev => prev.map(s => s.salon === kycDrawer ? { ...s, status: 'cancelled' } : s));
+      setKycDrawer(null);
     }
   };
 
@@ -349,7 +477,8 @@ function AssinaturasView() {
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="font-serif text-2xl font-medium">Assinaturas</h1>
+        <h1 className="font-serif text-2xl font-medium">Assinaturas e KYC</h1>
+        <Button variant="outline" size="sm"><Download className="w-4 h-4 mr-2" /> Exportar Dados (PDF)</Button>
       </div>
 
       <div className="grid grid-cols-4 gap-4">
@@ -396,11 +525,11 @@ function AssinaturasView() {
                 <td className="px-4 py-3 relative">
                   <button onClick={() => setOpenMenu(openMenu === s.salon ? null : s.salon)} className="p-1.5 rounded-lg hover:bg-muted"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
                   {openMenu === s.salon && (
-                    <div className="absolute right-8 top-10 w-48 bg-white border border-gray-200 rounded-xl shadow-lg py-1 z-50">
+                    <div className="absolute right-8 top-10 w-48 bg-card border border-border rounded-xl shadow-lg py-1 z-50">
                       {s.status === 'pending' && (
-                        <button onClick={() => handleAction(s.salon, 'analyze')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-emerald-600 font-medium">Realizar Análise & Aprovar</button>
+                        <button onClick={() => handleAction(s.salon, 'analyze')} className="w-full text-left px-4 py-2 text-sm hover:bg-muted text-emerald-500 font-medium">Validar Compliance (KYC)</button>
                       )}
-                      <button onClick={() => handleAction(s.salon, 'cancel')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-red-600">Cancelar assinatura</button>
+                      <button onClick={() => handleAction(s.salon, 'cancel')} className="w-full text-left px-4 py-2 text-sm hover:bg-muted text-red-500">Cancelar assinatura</button>
                     </div>
                   )}
                 </td>
@@ -409,6 +538,90 @@ function AssinaturasView() {
           </tbody>
         </table>
       </div>
+
+      {kycDrawer && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-sm animate-in fade-in" onClick={() => setKycDrawer(null)}>
+          <div className="w-[450px] sm:w-[500px] bg-background h-full shadow-2xl flex flex-col animate-in slide-in-from-right" onClick={e => e.stopPropagation()}>
+            <div className="h-14 border-b border-border flex items-center justify-between px-6 shrink-0">
+              <h3 className="font-medium font-serif">Validação de Compliance (KYC)</h3>
+              <button onClick={() => setKycDrawer(null)} className="p-2 hover:bg-muted rounded-lg text-muted-foreground transition-colors"><X className="w-4 h-4" /></button>
+            </div>
+            
+            <div className="p-6 flex-1 overflow-y-auto space-y-6">
+              <div className="flex items-center gap-4 border-b border-border pb-6">
+                <Avatar name={kycDrawer} size="lg" />
+                <div>
+                  <h4 className="text-xl font-medium">{kycDrawer}</h4>
+                  <Badge variant="warning" className="mt-1">Aguardando Aprovação</Badge>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h5 className="font-medium text-sm text-foreground uppercase tracking-wider">Dados Cadastrais (Receita Federal)</h5>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-muted/30 p-3 rounded-lg border border-border">
+                    <span className="block text-xs text-muted-foreground mb-1">CNPJ</span>
+                    <span className="font-mono text-sm">45.293.109/0001-44</span>
+                  </div>
+                  <div className="bg-muted/30 p-3 rounded-lg border border-border">
+                    <span className="block text-xs text-muted-foreground mb-1">Status Receita</span>
+                    <span className="text-sm font-medium text-emerald-500 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> ATIVA</span>
+                  </div>
+                </div>
+
+                <div className="bg-muted/30 p-3 rounded-lg border border-border">
+                  <span className="block text-xs text-muted-foreground mb-1">Razão Social</span>
+                  <span className="text-sm font-medium">BELEZA PURA ESTETICA LTDA</span>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h5 className="font-medium text-sm text-foreground uppercase tracking-wider">Split de Pagamentos (Recebimento)</h5>
+                
+                <div className="bg-muted/30 p-4 rounded-lg border border-border space-y-3">
+                  <div className="flex justify-between items-center border-b border-border pb-2">
+                    <span className="text-sm text-muted-foreground">Banco</span>
+                    <span className="text-sm font-medium">Itaú Unibanco (341)</span>
+                  </div>
+                  <div className="flex justify-between items-center border-b border-border pb-2">
+                    <span className="text-sm text-muted-foreground">Agência / Conta</span>
+                    <span className="text-sm font-medium">1234 / 56789-0</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Titular</span>
+                    <span className="text-sm font-medium">BELEZA PURA ESTETICA LTDA</span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2 p-3 bg-emerald-500/10 text-emerald-600 rounded-lg text-sm border border-emerald-500/20">
+                  <CheckCircle className="w-4 h-4 shrink-0" />
+                  Titularidade da conta coincide com o CNPJ informado.
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h5 className="font-medium text-sm text-foreground uppercase tracking-wider">Documentos Anexados</h5>
+                <div className="flex items-center justify-between p-3 border border-border rounded-lg bg-card">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg"><CheckCircle className="w-4 h-4 text-primary" /></div>
+                    <div>
+                      <div className="text-sm font-medium">Contrato Social.pdf</div>
+                      <div className="text-xs text-muted-foreground">Enviado hoje, 2MB</div>
+                    </div>
+                  </div>
+                  <Button variant="outline" size="sm">Visualizar</Button>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-border flex gap-3 bg-card shrink-0">
+              <Button variant="outline" className="flex-1 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={handleRejectKYC}>Rejeitar</Button>
+              <Button className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white" onClick={handleApproveKYC}>Aprovar e Ativar</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -703,7 +916,10 @@ function PagamentosView() {
 
   return (
     <div className="p-6 space-y-4">
-      <h1 className="font-serif text-2xl font-medium">Pagamentos</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="font-serif text-2xl font-medium">Pagamentos</h1>
+        <Button variant="outline" size="sm"><Download className="w-4 h-4 mr-2" /> Exportar Faturamento (CSV)</Button>
+      </div>
 
       <div className="grid grid-cols-3 gap-4">
         <StatCard label="Recebido este mês" value="R$ 12.840" icon={CheckCircle} color="emerald" trend={9} />
@@ -759,32 +975,44 @@ function PagamentosView() {
 }
 
 const adminUsers = [
-  { name: "Admin beautyOS", role: "Super Admin", email: "admin@beautyos.app", last: "Agora", status: "active" },
-  { name: "Carlos Mendes", role: "Suporte N1", email: "carlos@beautyos.app", last: "2h atrás", status: "active" },
-  { name: "Fernanda Ramos", role: "Suporte N2", email: "fernanda@beautyos.app", last: "Hoje", status: "active" },
-  { name: "Rodrigo Lima", role: "Financeiro", email: "rodrigo@beautyos.app", last: "Ontem", status: "inactive" },
+  { id: 1, name: "Admin beautyOS", role: "Super Admin", email: "admin@beautyos.app", last: "Agora", status: "active", permissions: ["all"] },
+  { id: 2, name: "Carlos Mendes", role: "Suporte N1", email: "carlos@beautyos.app", last: "2h atrás", status: "active", permissions: ["tickets:read", "tickets:write"] },
+  { id: 3, name: "Fernanda Ramos", role: "Suporte N2", email: "fernanda@beautyos.app", last: "Hoje", status: "active", permissions: ["tickets:read", "tickets:write", "salons:read"] },
+  { id: 4, name: "Rodrigo Lima", role: "Financeiro", email: "rodrigo@beautyos.app", last: "Ontem", status: "inactive", permissions: ["finance:read", "finance:write"] },
 ];
 
 function UsuariosView() {
   const [localUsers, setLocalUsers] = useState(adminUsers);
-  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [openMenu, setOpenMenu] = useState<number | null>(null);
+  const [drawerUser, setDrawerUser] = useState<any | null>(null);
 
-  const handleAction = (name: string, action: string) => {
+  const handleAction = (id: number, action: string) => {
     setOpenMenu(null);
     if (action === 'toggle') {
-      setLocalUsers(prev => prev.map(u => u.name === name ? { ...u, status: u.status === 'active' ? 'inactive' : 'active' } : u));
+      setLocalUsers(prev => prev.map(u => u.id === id ? { ...u, status: u.status === 'active' ? 'inactive' : 'active' } : u));
     } else if (action === 'delete') {
-      if(window.confirm(`Excluir usuário ${name}?`)) {
-        setLocalUsers(prev => prev.filter(u => u.name !== name));
+      if(window.confirm(`Excluir usuário permanentemente?`)) {
+        setLocalUsers(prev => prev.filter(u => u.id !== id));
       }
+    } else if (action === 'edit') {
+      const user = localUsers.find(u => u.id === id);
+      if(user) setDrawerUser(user);
     }
   };
 
   const handleNewUser = () => {
-    const name = window.prompt("Nome do novo usuário:");
-    if (name) {
-      setLocalUsers([...localUsers, { name, role: "Suporte N1", email: `${name.split(' ')[0].toLowerCase()}@beautyos.app`, last: "Nunca", status: "active" }]);
+    setDrawerUser({ id: Date.now(), name: "", email: "", role: "Visualizador", status: "active", permissions: [] });
+  };
+
+  const handleSaveUser = () => {
+    if(!drawerUser.name || !drawerUser.email) return alert("Preencha nome e e-mail");
+    const exists = localUsers.find(u => u.id === drawerUser.id);
+    if (exists) {
+      setLocalUsers(prev => prev.map(u => u.id === drawerUser.id ? drawerUser : u));
+    } else {
+      setLocalUsers([{ ...drawerUser, last: "Nunca" }, ...localUsers]);
     }
+    setDrawerUser(null);
   };
 
   return (
@@ -805,7 +1033,7 @@ function UsuariosView() {
           </thead>
           <tbody>
             {localUsers.map(u => (
-              <tr key={u.name} className="border-b border-border last:border-0 hover:bg-muted/20">
+              <tr key={u.id} className="border-b border-border last:border-0 hover:bg-muted/20">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     <Avatar name={u.name} size="sm" />
@@ -813,7 +1041,7 @@ function UsuariosView() {
                   </div>
                 </td>
                 <td className="px-4 py-3">
-                  <Badge variant={u.role === "Super Admin" ? "purple" : "outline"}>{u.role}</Badge>
+                  <Badge variant={u.role === "Super Admin" ? "purple" : "outline"} className={u.role !== "Super Admin" ? "bg-secondary/50" : ""}>{u.role}</Badge>
                 </td>
                 <td className="px-4 py-3 text-sm text-muted-foreground">{u.email}</td>
                 <td className="px-4 py-3 text-sm text-muted-foreground">{u.last}</td>
@@ -821,11 +1049,12 @@ function UsuariosView() {
                   <Badge variant={u.status === "active" ? "success" : "outline"}>{u.status === "active" ? "Ativo" : "Inativo"}</Badge>
                 </td>
                 <td className="px-4 py-3 relative">
-                  <button onClick={() => setOpenMenu(openMenu === u.name ? null : u.name)} className="p-1.5 rounded-lg hover:bg-muted"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
-                  {openMenu === u.name && (
-                    <div className="absolute right-8 top-10 w-36 bg-white border border-gray-200 rounded-xl shadow-lg py-1 z-50">
-                      <button onClick={() => handleAction(u.name, 'toggle')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700">{u.status === 'active' ? 'Suspender' : 'Reativar'}</button>
-                      <button onClick={() => handleAction(u.name, 'delete')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-red-600">Excluir</button>
+                  <button onClick={() => setOpenMenu(openMenu === u.id ? null : u.id)} className="p-1.5 rounded-lg hover:bg-muted"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
+                  {openMenu === u.id && (
+                    <div className="absolute right-8 top-10 w-40 bg-card border border-border rounded-xl shadow-lg py-1 z-50">
+                      <button onClick={() => handleAction(u.id, 'edit')} className="w-full text-left px-4 py-2 text-sm hover:bg-muted text-foreground">Editar Permissões</button>
+                      <button onClick={() => handleAction(u.id, 'toggle')} className="w-full text-left px-4 py-2 text-sm hover:bg-muted text-foreground">{u.status === 'active' ? 'Desativar' : 'Ativar'}</button>
+                      <button onClick={() => handleAction(u.id, 'delete')} className="w-full text-left px-4 py-2 text-sm hover:bg-muted text-red-500">Excluir</button>
                     </div>
                   )}
                 </td>
@@ -834,6 +1063,72 @@ function UsuariosView() {
           </tbody>
         </table>
       </div>
+
+      {drawerUser && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-sm animate-in fade-in" onClick={() => setDrawerUser(null)}>
+          <div className="w-[400px] sm:w-[450px] bg-background h-full shadow-2xl flex flex-col animate-in slide-in-from-right" onClick={e => e.stopPropagation()}>
+            <div className="h-14 border-b border-border flex items-center justify-between px-6 shrink-0">
+              <h3 className="font-medium font-serif">{drawerUser.id > 10000 ? 'Novo Usuário' : 'Editar Usuário e Permissões'}</h3>
+              <button onClick={() => setDrawerUser(null)} className="p-2 hover:bg-muted rounded-lg text-muted-foreground transition-colors"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="p-6 flex-1 overflow-y-auto space-y-5">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground block mb-1">Nome Completo</label>
+                <input value={drawerUser.name} onChange={e => setDrawerUser({...drawerUser, name: e.target.value})} className="w-full h-10 rounded-lg border border-border px-3 text-sm bg-background outline-none focus:border-primary transition-colors" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground block mb-1">E-mail Corporativo</label>
+                <input value={drawerUser.email} onChange={e => setDrawerUser({...drawerUser, email: e.target.value})} type="email" className="w-full h-10 rounded-lg border border-border px-3 text-sm bg-background outline-none focus:border-primary transition-colors" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground block mb-1">Cargo / Função (RBAC)</label>
+                <select value={drawerUser.role} onChange={e => setDrawerUser({...drawerUser, role: e.target.value})} className="w-full h-10 rounded-lg border border-border px-3 text-sm bg-background outline-none focus:border-primary transition-colors">
+                  <option>Super Admin</option>
+                  <option>Admin</option>
+                  <option>Financeiro</option>
+                  <option>Suporte N2</option>
+                  <option>Suporte N1</option>
+                  <option>Visualizador</option>
+                </select>
+              </div>
+              
+              <div className="pt-2">
+                <label className="text-sm font-medium mb-3 block">Privilégios de Acesso Específicos</label>
+                <div className="space-y-3 border border-border rounded-xl p-4 bg-muted/20">
+                  {['salons', 'finance', 'tickets', 'plans', 'users', 'audit'].map(resource => (
+                    <div key={resource} className="flex flex-col gap-1.5 pb-3 border-b border-border last:border-0 last:pb-0">
+                      <span className="text-xs font-semibold uppercase text-muted-foreground">{resource === 'salons' ? 'Gestão de Salões' : resource === 'finance' ? 'Financeiro & Pagamentos' : resource === 'tickets' ? 'Suporte & Tickets' : resource === 'plans' ? 'Planos & Assinaturas' : resource === 'users' ? 'Usuários do Sistema' : 'Logs de Auditoria'}</span>
+                      <div className="flex gap-4">
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                          <input type="checkbox" className="rounded border-border text-primary focus:ring-primary" checked={drawerUser.role === 'Super Admin' || drawerUser.permissions?.includes(`${resource}:read`)} onChange={e => {
+                            if(drawerUser.role === 'Super Admin') return;
+                            const p = new Set(drawerUser.permissions || []);
+                            e.target.checked ? p.add(`${resource}:read`) : p.delete(`${resource}:read`);
+                            setDrawerUser({...drawerUser, permissions: Array.from(p)});
+                          }} disabled={drawerUser.role === 'Super Admin'} />
+                          Leitura
+                        </label>
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                          <input type="checkbox" className="rounded border-border text-primary focus:ring-primary" checked={drawerUser.role === 'Super Admin' || drawerUser.permissions?.includes(`${resource}:write`)} onChange={e => {
+                            if(drawerUser.role === 'Super Admin') return;
+                            const p = new Set(drawerUser.permissions || []);
+                            e.target.checked ? p.add(`${resource}:write`) : p.delete(`${resource}:write`);
+                            if(e.target.checked) p.add(`${resource}:read`); // write implies read
+                            setDrawerUser({...drawerUser, permissions: Array.from(p)});
+                          }} disabled={drawerUser.role === 'Super Admin'} />
+                          Escrita
+                        </label>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <Button className="w-full mt-4" onClick={handleSaveUser}>Salvar Configurações de Acesso</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -939,10 +1234,116 @@ function ConfiguracoesAdminView() {
   );
 }
 
+const broadcasts = [
+  { id: 1, title: "Manutenção programada (V2.0)", audience: "Todos", date: "Ontem, 22:00", status: "sent" },
+  { id: 2, title: "Lembrete: Como usar o split de pagamento", audience: "Ativos", date: "Segunda, 10:00", status: "sent" },
+  { id: 3, title: "Sua trial está acabando!", audience: "Trial", date: "Hoje, 09:00", status: "sent" },
+];
+
+function ComunicacaoView() {
+  const [localBroadcasts, setLocalBroadcasts] = useState(broadcasts);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [newMsg, setNewMsg] = useState({ title: "", audience: "Todos os Salões", text: "" });
+
+  const handleSend = () => {
+    if(!newMsg.title || !newMsg.text) return alert("Preencha todos os campos");
+    setLocalBroadcasts([{ 
+      id: Date.now(), 
+      title: newMsg.title, 
+      audience: newMsg.audience, 
+      date: "Agora mesmo", 
+      status: "sent" 
+    }, ...localBroadcasts]);
+    setDrawerOpen(false);
+    setNewMsg({ title: "", audience: "Todos os Salões", text: "" });
+  };
+
+  return (
+    <div className="p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="font-serif text-2xl font-medium">Comunicação e Avisos</h1>
+        <Button size="sm" onClick={() => setDrawerOpen(true)}><Megaphone className="w-4 h-4 mr-2" /> Novo Aviso Global</Button>
+      </div>
+
+      <div className="bg-card border border-border rounded-2xl overflow-hidden mt-4">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-border bg-muted/40">
+              {["Título do Aviso", "Público-alvo", "Data de envio", "Status"].map(h => (
+                <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {localBroadcasts.map(b => (
+              <tr key={b.id} className="border-b border-border last:border-0 hover:bg-muted/20">
+                <td className="px-4 py-3 text-sm font-medium">{b.title}</td>
+                <td className="px-4 py-3">
+                  <Badge variant="outline">{b.audience}</Badge>
+                </td>
+                <td className="px-4 py-3 text-sm text-muted-foreground">{b.date}</td>
+                <td className="px-4 py-3">
+                  <Badge variant="success">Enviado</Badge>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {drawerOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-sm animate-in fade-in" onClick={() => setDrawerOpen(false)}>
+          <div className="w-[400px] sm:w-[450px] bg-background h-full shadow-2xl flex flex-col animate-in slide-in-from-right" onClick={e => e.stopPropagation()}>
+            <div className="h-14 border-b border-border flex items-center justify-between px-6 shrink-0">
+              <h3 className="font-medium font-serif">Criar Aviso Global</h3>
+              <button onClick={() => setDrawerOpen(false)} className="p-2 hover:bg-muted rounded-lg text-muted-foreground transition-colors"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="p-6 flex-1 overflow-y-auto space-y-5">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground block mb-1">Título do aviso</label>
+                <input value={newMsg.title} onChange={e => setNewMsg({...newMsg, title: e.target.value})} placeholder="Ex: Nova atualização disponível" className="w-full h-10 rounded-lg border border-border px-3 text-sm bg-background outline-none focus:border-primary transition-colors" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground block mb-1">Público-alvo</label>
+                <select value={newMsg.audience} onChange={e => setNewMsg({...newMsg, audience: e.target.value})} className="w-full h-10 rounded-lg border border-border px-3 text-sm bg-background outline-none focus:border-primary transition-colors">
+                  <option>Todos os Salões</option>
+                  <option>Salões Ativos</option>
+                  <option>Salões em Trial</option>
+                  <option>Salões Inadimplentes</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground block mb-1">Mensagem (Markdown suportado)</label>
+                <textarea value={newMsg.text} onChange={e => setNewMsg({...newMsg, text: e.target.value})} rows={6} className="w-full rounded-lg border border-border p-3 text-sm bg-background outline-none focus:border-primary transition-colors resize-none" placeholder="Escreva a mensagem aqui..." />
+              </div>
+              <div className="bg-amber-500/10 text-amber-600 p-3 rounded-lg text-xs flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <p>Este aviso aparecerá no dashboard dos salões imediatamente após o envio. Certifique-se de revisar o texto.</p>
+              </div>
+              <Button className="w-full" onClick={handleSend}>Publicar Aviso Agora</Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function SuperAdmin() {
   const [activeSection, setActiveSection] = useState("overview");
   const [overviewData, setOverviewData] = useState<any>(null);
   const [salonsData, setSalonsData] = useState<any[]>([]);
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains("dark"));
+
+  const toggleDarkMode = () => {
+    if (isDark) {
+      document.documentElement.classList.remove("dark");
+      setIsDark(false);
+    } else {
+      document.documentElement.classList.add("dark");
+      setIsDark(true);
+    }
+  };
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -971,7 +1372,9 @@ export default function SuperAdmin() {
       case "planos": return <PlanosView />;
       case "pagamentos": return <PagamentosView />;
       case "usuarios": return <UsuariosView />;
+      case "auditoria": return <AuditoriaView />;
       case "suporte": return <SuporteView />;
+      case "comunicacao": return <ComunicacaoView />;
       case "configuracoes": return <ConfiguracoesAdminView />;
       default: return null;
     }
@@ -980,7 +1383,7 @@ export default function SuperAdmin() {
   return (
     <div className="flex h-full bg-background">
       {/* Sidebar */}
-      <aside className="w-60 shrink-0 bg-foreground flex flex-col">
+      <aside className="w-60 shrink-0 bg-zinc-950 flex flex-col">
         <div className="h-14 flex items-center gap-2 px-5 border-b border-white/10">
           <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
             <Sparkles className="w-3.5 h-3.5 text-white" />
@@ -1026,6 +1429,9 @@ export default function SuperAdmin() {
             {NAV.find(n => n.id === activeSection)?.label}
           </div>
           <div className="flex items-center gap-3">
+            <button onClick={toggleDarkMode} className="p-2 rounded-lg hover:bg-muted text-muted-foreground transition-colors" title={isDark ? "Modo Claro" : "Modo Escuro"}>
+              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
             <button className="p-2 rounded-lg hover:bg-muted relative">
               <Bell className="w-4 h-4 text-muted-foreground" />
               <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />

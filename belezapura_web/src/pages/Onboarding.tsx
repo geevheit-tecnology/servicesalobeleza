@@ -60,6 +60,36 @@ function StepIndicator({ current }: { current: number }) {
   );
 }
 
+const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, callback: (base64: string) => void) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    const img = new window.Image();
+    img.src = event.target?.result as string;
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      const MAX_SIZE = 800;
+      let width = img.width;
+      let height = img.height;
+      if (width > height && width > MAX_SIZE) {
+        height *= MAX_SIZE / width;
+        width = MAX_SIZE;
+      } else if (height > MAX_SIZE) {
+        width *= MAX_SIZE / height;
+        height = MAX_SIZE;
+      }
+      canvas.width = width;
+      canvas.height = height;
+      ctx?.drawImage(img, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+      callback(dataUrl);
+    };
+  };
+  reader.readAsDataURL(file);
+};
+
 export default function Onboarding({ onFinish }: { onFinish: () => void }) {
   const [step, setStep] = useState(1);
   const [salonName, setSalonName] = useState("Meu Salão");
@@ -72,6 +102,15 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
   const [pixType, setPixType] = useState("cpf");
   const [done, setDone] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const [logo, setLogo] = useState<string | null>(null);
+  const [cover, setCover] = useState<string>("https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&h=300&fit=crop&auto=format");
+  const [gallery, setGallery] = useState<string[]>([
+    "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=200&h=200&fit=crop&auto=format",
+    "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=200&h=200&fit=crop&auto=format",
+    "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=200&h=200&fit=crop&auto=format"
+  ]);
+  const [mainColor, setMainColor] = useState<string>("#B8614A");
 
   const [tipoConta, setTipoConta] = useState("PJ");
   const [documento, setDocumento] = useState("");
@@ -134,7 +173,11 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
           services: services.filter(s => s.active),
           professionals: pros,
           schedule: schedule.filter(s => s.open),
-          pixKey
+          pixKey,
+          logo,
+          cover,
+          gallery,
+          mainColor
         };
 
         const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/public/onboarding`, {
@@ -358,52 +401,64 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
           <div className="space-y-5">
             <div>
               <label className="text-sm font-medium block mb-2">Logo do salão</label>
-              <div className="border-2 border-dashed border-border rounded-2xl p-8 text-center hover:border-primary/40 transition-colors cursor-pointer bg-muted/30">
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                  <Sparkles className="w-7 h-7 text-primary" />
-                </div>
-                <p className="text-sm font-medium mb-1">Clique para enviar sua logo</p>
-                <p className="text-xs text-muted-foreground">PNG ou SVG recomendado · até 5MB</p>
-              </div>
+              <label className="border-2 border-dashed border-border rounded-2xl p-8 text-center hover:border-primary/40 transition-colors cursor-pointer bg-muted/30 block relative overflow-hidden">
+                <input type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, setLogo)} />
+                {logo ? (
+                  <img src={logo} alt="Logo" className="absolute inset-0 w-full h-full object-contain bg-white" />
+                ) : (
+                  <>
+                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                      <Sparkles className="w-7 h-7 text-primary" />
+                    </div>
+                    <p className="text-sm font-medium mb-1">Clique para enviar sua logo</p>
+                    <p className="text-xs text-muted-foreground">PNG ou SVG recomendado · até 5MB</p>
+                  </>
+                )}
+              </label>
             </div>
 
             <div>
               <label className="text-sm font-medium block mb-2">Foto de capa</label>
-              <div className="border-2 border-dashed border-border rounded-2xl overflow-hidden cursor-pointer hover:border-primary/40 transition-colors relative h-44 bg-muted/30 group">
+              <label className="border-2 border-dashed border-border rounded-2xl overflow-hidden cursor-pointer hover:border-primary/40 transition-colors relative h-44 bg-muted/30 group block">
+                <input type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, setCover)} />
                 <img
-                  src="https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&h=300&fit=crop&auto=format"
+                  src={cover}
                   alt="Capa"
                   className="w-full h-full object-cover opacity-60 group-hover:opacity-70 transition-opacity"
                 />
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-                  <div className="bg-white/80 rounded-xl px-4 py-2 flex items-center gap-2 text-sm font-medium shadow">
+                  <div className="bg-white/80 rounded-xl px-4 py-2 flex items-center gap-2 text-sm font-medium shadow text-black">
                     <Upload className="w-4 h-4 text-primary" /> Trocar foto de capa
                   </div>
                 </div>
-              </div>
+              </label>
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium">Galeria do salão</label>
-                <button className="text-xs text-primary font-medium flex items-center gap-1"><Plus className="w-3 h-3" /> Adicionar foto</button>
+                <label className="text-sm font-medium">Galeria do salão (Máximo 6)</label>
+                {gallery.length < 6 && (
+                  <label className="text-xs text-primary font-medium flex items-center gap-1 cursor-pointer">
+                    <Plus className="w-3 h-3" /> Adicionar foto
+                    <input type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, (base64) => setGallery([...gallery, base64]))} />
+                  </label>
+                )}
               </div>
               <div className="grid grid-cols-3 gap-2">
-                {[
-                  "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=200&h=200&fit=crop&auto=format",
-                  "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=200&h=200&fit=crop&auto=format",
-                  "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=200&h=200&fit=crop&auto=format",
-                ].map((img, i) => (
+                {gallery.map((img, i) => (
                   <div key={i} className="aspect-square rounded-xl overflow-hidden relative group">
                     <img src={img} alt="" className="w-full h-full object-cover" />
-                    <button className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => setGallery(gallery.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                       <X className="w-3 h-3" />
                     </button>
                   </div>
                 ))}
-                <div className="aspect-square rounded-xl border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary/40 transition-colors bg-muted/30">
-                  <Plus className="w-5 h-5 text-muted-foreground" />
-                </div>
+                {gallery.length < 6 && (
+                  <label className="aspect-square rounded-xl border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary/40 transition-colors bg-muted/30">
+                    <input type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, (base64) => setGallery([...gallery, base64]))} />
+                    <Plus className="w-5 h-5 text-muted-foreground" />
+                  </label>
+                )}
               </div>
             </div>
 
@@ -418,7 +473,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
                   { color: "#E87B4A", label: "Laranja" },
                   { color: "#3D3D3D", label: "Carvão" },
                 ].map(c => (
-                  <button key={c.color} title={c.label} className={`w-9 h-9 rounded-full border-3 hover:scale-110 transition-transform shadow-sm ${c.color === "#B8614A" ? "ring-2 ring-offset-2 ring-primary" : ""}`}
+                  <button key={c.color} onClick={() => setMainColor(c.color)} title={c.label} className={`w-9 h-9 rounded-full border-3 hover:scale-110 transition-transform shadow-sm ${c.color === mainColor ? "ring-2 ring-offset-2 ring-primary" : ""}`}
                     style={{ background: c.color, borderColor: "white", borderWidth: 3 }} />
                 ))}
               </div>
