@@ -16,21 +16,6 @@ export default function Login() {
     setLoading(true);
 
     try {
-      if (email === "admin@beautyos.com" || email === "admin@admin.com") {
-        localStorage.setItem("token", "mock-token-superadmin");
-        localStorage.setItem("role", "superadmin");
-        navigate("/superadmin");
-        return;
-      }
-
-      if (email === "salao@beautyos.com") {
-        localStorage.setItem("token", "mock-token-salao");
-        localStorage.setItem("salonSlug", "meusalao");
-        localStorage.setItem("role", "admin");
-        navigate("/admin");
-        return;
-      }
-
       const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -43,12 +28,10 @@ export default function Login() {
         throw new Error(data.error || "Erro ao fazer login");
       }
 
-      // Salva dados no local storage
       localStorage.setItem("token", data.token);
+      localStorage.setItem("role", data.user.role);
       if (data.user.salonSlug) localStorage.setItem("salonSlug", data.user.salonSlug);
-      if (data.user.role) localStorage.setItem("role", data.user.role);
 
-      // Redireciona baseado na permissão
       if (data.user.role === "superadmin") {
         navigate("/superadmin");
       } else {
@@ -57,7 +40,7 @@ export default function Login() {
 
     } catch (err: any) {
       if (err.message === "Failed to fetch") {
-        setError("Erro de conexão. O servidor backend está rodando? Use admin@beautyos.com para testes.");
+        setError("Erro de conexão com o servidor. Verifique se o backend está rodando.");
       } else {
         setError(err.message);
       }

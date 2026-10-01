@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Store, Building2, CreditCard, Package, Users, HeadphonesIcon,
   Settings, TrendingUp, ArrowUpRight, ArrowDownRight, Bell, ChevronDown, MoreHorizontal,
@@ -1329,11 +1330,116 @@ function ComunicacaoView() {
   );
 }
 
+const auditLogs = [
+  { id: "evt-001", action: "LOGIN", user: "Admin beautyOS", resource: "Autenticação", detail: "Login realizado com sucesso", time: "Agora", level: "info" },
+  { id: "evt-002", action: "BLOCK_SALON", user: "Admin beautyOS", resource: "Beauty Club", detail: "Salão bloqueado por inadimplência", time: "5 min", level: "warning" },
+  { id: "evt-003", action: "PLAN_UPDATE", user: "Admin beautyOS", resource: "Plano Premium", detail: "Preço alterado de R$249 para R$299", time: "1h", level: "info" },
+  { id: "evt-004", action: "KYC_APPROVED", user: "Admin beautyOS", resource: "Studio Beauty Prime", detail: "Compliance aprovado e assinatura ativada", time: "2h", level: "success" },
+  { id: "evt-005", action: "USER_CREATED", user: "Admin beautyOS", resource: "carlos@beautyos.app", detail: "Novo usuário de suporte criado (N1)", time: "3h", level: "info" },
+  { id: "evt-006", action: "SETTINGS_UPDATE", user: "Admin beautyOS", resource: "Configurações", detail: "Trial alterado de 7 para 14 dias", time: "1d", level: "info" },
+  { id: "evt-007", action: "LOGIN_FAILED", user: "unknown@email.com", resource: "Autenticação", detail: "Tentativa de login inválida (3x)", time: "1d", level: "danger" },
+];
+
+const auditLevelConfig: Record<string, { label: string; variant: "success" | "warning" | "danger" | "info" | "outline" }> = {
+  info: { label: "Info", variant: "info" },
+  warning: { label: "Aviso", variant: "warning" },
+  success: { label: "Sucesso", variant: "success" },
+  danger: { label: "Alerta", variant: "danger" },
+};
+
+function AuditoriaView() {
+  const [filter, setFilter] = useState("Todos");
+  const [search, setSearch] = useState("");
+
+  const dataToUse = auditLogs.filter(log => {
+    const matchFilter = filter === "Todos" || log.level === filter.toLowerCase();
+    const matchSearch = !search || log.action.includes(search.toUpperCase()) || log.resource.toLowerCase().includes(search.toLowerCase()) || log.detail.toLowerCase().includes(search.toLowerCase());
+    return matchFilter && matchSearch;
+  });
+
+  return (
+    <div className="p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-serif text-2xl font-medium">Logs de Auditoria</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">Registro de todas as ações administrativas na plataforma</p>
+        </div>
+        <Button variant="outline" size="sm"><Download className="w-4 h-4 mr-2" /> Exportar Logs (CSV)</Button>
+      </div>
+
+      <div className="grid grid-cols-4 gap-4">
+        <StatCard label="Total de eventos" value={auditLogs.length.toString()} icon={Shield} color="primary" />
+        <StatCard label="Alertas de segurança" value={auditLogs.filter(l => l.level === "danger").length.toString()} icon={AlertCircle} color="rose" />
+        <StatCard label="Aprovações KYC" value={auditLogs.filter(l => l.action === "KYC_APPROVED").length.toString()} icon={CheckCircle} color="emerald" />
+        <StatCard label="Logins falhos" value={auditLogs.filter(l => l.action === "LOGIN_FAILED").length.toString()} icon={XCircle} color="amber" />
+      </div>
+
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 bg-card border border-border rounded-lg px-3 h-9 text-sm text-muted-foreground flex-1 max-w-sm">
+          <Search className="w-4 h-4 shrink-0" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar evento, recurso..." className="bg-transparent outline-none placeholder:text-muted-foreground w-full" />
+        </div>
+        <div className="flex gap-2">
+          {["Todos", "Info", "Success", "Warning", "Danger"].map(f => (
+            <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${filter === f ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"}`}>
+              {f === "Success" ? "Sucesso" : f === "Warning" ? "Aviso" : f === "Danger" ? "Alerta" : f}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-card border border-border rounded-2xl overflow-hidden">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-border bg-muted/40">
+              {["ID", "Ação", "Usuário", "Recurso", "Detalhe", "Nível", "Tempo"].map(h => (
+                <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {dataToUse.map(log => (
+              <tr key={log.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
+                <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{log.id}</td>
+                <td className="px-4 py-3 font-mono text-xs font-semibold text-foreground">{log.action}</td>
+                <td className="px-4 py-3 text-sm text-muted-foreground">{log.user}</td>
+                <td className="px-4 py-3 text-sm font-medium">{log.resource}</td>
+                <td className="px-4 py-3 text-sm text-muted-foreground max-w-xs truncate">{log.detail}</td>
+                <td className="px-4 py-3">
+                  <Badge variant={auditLevelConfig[log.level]?.variant || "outline"}>
+                    {auditLevelConfig[log.level]?.label || log.level}
+                  </Badge>
+                </td>
+                <td className="px-4 py-3 text-sm text-muted-foreground">{log.time}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {dataToUse.length === 0 && (
+          <div className="py-12 text-center text-muted-foreground text-sm">Nenhum evento encontrado.</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Helper: decode JWT payload without external lib
+function decodeToken(token: string): Record<string, any> | null {
+  try {
+    const payload = token.split('.')[1];
+    return JSON.parse(atob(payload));
+  } catch {
+    return null;
+  }
+}
+
 export default function SuperAdmin() {
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState("overview");
   const [overviewData, setOverviewData] = useState<any>(null);
   const [salonsData, setSalonsData] = useState<any[]>([]);
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains("dark"));
+  const [adminName, setAdminName] = useState("Admin beautyOS");
 
   const toggleDarkMode = () => {
     if (isDark) {
@@ -1346,22 +1452,36 @@ export default function SuperAdmin() {
   };
 
   useEffect(() => {
+    // ── Auth guard ──────────────────────────────────────
     const token = localStorage.getItem('token');
-    
-    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/superadmin/overview`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
-      .then(res => res.json())
-      .then(data => setOverviewData(data))
-      .catch(console.error);
+    const role  = localStorage.getItem('role');
 
-    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/superadmin/salons`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
+    if (!token || role !== 'superadmin') {
+      navigate('/login', { replace: true });
+      return;
+    }
+
+    // Decode name from JWT
+    const decoded = decodeToken(token);
+    if (decoded?.name) setAdminName(decoded.name);
+
+    // ── Data fetching ────────────────────────────────────
+    const headers = { 'Authorization': `Bearer ${token}` };
+    const api = import.meta.env.VITE_API_URL || 'http://localhost:3050';
+
+    fetch(`${api}/api/superadmin/overview`, { headers })
+      .then(res => { if (!res.ok) throw new Error('Unauthorized'); return res.json(); })
+      .then(data => setOverviewData(data))
+      .catch(err => {
+        if (err.message === 'Unauthorized') { navigate('/login', { replace: true }); }
+        else { setOverviewData({ error: err.message }); }
+      });
+
+    fetch(`${api}/api/superadmin/salons`, { headers })
       .then(res => res.json())
-      .then(data => setSalonsData(data))
+      .then(data => setSalonsData(Array.isArray(data) ? data : []))
       .catch(console.error);
-  }, []);
+  }, [navigate]);
 
   const renderContent = () => {
     switch (activeSection) {
@@ -1413,9 +1533,9 @@ export default function SuperAdmin() {
 
         <div className="p-4 border-t border-white/10">
           <div className="flex items-center gap-2">
-            <Avatar name="Admin beautyOS" size="sm" className="shrink-0" />
+            <Avatar name={adminName} size="sm" className="shrink-0" />
             <div>
-              <div className="text-white text-xs font-medium">Admin beautyOS</div>
+              <div className="text-white text-xs font-medium">{adminName}</div>
               <div className="text-white/40 text-xs">Super Administrador</div>
             </div>
           </div>
@@ -1436,11 +1556,13 @@ export default function SuperAdmin() {
               <Bell className="w-4 h-4 text-muted-foreground" />
               <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
             </button>
-            <Avatar name="Admin beautyOS" size="sm" />
+            <Avatar name={adminName} size="sm" />
             <button 
               onClick={() => {
                 localStorage.removeItem('token');
-                window.location.href = '/login';
+                localStorage.removeItem('role');
+                localStorage.removeItem('salonSlug');
+                navigate('/login', { replace: true });
               }}
               className="p-2 rounded-lg hover:bg-red-50 text-red-500 flex items-center transition-colors ml-2"
               title="Sair da conta"
