@@ -43,18 +43,7 @@ const testimonials = [
 export default function Marketing() {
   const navigate = useNavigate();
   const [mobileMenu, setMobileMenu] = useState(false);
-  const [plansList, setPlansList] = useState<any[]>(plans);
-
-  useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/public/plans`)
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.length > 0) {
-          setPlansList(data);
-        }
-      })
-      .catch(console.error);
-  }, []);
+  const plansList = plans;
 
   return (
     <div className="min-h-full bg-background font-sans selection:bg-primary/20 selection:text-primary">
@@ -380,7 +369,7 @@ export default function Marketing() {
               </div>
               <span className="font-serif text-lg text-foreground font-medium">beautyOS</span>
             </div>
-            <p className="text-sm text-muted-foreground">© 2024 beautyOS Tecnologia. Todos os direitos reservados.</p>
+            <p className="text-sm text-muted-foreground">© 2026 Geevheith software solutions. Todos os direitos reservados.</p>
           </div>
           <div className="flex gap-6 text-sm font-medium text-muted-foreground">
             <a href="#" className="hover:text-primary transition-colors">Termos de Uso</a>
