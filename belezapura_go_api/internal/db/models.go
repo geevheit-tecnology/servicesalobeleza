@@ -40,6 +40,12 @@ type Salon struct {
 	Slug          string         `gorm:"uniqueIndex;not null" json:"slug"`
 	Name          string         `gorm:"not null" json:"name"`
 	Document      *string        `json:"document"`
+	PixKey        *string        `json:"pixKey"`
+	Logo          *string        `gorm:"type:text" json:"logo"`
+	Cover         *string        `gorm:"type:text" json:"cover"`
+	Gallery       string         `gorm:"type:text" json:"gallery"`
+	MainColor     *string        `json:"mainColor"`
+	ScheduleRaw   string         `gorm:"type:text" json:"scheduleRaw"`
 	Users         []User         `gorm:"foreignKey:SalonID" json:"users,omitempty"`
 	Clients       []Client       `gorm:"foreignKey:SalonID" json:"clients,omitempty"`
 	Professionals []Professional `gorm:"foreignKey:SalonID" json:"professionals,omitempty"`

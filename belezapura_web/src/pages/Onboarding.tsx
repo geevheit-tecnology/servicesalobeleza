@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Store, Image, Scissors, UserCheck, Clock, CreditCard, Globe,
-  Check, ArrowRight, ArrowLeft, Sparkles, Upload, Plus, X, ChevronRight
+  Check, ArrowRight, ArrowLeft, Sparkles, Upload, Plus, X, ChevronRight, Lock
 } from "lucide-react";
 import { Button, Badge, Avatar } from "@/components/ui";
 
@@ -13,6 +14,7 @@ const STEPS = [
   { id: 5, icon: Clock, label: "Horários", sub: "Quando você atende" },
   { id: 6, icon: CreditCard, label: "PIX", sub: "Receba online" },
   { id: 7, icon: Globe, label: "Publicar", sub: "Sua página no ar" },
+  { id: 8, icon: Lock, label: "Assinatura", sub: "Ativar plano" },
 ];
 
 const serviceCategories = ["Cabelo", "Unhas", "Massagem", "Estética", "Maquiagem", "Sobrancelhas", "Bronzeamento", "Outros"];
@@ -91,6 +93,9 @@ const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, callback: (ba
 };
 
 export default function Onboarding({ onFinish }: { onFinish: () => void }) {
+  const [searchParams] = useSearchParams();
+  const planId = searchParams.get("planId");
+
   const [step, setStep] = useState(1);
   const [salonName, setSalonName] = useState("Meu Salão");
   const [email, setEmail] = useState("");
@@ -161,7 +166,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
   };
 
   const next = async () => {
-    if (step < 7) {
+    if (step < 8) {
       setStep(s => s + 1);
     } else {
       setLoading(true);
@@ -177,7 +182,8 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
           logo,
           cover,
           gallery,
-          mainColor
+          mainColor,
+          planId
         };
 
         const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/public/onboarding`, {
@@ -697,6 +703,41 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
           </div>
         )}
 
+        {/* Step 8: Assinatura */}
+        {step === 8 && (
+          <div className="space-y-6">
+            <div className="text-center mb-6">
+              <h3 className="font-serif text-2xl font-medium">Assine e comece a faturar</h3>
+              <p className="text-muted-foreground text-sm">Falta pouco para liberar seu painel completo.</p>
+            </div>
+            <div className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-2xl p-6">
+              <div className="flex justify-between items-center mb-4">
+                <span className="font-semibold text-lg text-primary">Plano Escolhido</span>
+                <span className="font-serif text-2xl font-medium text-foreground">
+                  {planId === '2' ? 'R$ 97/mês' : planId === '3' ? 'R$ 197/mês' : 'Básico'}
+                </span>
+              </div>
+              <ul className="space-y-2 mb-6">
+                <li className="flex items-center gap-2 text-sm"><Check className="w-4 h-4 text-emerald-500" /> Agenda online 24h (Página web)</li>
+                <li className="flex items-center gap-2 text-sm"><Check className="w-4 h-4 text-emerald-500" /> Cobrança via PIX (Sinal)</li>
+                <li className="flex items-center gap-2 text-sm"><Check className="w-4 h-4 text-emerald-500" /> Painel de gestão inteligente</li>
+              </ul>
+              
+              <div className="bg-card rounded-xl p-4 border border-border">
+                <div className="text-sm font-medium mb-3">Cartão de Crédito</div>
+                <div className="mt-4 space-y-3">
+                  <input placeholder="0000 0000 0000 0000" className="w-full h-11 rounded-lg border border-border px-3 text-sm bg-background" />
+                  <div className="flex gap-3">
+                    <input placeholder="MM/AA" className="flex-1 h-11 rounded-lg border border-border px-3 text-sm bg-background" />
+                    <input placeholder="CVC" className="flex-1 h-11 rounded-lg border border-border px-3 text-sm bg-background" />
+                  </div>
+                  <input placeholder="Nome impresso no cartão" className="w-full h-11 rounded-lg border border-border px-3 text-sm bg-background" />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Navigation */}
         <div className="flex items-center justify-between mt-8 pt-6 border-t border-border">
           <Button variant="ghost" onClick={back} disabled={step === 1}>
@@ -705,8 +746,8 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">{step} / {STEPS.length}</span>
             <Button onClick={next} disabled={loading}>
-              {step === 7 ? (
-                <><Sparkles className="w-4 h-4" /> {loading ? "Publicando..." : "Publicar meu salão"}</>
+              {step === 8 ? (
+                <><Sparkles className="w-4 h-4" /> {loading ? "Processando..." : "Pagar e Publicar"}</>
               ) : (
                 <>Continuar <ArrowRight className="w-4 h-4" /></>
               )}
