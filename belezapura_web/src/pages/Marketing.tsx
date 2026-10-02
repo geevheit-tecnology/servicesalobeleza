@@ -29,9 +29,9 @@ const faqs = [
 ];
 
 const plans = [
-  { name: "Básico", price: "R$ 49,90", per: "/mês", highlight: false, features: ["1 profissional", "Agendamento Automático 24h", "Cobrança de Sinal (PIX)", "Página do salão (Link na Bio)", "Até 100 agendamentos/mês"] },
-  { name: "Profissional", price: "R$ 97,00", per: "/mês", highlight: true, features: ["Até 5 profissionais", "Agendamentos Ilimitados", "Cálculo de Comissões", "Controle Financeiro", "Relatórios de Lucro", "Suporte Prioritário"] },
-  { name: "Empresarial", price: "R$ 197,00", per: "/mês", highlight: false, features: ["Profissionais Ilimitados", "Múltiplas unidades (até 3)", "Tudo do plano Profissional", "Gestão de Estoque", "Acesso para Recepcionista"] },
+  { name: "Básico", price: "R$ 49,90", per: "/mês", highlight: false, features: ["1 profissional", "Página do salão (Link na Bio)", "Agendamento Automático 24h", "Cobrança de Sinal (PIX)", "Até 100 agendamentos/mês"] },
+  { name: "Profissional", price: "R$ 97,00", per: "/mês", highlight: true, features: ["Tudo do plano Básico, mais:", "Até 5 profissionais", "Agendamentos Ilimitados", "Cálculo de Comissões", "Controle Financeiro", "Suporte VIP"] },
+  { name: "Premium", price: "R$ 197,00", per: "/mês", highlight: false, features: ["Tudo do plano Profissional, mais:", "Profissionais Ilimitados", "Múltiplas unidades (até 3)", "Gestão de Estoque", "Acesso para Recepcionista", "Integração via API"] },
 ];
 
 const testimonials = [
