@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sparkles, Calendar, CreditCard, BarChart3, Users, Store, Check, ArrowRight, Menu, X, ChevronRight, ShieldCheck, Smartphone, Zap, Clock, TrendingUp } from "lucide-react";
+import { Sparkles, Calendar, CreditCard, BarChart3, Users, Store, Check, ArrowRight, Menu, X, ChevronRight, ShieldCheck, Smartphone, Zap, Clock, TrendingUp, HelpCircle } from "lucide-react";
 import { Button, Badge } from "@/components/ui";
 
 const HERO_IMG = "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=1400&h=700&fit=crop&auto=format";
