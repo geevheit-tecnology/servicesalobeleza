@@ -15,8 +15,18 @@ class PlanosView extends StatelessWidget {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Gestão de Planos', style: TextStyle(fontFamily: 'Fraunces', fontSize: 32, fontWeight: FontWeight.w500)),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Quem usar, não vai largar mais.', style: TextStyle(fontFamily: 'Fraunces', fontSize: 32, fontWeight: FontWeight.w500)),
+                    const SizedBox(height: 8),
+                    const Text('Chega de perder clientes, aumente sua gestão financeira.', style: TextStyle(color: AppTheme.mutedForeground, fontSize: 16)),
+                  ],
+                ),
+              ),
               AppButton(label: 'Criar Plano', icon: LucideIcons.plus, onPressed: () {}),
             ],
           ),
@@ -37,7 +47,7 @@ class PlanosView extends StatelessWidget {
   }
 }
 
-class _PlanCard extends StatelessWidget {
+class _PlanCard extends StatefulWidget {
   final String name;
   final String price;
   final List<String> features;
@@ -47,46 +57,70 @@ class _PlanCard extends StatelessWidget {
   const _PlanCard({required this.name, required this.price, required this.features, required this.active, this.featured = false});
 
   @override
+  State<_PlanCard> createState() => _PlanCardState();
+}
+
+class _PlanCardState extends State<_PlanCard> {
+  bool _isHovered = false;
+
+  @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(32),
-        decoration: BoxDecoration(
-          color: featured ? AppTheme.primary : AppTheme.card,
-          border: Border.all(color: featured ? AppTheme.primary : AppTheme.border),
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: featured ? [BoxShadow(color: AppTheme.primary.withValues(alpha: 0.2), blurRadius: 20, offset: const Offset(0, 10))] : null,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(name, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 18, color: featured ? Colors.white : AppTheme.foreground)),
-            const SizedBox(height: 12),
-            Text(price, style: TextStyle(fontFamily: 'Fraunces', fontSize: 36, fontWeight: FontWeight.w500, color: featured ? Colors.white : AppTheme.foreground)),
-            const SizedBox(height: 24),
-            ...features.map((f) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Row(
-                children: [
-                  Icon(LucideIcons.check, size: 16, color: featured ? Colors.white : AppTheme.primary),
-                  const SizedBox(width: 8),
-                  Text(f, style: TextStyle(color: featured ? Colors.white.withValues(alpha: 0.9) : AppTheme.mutedForeground)),
-                ],
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _isHovered = true),
+        onExit: (_) => setState(() => _isHovered = false),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          transform: Matrix4.diagonal3Values(_isHovered ? 1.03 : 1.0, _isHovered ? 1.03 : 1.0, 1.0),
+          transformAlignment: FractionalOffset.center,
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: widget.featured ? AppTheme.primary : AppTheme.card,
+            border: Border.all(color: widget.featured ? AppTheme.primary : AppTheme.border),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: widget.featured || _isHovered
+                ? [
+                    BoxShadow(
+                      color: (widget.featured ? AppTheme.primary : Colors.black).withValues(alpha: _isHovered ? 0.3 : 0.2),
+                      blurRadius: _isHovered ? 30 : 20,
+                      offset: Offset(0, _isHovered ? 15 : 10),
+                    )
+                  ]
+                : null,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(widget.name, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 18, color: widget.featured ? Colors.white : AppTheme.foreground)),
+              const SizedBox(height: 12),
+              Text(widget.price, style: TextStyle(fontFamily: 'Fraunces', fontSize: 36, fontWeight: FontWeight.w500, color: widget.featured ? Colors.white : AppTheme.foreground)),
+              const SizedBox(height: 24),
+              ...widget.features.map((f) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  children: [
+                    Icon(LucideIcons.check, size: 16, color: widget.featured ? Colors.white : AppTheme.primary),
+                    const SizedBox(width: 8),
+                    Text(f, style: TextStyle(color: widget.featured ? Colors.white.withValues(alpha: 0.9) : AppTheme.mutedForeground)),
+                  ],
+                ),
+              )),
+              const SizedBox(height: 32),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(color: widget.featured ? Colors.white.withValues(alpha: 0.1) : AppTheme.secondary, borderRadius: BorderRadius.circular(12)),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Assinantes ativos', style: TextStyle(fontSize: 12, color: widget.featured ? Colors.white.withValues(alpha: 0.9) : AppTheme.mutedForeground)),
+                    Text(widget.active.toString(), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: widget.featured ? Colors.white : AppTheme.foreground)),
+                  ],
+                ),
               ),
-            )),
-            const SizedBox(height: 32),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: featured ? Colors.white.withValues(alpha: 0.1) : AppTheme.secondary, borderRadius: BorderRadius.circular(12)),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Assinantes ativos', style: TextStyle(fontSize: 12, color: featured ? Colors.white.withValues(alpha: 0.9) : AppTheme.mutedForeground)),
-                  Text(active.toString(), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: featured ? Colors.white : AppTheme.foreground)),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
