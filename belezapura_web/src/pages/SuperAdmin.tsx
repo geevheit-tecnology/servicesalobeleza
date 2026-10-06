@@ -282,15 +282,19 @@ function SaloesView({ salonsData }: { salonsData: any }) {
     return <div className="p-6 text-red-500 font-medium">Erro ao carregar salões: {salonsData.error}. Verifique o banco de dados.</div>;
   }
   
-  const handleAction = (salonName: string, action: string) => {
+  const handleAction = async (salon: any, action: string) => {
     setOpenMenu(null);
     if (action === 'block') {
-      const confirm = window.confirm(`Tem certeza que deseja bloquear o salão ${salonName}?`);
+      const confirm = window.confirm(`Tem certeza que deseja bloquear o salão ${salon.name}?`);
       if (confirm) {
-        setLocalSalons(prev => prev.map(s => s.name === salonName ? { ...s, status: 'blocked' } : s));
+        await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/superadmin/salons/${salon.id}/block`, {
+          method: 'PUT',
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        setLocalSalons(prev => prev.map(s => s.id === salon.id ? { ...s, status: 'BLOCKED' } : s));
       }
     } else if (action === 'history' || action === 'edit') {
-      setDrawerInfo({ salonName, type: action as 'history' | 'edit' });
+      setDrawerInfo({ salonName: salon.name, type: action as 'history' | 'edit' });
     }
   };
 
@@ -357,9 +361,9 @@ function SaloesView({ salonsData }: { salonsData: any }) {
                   <button onClick={() => setOpenMenu(openMenu === s.name ? null : s.name)} className="p-1.5 rounded-lg hover:bg-muted"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
                   {openMenu === s.name && (
                     <div className="absolute right-8 top-10 w-40 bg-white border border-gray-200 rounded-xl shadow-lg py-1 z-50">
-                      <button onClick={() => handleAction(s.name, 'history')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700">Ver histórico</button>
-                      <button onClick={() => handleAction(s.name, 'edit')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700">Editar dados</button>
-                      <button onClick={() => handleAction(s.name, 'block')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-red-600">Bloquear</button>
+                      <button onClick={() => handleAction(s, 'history')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700">Ver histórico</button>
+                      <button onClick={() => handleAction(s, 'edit')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700">Editar dados</button>
+                      <button onClick={() => handleAction(s, 'block')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-red-600">Bloquear</button>
                     </div>
                   )}
                 </td>
@@ -437,31 +441,47 @@ function SaloesView({ salonsData }: { salonsData: any }) {
 }
 
 function AssinaturasView() {
-  const [localSubs, setLocalSubs] = useState<any[]>(subscriptions);
+  const [localSubs, setLocalSubs] = useState<any[]>([]);
   const [filter, setFilter] = useState("Todos");
   const [openMenu, setOpenMenu] = useState<string | null>(null);
-  const [kycDrawer, setKycDrawer] = useState<string | null>(null);
+  const [kycDrawer, setKycDrawer] = useState<any | null>(null);
 
-  const handleAction = (salonName: string, action: string) => {
+  const fetchSubs = () => {
+    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/superadmin/subscriptions`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    }).then(res => res.json()).then(setLocalSubs).catch(console.error);
+  };
+
+  useEffect(() => { fetchSubs(); }, []);
+
+  const updateStatus = async (id: string, status: string) => {
+    await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/superadmin/subscriptions/${id}/status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      body: JSON.stringify({ status })
+    });
+    fetchSubs();
+  };
+
+  const handleAction = (sub: any, action: string) => {
     setOpenMenu(null);
     if (action === 'analyze') {
-      setKycDrawer(salonName);
+      setKycDrawer(sub);
     } else if (action === 'cancel') {
-      const confirm = window.confirm(`Deseja cancelar a assinatura de ${salonName}?`);
-      if (confirm) {
-        setLocalSubs(prev => prev.map(s => s.salon === salonName ? { ...s, status: 'cancelled' } : s));
+      if (window.confirm(`Deseja cancelar a assinatura de ${sub.salon}?`)) {
+        updateStatus(sub.id, 'CANCELED');
       }
     }
   };
 
   const handleApproveKYC = () => {
-    setLocalSubs(prev => prev.map(s => s.salon === kycDrawer ? { ...s, status: 'active', next: 'Daqui a 30 dias' } : s));
+    updateStatus(kycDrawer.id, 'ACTIVE');
     setKycDrawer(null);
   };
 
   const handleRejectKYC = () => {
     if(window.confirm("Rejeitar este salão permanentemente?")) {
-      setLocalSubs(prev => prev.map(s => s.salon === kycDrawer ? { ...s, status: 'cancelled' } : s));
+      updateStatus(kycDrawer.id, 'CANCELED');
       setKycDrawer(null);
     }
   };
@@ -527,10 +547,10 @@ function AssinaturasView() {
                   <button onClick={() => setOpenMenu(openMenu === s.salon ? null : s.salon)} className="p-1.5 rounded-lg hover:bg-muted"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
                   {openMenu === s.salon && (
                     <div className="absolute right-8 top-10 w-48 bg-card border border-border rounded-xl shadow-lg py-1 z-50">
-                      {s.status === 'pending' && (
-                        <button onClick={() => handleAction(s.salon, 'analyze')} className="w-full text-left px-4 py-2 text-sm hover:bg-muted text-emerald-500 font-medium">Validar Compliance (KYC)</button>
+                      {s.status === 'TRIAL' && (
+                        <button onClick={() => handleAction(s, 'analyze')} className="w-full text-left px-4 py-2 text-sm hover:bg-muted text-emerald-500 font-medium">Validar Compliance (KYC)</button>
                       )}
-                      <button onClick={() => handleAction(s.salon, 'cancel')} className="w-full text-left px-4 py-2 text-sm hover:bg-muted text-red-500">Cancelar assinatura</button>
+                      <button onClick={() => handleAction(s, 'cancel')} className="w-full text-left px-4 py-2 text-sm hover:bg-muted text-red-500">Cancelar assinatura</button>
                     </div>
                   )}
                 </td>
@@ -550,9 +570,9 @@ function AssinaturasView() {
             
             <div className="p-6 flex-1 overflow-y-auto space-y-6">
               <div className="flex items-center gap-4 border-b border-border pb-6">
-                <Avatar name={kycDrawer} size="lg" />
+                <Avatar name={kycDrawer.salon} size="lg" />
                 <div>
-                  <h4 className="text-xl font-medium">{kycDrawer}</h4>
+                  <h4 className="text-xl font-medium">{kycDrawer.salon}</h4>
                   <Badge variant="warning" className="mt-1">Aguardando Aprovação</Badge>
                 </div>
               </div>
@@ -562,8 +582,8 @@ function AssinaturasView() {
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-muted/30 p-3 rounded-lg border border-border">
-                    <span className="block text-xs text-muted-foreground mb-1">CNPJ</span>
-                    <span className="font-mono text-sm">45.293.109/0001-44</span>
+                    <span className="block text-xs text-muted-foreground mb-1">CNPJ / CPF</span>
+                    <span className="font-mono text-sm">{kycDrawer.document || "Não informado"}</span>
                   </div>
                   <div className="bg-muted/30 p-3 rounded-lg border border-border">
                     <span className="block text-xs text-muted-foreground mb-1">Status Receita</span>
@@ -573,7 +593,7 @@ function AssinaturasView() {
 
                 <div className="bg-muted/30 p-3 rounded-lg border border-border">
                   <span className="block text-xs text-muted-foreground mb-1">Razão Social</span>
-                  <span className="text-sm font-medium">BELEZA PURA ESTETICA LTDA</span>
+                  <span className="text-sm font-medium">{kycDrawer.salon} LTDA</span>
                 </div>
               </div>
 

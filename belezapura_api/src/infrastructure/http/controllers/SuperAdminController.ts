@@ -75,6 +75,25 @@ export class SuperAdminController {
     }
   }
 
+  async blockSalon(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const salon = await prisma.salon.findUnique({
+        where: { id },
+        include: { subscriptions: { orderBy: { createdAt: 'desc' }, take: 1 } }
+      });
+      if (salon && salon.subscriptions.length > 0) {
+        await prisma.subscription.update({
+          where: { id: salon.subscriptions[0].id },
+          data: { status: 'BLOCKED' }
+        });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to block salon' });
+    }
+  }
+
   async getSettings(req: Request, res: Response) {
     try {
       let settings = await prisma.systemSettings.findFirst();
@@ -146,6 +165,44 @@ export class SuperAdminController {
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Failed to delete plan' });
+    }
+  }
+
+  async getSubscriptions(req: Request, res: Response) {
+    try {
+      const subs = await prisma.subscription.findMany({
+        include: { salon: true, plan: true },
+        orderBy: { createdAt: 'desc' }
+      });
+      const formatted = subs.map(s => ({
+        id: s.id,
+        salon: s.salon.name,
+        salonId: s.salonId,
+        document: s.salon.document || 'Não informado',
+        plan: s.plan?.name || 'Sem plano',
+        value: `R$ ${s.price}`,
+        status: s.status,
+        next: s.status === 'ACTIVE' ? 'Próximo mês' : '—',
+      }));
+      res.json(formatted);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to fetch subscriptions' });
+    }
+  }
+
+  async updateSubscriptionStatus(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      const sub = await prisma.subscription.update({
+        where: { id },
+        data: { status }
+      });
+      res.json(sub);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to update subscription status' });
     }
   }
 

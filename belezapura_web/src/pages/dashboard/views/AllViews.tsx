@@ -456,31 +456,99 @@ function ClientsView() {
   const [data, setData] = useState<any[]>([]);
   const [selected, setSelected] = useState<any | null>(null);
   const [showCampaign, setShowCampaign] = useState(false);
+  const [showForm, setShowForm] = useState(false);
 
-  useEffect(() => {
+  const [formData, setFormData] = useState({ id: "", name: "", phone: "", tags: "" });
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const loadClients = () => {
     const token = localStorage.getItem('token');
     fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/salon/clients`, { headers: { 'Authorization': `Bearer ${token}` } })
       .then(r => r.json())
       .then(json => {
-        const formatted = json.map((c: any) => ({
-          name: c.name,
-          phone: c.phone || "Não informado",
-          lastVisit: c.lastVisit ? new Date(c.lastVisit).toLocaleDateString('pt-BR') : "Nunca",
-          visits: c.visits || 0,
-          total: `R$ ${c.totalSpent || "0"}`,
-          tags: c.tags || [],
-          pontos: c.pontos || Math.floor((c.totalSpent || 0) / 10) + 150
-        }));
-        setData(formatted);
+        if(Array.isArray(json)) {
+          const formatted = json.map((c: any) => ({
+            id: c.id,
+            name: c.name,
+            phone: c.phone || "",
+            lastVisit: c.lastVisit ? new Date(c.lastVisit).toLocaleDateString('pt-BR') : "Nunca",
+            visits: c.visits || 0,
+            total: `R$ ${c.totalSpent || "0"}`,
+            tags: c.tags || [],
+            pontos: c.pontos || Math.floor((c.totalSpent || 0) / 10) + 150
+          }));
+          setData(formatted);
+        }
       })
-      .catch(() => {
-        // Fallback to local data
-        setData(clients.map(c => ({
-          ...c,
-          pontos: Math.floor(parseInt(c.total.replace(/\D/g, "")) / 10) + 150
-        })));
+      .catch(console.error);
+  };
+
+  useEffect(() => { loadClients(); }, []);
+
+  const handleSave = async () => {
+    if(!formData.name.trim()) { setErrorMsg("Nome é obrigatório."); return; }
+    setLoading(true);
+    setErrorMsg("");
+    const token = localStorage.getItem('token');
+    const isEdit = !!formData.id;
+    const url = `${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/salon/clients${isEdit ? `/${formData.id}` : ''}`;
+    
+    try {
+      const res = await fetch(url, {
+        method: isEdit ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({
+          name: formData.name,
+          phone: formData.phone,
+          tags: formData.tags ? formData.tags.split(',').map((t: string)=>t.trim()).filter(Boolean) : []
+        })
       });
-  }, []);
+      const d = await res.json();
+      if(!res.ok) throw new Error(d.error || "Erro ao salvar cliente");
+      
+      alert("Cliente salvo com sucesso!");
+      setShowForm(false);
+      loadClients();
+      if(isEdit && selected?.id === formData.id) setSelected(null);
+    } catch(e: any) {
+      setErrorMsg(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if(!confirm("Tem certeza que deseja excluir este cliente?")) return;
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/salon/clients/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if(!res.ok) {
+        const d = await res.json();
+        throw new Error(d.error || "Erro ao excluir cliente");
+      }
+      alert("Cliente excluído!");
+      if(selected?.id === id) setSelected(null);
+      loadClients();
+    } catch(e: any) {
+      alert(e.message);
+    }
+  };
+
+  const openNewForm = () => {
+    setFormData({ id: "", name: "", phone: "", tags: "" });
+    setErrorMsg("");
+    setShowForm(true);
+  };
+
+  const openEditForm = (client: any) => {
+    setFormData({ id: client.id, name: client.name, phone: client.phone === "Não informado" ? "" : client.phone, tags: client.tags.join(", ") });
+    setErrorMsg("");
+    setShowForm(true);
+  };
 
   return (
     <div className="p-6 space-y-4">
@@ -494,7 +562,7 @@ function ClientsView() {
             <MessageCircle className="w-4 h-4 mr-2 text-emerald-500" />
             Nova Campanha Zap
           </Button>
-          <Button size="sm"><Plus className="w-4 h-4 mr-2" /> Novo cliente</Button>
+          <Button size="sm" onClick={openNewForm}><Plus className="w-4 h-4 mr-2" /> Novo cliente</Button>
         </div>
       </div>
 
@@ -508,53 +576,87 @@ function ClientsView() {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 bg-card border border-border rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border bg-muted/40">
-                {["Cliente", "Telefone", "Último atend.", "Total gasto", "Pontos", ""].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {data.map((c: any) => (
-                <tr key={c.name} onClick={() => setSelected(c)} className={`border-b border-border last:border-0 hover:bg-muted/30 cursor-pointer transition-colors ${selected?.name === c.name ? 'bg-primary/5' : ''}`}>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <Avatar name={c.name} size="sm" />
-                      <div>
-                        <div className="text-sm font-medium">{c.name}</div>
-                        {c.tags.map((t: string) => <Badge key={t} variant="purple" className="text-[10px] mr-1 mt-0.5">{t}</Badge>)}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground">{c.phone}</td>
-                  <td className="px-4 py-3 text-sm">{c.lastVisit}</td>
-                  <td className="px-4 py-3 text-sm font-medium">{c.total}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1.5 text-sm font-semibold text-amber-500">
-                      <Star className="w-3.5 h-3.5 fill-amber-500" />
-                      {c.pontos}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <button className="p-1.5 rounded-lg hover:bg-muted"><ChevronRight className="w-4 h-4 text-muted-foreground" /></button>
-                  </td>
+        <div className="lg:col-span-2 space-y-4">
+          {showForm && (
+            <div className="bg-card border border-border rounded-2xl p-5 shadow-sm relative animate-in fade-in zoom-in-95">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold">{formData.id ? "Editar Cliente" : "Novo Cliente"}</h3>
+                <button onClick={() => setShowForm(false)} className="p-1 rounded hover:bg-muted"><X className="w-4 h-4 text-muted-foreground" /></button>
+              </div>
+              {errorMsg && <div className="text-red-500 text-sm mb-3 bg-red-50 p-2 rounded">{errorMsg}</div>}
+              <div className="grid sm:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1 block">Nome *</label>
+                  <input disabled={loading} value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full h-10 rounded-lg border border-border px-3 text-sm bg-background outline-none focus:border-primary" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1 block">Telefone / WhatsApp</label>
+                  <input disabled={loading} value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="(11) 99999-9999" className="w-full h-10 rounded-lg border border-border px-3 text-sm bg-background outline-none focus:border-primary" />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="text-xs font-medium text-muted-foreground mb-1 block">Tags (separadas por vírgula)</label>
+                  <input disabled={loading} value={formData.tags} onChange={e => setFormData({...formData, tags: e.target.value})} placeholder="VIP, Fiel, Noiva..." className="w-full h-10 rounded-lg border border-border px-3 text-sm bg-background outline-none focus:border-primary" />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" size="sm" onClick={() => setShowForm(false)}>Cancelar</Button>
+                <Button size="sm" onClick={handleSave} disabled={loading}>{loading ? "Salvando..." : "Salvar"}</Button>
+              </div>
+            </div>
+          )}
+          
+          <div className="bg-card border border-border rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border bg-muted/40">
+                  {["Cliente", "Telefone", "Último atend.", "Total gasto", "Pontos", ""].map(h => (
+                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">{h}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {data.map((c: any) => (
+                  <tr key={c.id} onClick={() => setSelected(c)} className={`border-b border-border last:border-0 hover:bg-muted/30 cursor-pointer transition-colors ${selected?.id === c.id ? 'bg-primary/5' : ''}`}>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <Avatar name={c.name} size="sm" />
+                        <div>
+                          <div className="text-sm font-medium">{c.name}</div>
+                          {c.tags.map((t: string) => <Badge key={t} variant="purple" className="text-[10px] mr-1 mt-0.5">{t}</Badge>)}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{c.phone || "Não informado"}</td>
+                    <td className="px-4 py-3 text-sm">{c.lastVisit}</td>
+                    <td className="px-4 py-3 text-sm font-medium">{c.total}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5 text-sm font-semibold text-amber-500">
+                        <Star className="w-3.5 h-3.5 fill-amber-500" />
+                        {c.pontos}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button className="p-1.5 rounded-lg hover:bg-muted"><ChevronRight className="w-4 h-4 text-muted-foreground" /></button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <div className="bg-card border border-border rounded-2xl shadow-sm transition-shadow">
           {selected ? (
             <div className="flex flex-col h-full">
-              <div className="p-5 border-b border-border text-center">
+              <div className="p-5 border-b border-border text-center relative">
+                <div className="absolute top-4 right-4 flex gap-1">
+                  <button onClick={() => openEditForm(selected)} className="p-2 bg-muted hover:bg-primary/10 hover:text-primary rounded-lg transition-colors" title="Editar"><Edit3 className="w-4 h-4" /></button>
+                  <button onClick={() => handleDelete(selected.id)} className="p-2 bg-muted hover:bg-red-100 text-red-500 rounded-lg transition-colors" title="Excluir"><Trash2 className="w-4 h-4" /></button>
+                </div>
                 <Avatar name={selected.name} size="xl" className="mx-auto mb-3" />
                 <h3 className="font-serif text-xl font-medium">{selected.name}</h3>
-                <div className="text-muted-foreground text-sm">{selected.phone}</div>
-                <div className="flex justify-center gap-2 mt-3">
+                <div className="text-muted-foreground text-sm">{selected.phone || "Sem telefone"}</div>
+                <div className="flex justify-center flex-wrap gap-2 mt-3">
                   {selected.tags.map((t: string) => <Badge key={t} variant="purple">{t}</Badge>)}
                 </div>
               </div>
@@ -922,10 +1024,29 @@ function PaginaSalaoView() {
           <div className="flex items-center gap-2 pt-2">
             <Button variant="outline" size="sm" className="flex-1" onClick={() => {
               const slug = localStorage.getItem('salonSlug') || 'beleza-pura-matriz';
-              navigator.clipboard.writeText(`http://localhost:8443/agendar/${slug}`);
-              alert("Link copiado para a área de transferência!");
+              const url = `${window.location.origin}/agendar/${slug}`;
+              if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(() => {
+                  alert("Link copiado: " + url);
+                }).catch(() => alert("Copie este link manualmente: " + url));
+              } else {
+                alert("Seu navegador não suporta cópia automática. Link: " + url);
+              }
             }}>Copiar link</Button>
-            <Button variant="outline" size="sm" className="flex-1">Compartilhar</Button>
+            <Button variant="outline" size="sm" className="flex-1" onClick={() => {
+              const slug = localStorage.getItem('salonSlug') || 'beleza-pura-matriz';
+              const url = `${window.location.origin}/agendar/${slug}`;
+              if (navigator.share) {
+                navigator.share({ title: 'Agende seu horário conosco!', url }).catch(console.error);
+              } else {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                  navigator.clipboard.writeText(url);
+                  alert("Link copiado para compartilhar!");
+                } else {
+                  alert("Compartilhe este link: " + url);
+                }
+              }
+            }}>Compartilhar</Button>
             <Button size="sm" className="flex-1">Publicar</Button>
           </div>
         </div>
@@ -978,6 +1099,8 @@ function ServicosView() {
   const [services, setServices] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [newSvc, setNewSvc] = useState({ name: "", duration: "", price: "" });
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -992,6 +1115,12 @@ function ServicosView() {
   }, []);
 
   const handleSave = async () => {
+    if (!newSvc.name.trim() || !newSvc.price || !newSvc.duration) {
+      setErrorMsg("Preencha nome, preço e duração.");
+      return;
+    }
+    setLoading(true);
+    setErrorMsg("");
     const token = localStorage.getItem('token');
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/services`, {
@@ -1000,10 +1129,36 @@ function ServicosView() {
         body: JSON.stringify(newSvc)
       });
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erro ao salvar serviço");
+
       setServices([...services, { ...data, cat: 'Serviço', pros: ['Geral'], status: 'active' }]);
       setShowForm(false);
       setNewSvc({ name: "", duration: "", price: "" });
-    } catch(e) { console.error(e) }
+      alert("Serviço salvo com sucesso!");
+    } catch(e: any) { 
+      setErrorMsg(e.message || "Erro de conexão ao salvar");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Tem certeza que deseja excluir este serviço?")) return;
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/services/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.error || "Erro ao excluir serviço");
+      }
+      setServices(services.filter(s => s.id !== id));
+      alert("Serviço excluído com sucesso!");
+    } catch(e: any) {
+      alert(e.message);
+    }
   };
 
   const cats = ["Todos", "Cabelo", "Unhas", "Massagem", "Estética", "Sobrancelhas", "Maquiagem"];
@@ -1023,16 +1178,17 @@ function ServicosView() {
             <h3 className="font-semibold text-sm">Novo serviço</h3>
             <button onClick={() => setShowForm(false)} className="p-1 rounded hover:bg-muted"><X className="w-4 h-4 text-muted-foreground" /></button>
           </div>
+          {errorMsg && <div className="text-red-500 text-sm mb-2">{errorMsg}</div>}
           <div className="grid sm:grid-cols-2 gap-3">
-            <input value={newSvc.name} onChange={e => setNewSvc({...newSvc, name: e.target.value})} placeholder="Nome do serviço" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
-            <select className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card appearance-none">
+            <input disabled={loading} value={newSvc.name} onChange={e => setNewSvc({...newSvc, name: e.target.value})} placeholder="Nome do serviço" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
+            <select disabled={loading} className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card appearance-none">
               {cats.slice(1).map(c => <option key={c}>{c}</option>)}
             </select>
           </div>
           <div className="grid grid-cols-3 gap-3">
-            <input value={newSvc.duration} onChange={e => setNewSvc({...newSvc, duration: e.target.value})} placeholder="Duração (min)" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
-            <input value={newSvc.price} onChange={e => setNewSvc({...newSvc, price: e.target.value})} placeholder="Preço (R$)" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
-            <Button size="sm" className="h-10" onClick={handleSave}>Salvar</Button>
+            <input disabled={loading} value={newSvc.duration} onChange={e => setNewSvc({...newSvc, duration: e.target.value})} placeholder="Duração (min)" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
+            <input disabled={loading} value={newSvc.price} onChange={e => setNewSvc({...newSvc, price: e.target.value})} placeholder="Preço (R$)" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
+            <Button size="sm" className="h-10" onClick={handleSave} disabled={loading}>{loading ? "..." : "Salvar"}</Button>
           </div>
         </div>
       )}
@@ -1060,9 +1216,9 @@ function ServicosView() {
               <tr key={s.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
                 <td className="px-4 py-3 font-medium text-sm">{s.name}</td>
                 <td className="px-4 py-3"><Badge variant="outline">{s.cat}</Badge></td>
-                <td className="px-4 py-3 text-sm text-muted-foreground">{s.duration}</td>
-                <td className="px-4 py-3 text-sm font-semibold text-primary">{s.price}</td>
-                <td className="px-4 py-3 text-sm text-muted-foreground">{s.pros.join(", ")}</td>
+                <td className="px-4 py-3 text-sm text-muted-foreground">{s.duration} min</td>
+                <td className="px-4 py-3 text-sm font-semibold text-primary">R$ {Number(s.price).toFixed(2).replace('.', ',')}</td>
+                <td className="px-4 py-3 text-sm text-muted-foreground">{s.pros?.join(", ") || "Geral"}</td>
                 <td className="px-4 py-3">
                   <button onClick={() => setServices(prev => prev.map(sv => sv.id === s.id ? { ...sv, status: sv.status === "active" ? "inactive" : "active" } : sv))}
                     className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${s.status === "active" ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100" : "bg-muted text-muted-foreground border-border hover:border-primary/30"}`}>
@@ -1072,7 +1228,7 @@ function ServicosView() {
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1">
                     <button className="p-1.5 rounded hover:bg-muted"><Edit3 className="w-3.5 h-3.5 text-muted-foreground" /></button>
-                    <button className="p-1.5 rounded hover:bg-muted"><Trash2 className="w-3.5 h-3.5 text-muted-foreground" /></button>
+                    <button onClick={() => handleDelete(s.id)} className="p-1.5 rounded hover:bg-red-100 text-red-500 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                   </div>
                 </td>
               </tr>
@@ -1093,6 +1249,8 @@ function ProfissionaisView() {
   const [tab, setTab] = useState<"agenda" | "faturamento" | "comissoes" | "avaliacoes">("agenda");
   const [showForm, setShowForm] = useState(false);
   const [newPro, setNewPro] = useState({ name: "", specialty: "", commission: "" });
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -1113,6 +1271,12 @@ function ProfissionaisView() {
   }, []);
 
   const handleSave = async () => {
+    if (!newPro.name.trim()) {
+      setErrorMsg("O nome do profissional é obrigatório.");
+      return;
+    }
+    setLoading(true);
+    setErrorMsg("");
     const token = localStorage.getItem('token');
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/professionals`, {
@@ -1121,10 +1285,37 @@ function ProfissionaisView() {
         body: JSON.stringify(newPro)
       });
       const resData = await res.json();
+      if (!res.ok) throw new Error(resData.error || "Erro ao salvar profissional");
+      
       setData([...data, { ...resData, appointments: 0, revenue: "R$ 0", commission: `${resData.commission}%` }]);
       setShowForm(false);
       setNewPro({ name: "", specialty: "", commission: "" });
-    } catch(e) { console.error(e) }
+      alert("Profissional salvo com sucesso!");
+    } catch(e: any) { 
+      setErrorMsg(e.message || "Erro de conexão ao salvar");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Tem certeza que deseja excluir este profissional?")) return;
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/professionals/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.error || "Erro ao excluir profissional");
+      }
+      setData(data.filter(p => p.id !== id));
+      setSelected(null);
+      alert("Profissional excluído com sucesso!");
+    } catch(e: any) {
+      alert(e.message);
+    }
   };
 
   return (
@@ -1140,13 +1331,14 @@ function ProfissionaisView() {
             <h3 className="font-semibold text-sm">Novo profissional</h3>
             <button onClick={() => setShowForm(false)} className="p-1 rounded hover:bg-muted"><X className="w-4 h-4 text-muted-foreground" /></button>
           </div>
+          {errorMsg && <div className="text-red-500 text-sm mb-2">{errorMsg}</div>}
           <div className="grid sm:grid-cols-2 gap-3">
-            <input value={newPro.name} onChange={e => setNewPro({...newPro, name: e.target.value})} placeholder="Nome completo" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
-            <input value={newPro.specialty} onChange={e => setNewPro({...newPro, specialty: e.target.value})} placeholder="Especialidade (ex: Cabelos)" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
+            <input disabled={loading} value={newPro.name} onChange={e => setNewPro({...newPro, name: e.target.value})} placeholder="Nome completo" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
+            <input disabled={loading} value={newPro.specialty} onChange={e => setNewPro({...newPro, specialty: e.target.value})} placeholder="Especialidade (ex: Cabelos)" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
           </div>
           <div className="grid sm:grid-cols-2 gap-3">
-            <input value={newPro.commission} onChange={e => setNewPro({...newPro, commission: e.target.value})} placeholder="Comissão (%)" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
-            <Button size="sm" className="h-10" onClick={handleSave}>Salvar</Button>
+            <input disabled={loading} value={newPro.commission} onChange={e => setNewPro({...newPro, commission: e.target.value})} placeholder="Comissão (%)" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
+            <Button size="sm" className="h-10" onClick={handleSave} disabled={loading}>{loading ? "Salvando..." : "Salvar"}</Button>
           </div>
         </div>
       )}
@@ -1177,12 +1369,19 @@ function ProfissionaisView() {
         <div className="bg-card border border-border rounded-2xl shadow-sm hover:shadow-md transition-shadow p-5">
           {selected ? (
             <div>
-              <div className="flex items-center gap-3 mb-4">
-                <Avatar name={selected.name} size="lg" />
-                <div>
-                  <div className="font-semibold">{selected.name}</div>
-                  <div className="text-muted-foreground text-sm">{selected.specialty}</div>
-                  <div className="text-amber-500 text-xs mt-0.5">★★★★★ 4.9</div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <Avatar name={selected.name} size="lg" />
+                  <div>
+                    <div className="font-semibold">{selected.name}</div>
+                    <div className="text-muted-foreground text-sm">{selected.specialty}</div>
+                    <div className="text-amber-500 text-xs mt-0.5">★★★★★ 4.9</div>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => handleDelete(selected.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Excluir profissional">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
 

@@ -44,6 +44,23 @@ export default function SalonDashboard() {
   }, [role]);
 
   useEffect(() => {
+    if (token) {
+      fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/salon/details`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      .then(res => {
+        if (res.status === 401 || res.status === 403) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('role');
+          localStorage.removeItem('userName');
+          setToken(null);
+        }
+      })
+      .catch(console.error);
+    }
+  }, [token]);
+
+  useEffect(() => {
     if (!allowedNav.find(n => n.id === activeSection)) {
       setActiveSection(allowedNav[0]?.id || 'dashboard');
     }

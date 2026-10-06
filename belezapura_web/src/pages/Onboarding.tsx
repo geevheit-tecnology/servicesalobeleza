@@ -126,6 +126,12 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
   const [cidade, setCidade] = useState("");
   const [estado, setEstado] = useState("");
 
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardExp, setCardExp] = useState("");
+  const [cardCvc, setCardCvc] = useState("");
+  const [cardName, setCardName] = useState("");
+  const [paymentError, setPaymentError] = useState("");
+
   const consultarCNPJ = async () => {
     const limpo = documento.replace(/\D/g, '');
     if (limpo.length !== 14) return alert("CNPJ inválido. Digite 14 números.");
@@ -203,10 +209,15 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
           }
           setDone(true);
         } else {
-          alert('Erro ao criar conta');
+          if (res.status === 402) {
+            setPaymentError('O pagamento não foi autorizado pela operadora. Verifique os dados ou utilize outro cartão.');
+          } else {
+            const errData = await res.json().catch(()=>({}));
+            setPaymentError(errData.error || 'Não conseguimos concluir o pagamento neste momento. Tente novamente em alguns instantes.');
+          }
         }
       } catch (e) {
-        alert('Erro de conexão');
+        setPaymentError('Não foi possível conectar ao serviço de pagamento. Verifique sua conexão e tente novamente.');
       } finally {
         setLoading(false);
       }
@@ -725,13 +736,45 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
               
               <div className="bg-card rounded-xl p-4 border border-border">
                 <div className="text-sm font-medium mb-3">Cartão de Crédito</div>
-                <div className="mt-4 space-y-3">
-                  <input placeholder="0000 0000 0000 0000" className="w-full h-11 rounded-lg border border-border px-3 text-sm bg-background" />
-                  <div className="flex gap-3">
-                    <input placeholder="MM/AA" className="flex-1 h-11 rounded-lg border border-border px-3 text-sm bg-background" />
-                    <input placeholder="CVC" className="flex-1 h-11 rounded-lg border border-border px-3 text-sm bg-background" />
+                {paymentError && (
+                  <div className="mb-4 p-3 text-sm text-red-700 bg-red-100 border border-red-200 rounded-lg">
+                    {paymentError}
                   </div>
-                  <input placeholder="Nome impresso no cartão" className="w-full h-11 rounded-lg border border-border px-3 text-sm bg-background" />
+                )}
+                <div className="space-y-3">
+                  <input 
+                    placeholder="0000 0000 0000 0000" 
+                    maxLength={19}
+                    value={cardNumber}
+                    onChange={e => setCardNumber(e.target.value.replace(/\D/g, '').replace(/(\d{4})(?=\d)/g, '$1 '))}
+                    className="w-full h-11 rounded-lg border border-border px-3 text-sm bg-background transition-colors focus:border-primary focus:ring-1 focus:ring-primary outline-none" 
+                  />
+                  <div className="flex gap-3">
+                    <input 
+                      placeholder="MM/AA" 
+                      maxLength={5}
+                      value={cardExp}
+                      onChange={e => {
+                        let val = e.target.value.replace(/\D/g, '');
+                        if (val.length > 2) val = val.substring(0,2) + '/' + val.substring(2);
+                        setCardExp(val);
+                      }}
+                      className="flex-1 h-11 rounded-lg border border-border px-3 text-sm bg-background transition-colors focus:border-primary focus:ring-1 focus:ring-primary outline-none" 
+                    />
+                    <input 
+                      placeholder="CVC" 
+                      maxLength={4}
+                      value={cardCvc}
+                      onChange={e => setCardCvc(e.target.value.replace(/\D/g, ''))}
+                      className="w-24 min-w-[80px] h-11 rounded-lg border border-border px-3 text-sm bg-background text-center transition-colors focus:border-primary focus:ring-1 focus:ring-primary outline-none" 
+                    />
+                  </div>
+                  <input 
+                    placeholder="Nome impresso no cartão" 
+                    value={cardName}
+                    onChange={e => setCardName(e.target.value)}
+                    className="w-full h-11 rounded-lg border border-border px-3 text-sm bg-background uppercase transition-colors focus:border-primary focus:ring-1 focus:ring-primary outline-none" 
+                  />
                 </div>
               </div>
             </div>
