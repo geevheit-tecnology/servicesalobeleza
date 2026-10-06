@@ -1122,18 +1122,22 @@ function ServicosView() {
     setLoading(true);
     setErrorMsg("");
     const token = localStorage.getItem('token');
+    
+    // Limpar o preço de qualquer formatação (R$, letras, etc)
+    const cleanPrice = newSvc.price.toString().replace(/[^\d.,]/g, '').replace(',', '.');
+
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/services`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(newSvc)
+        body: JSON.stringify({ ...newSvc, price: cleanPrice })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Erro ao salvar serviço");
 
-      setServices([...services, { ...data, cat: 'Serviço', pros: ['Geral'], status: 'active' }]);
+      setServices([...services, { ...data, cat: newSvc.cat || 'Serviço', pros: ['Geral'], status: 'active' }]);
       setShowForm(false);
-      setNewSvc({ name: "", duration: "", price: "" });
+      setNewSvc({ name: "", duration: "", price: "", cat: "Cabelo" });
       alert("Serviço salvo com sucesso!");
     } catch(e: any) { 
       setErrorMsg(e.message || "Erro de conexão ao salvar");
@@ -1181,7 +1185,7 @@ function ServicosView() {
           {errorMsg && <div className="text-red-500 text-sm mb-2">{errorMsg}</div>}
           <div className="grid sm:grid-cols-2 gap-3">
             <input disabled={loading} value={newSvc.name} onChange={e => setNewSvc({...newSvc, name: e.target.value})} placeholder="Nome do serviço" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
-            <select disabled={loading} className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card appearance-none">
+            <select disabled={loading} value={newSvc.cat} onChange={e => setNewSvc({...newSvc, cat: e.target.value})} className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card appearance-none">
               {cats.slice(1).map(c => <option key={c}>{c}</option>)}
             </select>
           </div>
