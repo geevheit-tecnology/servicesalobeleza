@@ -21,6 +21,7 @@ type User struct {
 	Password  string         `gorm:"not null" json:"-"`
 	Name      string         `gorm:"not null" json:"name"`
 	Role      string         `gorm:"default:owner" json:"role"` // owner | superadmin
+	Status    string         `gorm:"default:active" json:"status"`
 	SalonID   *string        `json:"salonId"`
 	Salon     *Salon         `gorm:"foreignKey:SalonID" json:"salon,omitempty"`
 	CreatedAt time.Time      `json:"createdAt"`
@@ -70,6 +71,7 @@ type Client struct {
 	Salon        Salon          `gorm:"foreignKey:SalonID" json:"-"`
 	Name         string         `gorm:"not null" json:"name"`
 	Phone        *string        `json:"phone"`
+	Status       string         `gorm:"default:active" json:"status"`
 	LastVisit    *time.Time     `json:"lastVisit"`
 	Visits       int            `gorm:"default:0" json:"visits"`
 	TotalSpent   float64        `gorm:"default:0.0;type:decimal(10,2)" json:"totalSpent"`
@@ -115,6 +117,7 @@ type Service struct {
 	Name         string         `gorm:"not null" json:"name"`
 	Price        float64        `gorm:"type:decimal(10,2)" json:"price"`
 	Duration     int            `json:"duration"` // minutes
+	Status       string         `gorm:"default:active" json:"status"`
 	Appointments []Appointment  `gorm:"foreignKey:ServiceID" json:"appointments,omitempty"`
 	CreatedAt    time.Time      `json:"createdAt"`
 	UpdatedAt    time.Time      `json:"updatedAt"`
@@ -155,18 +158,18 @@ func (a *Appointment) BeforeCreate(tx *gorm.DB) error {
 }
 
 type Plan struct {
-	ID              string         `gorm:"primaryKey;type:uuid" json:"id"`
-	Name            string         `gorm:"not null" json:"name"`
-	Price           float64        `gorm:"type:decimal(10,2)" json:"price"`
-	Period          string         `gorm:"default:/mês" json:"period"`
-	Highlight       bool           `gorm:"default:false" json:"highlight"`
-	Features        string         `gorm:"type:text" json:"featuresRaw"` // JSON array stored as text
-	MaxProfessionals int           `gorm:"default:0" json:"maxProfessionals"`
-	Color           string         `gorm:"default:#000000" json:"color"`
-	Subscriptions   []Subscription `gorm:"foreignKey:PlanID" json:"subscriptions,omitempty"`
-	CreatedAt       time.Time      `json:"createdAt"`
-	UpdatedAt       time.Time      `json:"updatedAt"`
-	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`
+	ID               string         `gorm:"primaryKey;type:uuid" json:"id"`
+	Name             string         `gorm:"not null" json:"name"`
+	Price            float64        `gorm:"type:decimal(10,2)" json:"price"`
+	Period           string         `gorm:"default:/mês" json:"period"`
+	Highlight        bool           `gorm:"default:false" json:"highlight"`
+	Features         string         `gorm:"type:text" json:"featuresRaw"` // JSON array stored as text
+	MaxProfessionals int            `gorm:"default:0" json:"maxProfessionals"`
+	Color            string         `gorm:"default:#000000" json:"color"`
+	Subscriptions    []Subscription `gorm:"foreignKey:PlanID" json:"subscriptions,omitempty"`
+	CreatedAt        time.Time      `json:"createdAt"`
+	UpdatedAt        time.Time      `json:"updatedAt"`
+	DeletedAt        gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 func (p *Plan) BeforeCreate(tx *gorm.DB) error {
@@ -179,6 +182,7 @@ func (p *Plan) BeforeCreate(tx *gorm.DB) error {
 type Subscription struct {
 	ID        string         `gorm:"primaryKey;type:uuid" json:"id"`
 	SalonID   string         `gorm:"not null" json:"salonId"`
+	Salon     Salon          `gorm:"foreignKey:SalonID" json:"salon,omitempty"`
 	PlanID    string         `gorm:"not null" json:"planId"`
 	Plan      *Plan          `gorm:"foreignKey:PlanID" json:"plan,omitempty"`
 	Status    string         `gorm:"default:TRIAL" json:"status"` // ACTIVE | CANCELED | TRIAL
@@ -196,18 +200,36 @@ func (s *Subscription) BeforeCreate(tx *gorm.DB) error {
 }
 
 type SystemSettings struct {
-	ID           string    `gorm:"primaryKey;type:uuid" json:"id"`
-	PlatformName string    `gorm:"default:beautyOS" json:"platformName"`
-	Domain       string    `gorm:"default:beautyos.app" json:"domain"`
-	SupportEmail string    `gorm:"default:suporte@beautyos.app" json:"supportEmail"`
-	TrialDays    int       `gorm:"default:14" json:"trialDays"`
-	DefaultPlanID *string  `json:"defaultPlanId"`
-	UpdatedAt    time.Time `json:"updatedAt"`
+	ID            string    `gorm:"primaryKey;type:uuid" json:"id"`
+	PlatformName  string    `gorm:"default:beautyOS" json:"platformName"`
+	Domain        string    `gorm:"default:beautyos.app" json:"domain"`
+	SupportEmail  string    `gorm:"default:suporte@beautyos.app" json:"supportEmail"`
+	TrialDays     int       `gorm:"default:14" json:"trialDays"`
+	DefaultPlanID *string   `json:"defaultPlanId"`
+	UpdatedAt     time.Time `json:"updatedAt"`
 }
 
 func (s *SystemSettings) BeforeCreate(tx *gorm.DB) error {
 	if s.ID == "" {
 		s.ID = newUUID()
+	}
+	return nil
+}
+
+type AdminAuditLog struct {
+	ID        string    `gorm:"primaryKey;type:uuid" json:"id"`
+	Action    string    `gorm:"not null;index" json:"action"`
+	UserID    *string   `json:"userId"`
+	UserName  *string   `json:"userName"`
+	Resource  string    `gorm:"not null" json:"resource"`
+	Detail    string    `gorm:"not null" json:"detail"`
+	Level     string    `gorm:"default:info;index" json:"level"`
+	CreatedAt time.Time `gorm:"index" json:"createdAt"`
+}
+
+func (a *AdminAuditLog) BeforeCreate(tx *gorm.DB) error {
+	if a.ID == "" {
+		a.ID = newUUID()
 	}
 	return nil
 }

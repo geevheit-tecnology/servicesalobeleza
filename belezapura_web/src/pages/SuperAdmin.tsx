@@ -127,7 +127,15 @@ const statusConfig: Record<string, { label: string; variant: "success" | "warnin
   late: { label: "Inadimplente", variant: "warning" },
   blocked: { label: "Bloqueado", variant: "danger" },
   cancelled: { label: "Cancelado", variant: "outline" },
+  canceled: { label: "Cancelado", variant: "outline" },
   pending: { label: "Em Análise", variant: "warning" },
+};
+
+const normalizeStatus = (status?: string) => (status || "").toLowerCase();
+
+const statusBadge = (status?: string) => {
+  const normalized = normalizeStatus(status);
+  return statusConfig[normalized] || { label: status || "Sem status", variant: "outline" as const };
 };
 
 function OverviewView({ overviewData }: { overviewData: any }) {
@@ -301,10 +309,11 @@ function SaloesView({ salonsData }: { salonsData: any }) {
   const dataToUse = filter === "Todos" 
     ? localSalons 
     : localSalons.filter((s: any) => {
-        if (filter === "Ativos") return s.status === "active";
-        if (filter === "Trial") return s.status === "trial";
-        if (filter === "Inadimplentes") return s.status === "late";
-        if (filter === "Bloqueados") return s.status === "blocked";
+        const status = normalizeStatus(s.status);
+        if (filter === "Ativos") return status === "active";
+        if (filter === "Trial") return status === "trial";
+        if (filter === "Inadimplentes") return status === "late";
+        if (filter === "Bloqueados") return status === "blocked";
         return true;
       });
 
@@ -352,7 +361,7 @@ function SaloesView({ salonsData }: { salonsData: any }) {
                 <td className="px-4 py-3 text-sm text-center">{s.units}</td>
                 <td className="px-4 py-3"><Badge variant="outline" className="text-xs">{s.plan}</Badge></td>
                 <td className="px-4 py-3">
-                  <Badge variant={statusConfig[s.status]?.variant || "outline"}>{statusConfig[s.status]?.label || s.status}</Badge>
+                  <Badge variant={statusBadge(s.status).variant}>{statusBadge(s.status).label}</Badge>
                 </td>
                 <td className="px-4 py-3 text-sm text-muted-foreground">{s.since}</td>
                 <td className="px-4 py-3 text-sm font-medium">{s.appointments?.toLocaleString("pt-BR")}</td>
@@ -489,9 +498,10 @@ function AssinaturasView() {
   const dataToUse = filter === "Todos" 
     ? localSubs 
     : localSubs.filter((s: any) => {
-        if (filter === "Em Análise") return s.status === "pending";
-        if (filter === "Ativas") return s.status === "active";
-        if (filter === "Inadimplentes") return s.status === "late";
+        const status = normalizeStatus(s.status);
+        if (filter === "Em Análise") return status === "pending" || status === "trial";
+        if (filter === "Ativas") return status === "active";
+        if (filter === "Inadimplentes") return status === "late";
         return true;
       });
 
@@ -503,10 +513,10 @@ function AssinaturasView() {
       </div>
 
       <div className="grid grid-cols-4 gap-4">
-        <StatCard label="Em Análise" value={localSubs.filter(s => s.status === 'pending').length.toString()} icon={Clock} color="amber" />
-        <StatCard label="Ativas" value={localSubs.filter(s => s.status === 'active').length.toString()} icon={CheckCircle} color="emerald" />
-        <StatCard label="Inadimplentes" value={localSubs.filter(s => s.status === 'late').length.toString()} icon={AlertCircle} color="rose" />
-        <StatCard label="Canceladas" value={localSubs.filter(s => s.status === 'cancelled').length.toString()} icon={XCircle} color="slate" />
+        <StatCard label="Em Análise" value={localSubs.filter(s => ["pending", "trial"].includes(normalizeStatus(s.status))).length.toString()} icon={Clock} color="amber" />
+        <StatCard label="Ativas" value={localSubs.filter(s => normalizeStatus(s.status) === 'active').length.toString()} icon={CheckCircle} color="emerald" />
+        <StatCard label="Inadimplentes" value={localSubs.filter(s => normalizeStatus(s.status) === 'late').length.toString()} icon={AlertCircle} color="rose" />
+        <StatCard label="Canceladas" value={localSubs.filter(s => normalizeStatus(s.status) === 'canceled' || normalizeStatus(s.status) === 'cancelled').length.toString()} icon={XCircle} color="slate" />
       </div>
 
       <div className="flex gap-2 my-4">
@@ -538,8 +548,8 @@ function AssinaturasView() {
                 <td className="px-4 py-3"><Badge variant="outline">{s.plan}</Badge></td>
                 <td className="px-4 py-3 text-sm font-semibold text-primary">{s.value}</td>
                 <td className="px-4 py-3">
-                  <Badge variant={statusConfig[s.status]?.variant || "outline"}>
-                    {statusConfig[s.status]?.label || s.status}
+                  <Badge variant={statusBadge(s.status).variant}>
+                    {statusBadge(s.status).label}
                   </Badge>
                 </td>
                 <td className="px-4 py-3 text-sm text-muted-foreground">{s.next}</td>
@@ -547,7 +557,7 @@ function AssinaturasView() {
                   <button onClick={() => setOpenMenu(openMenu === s.salon ? null : s.salon)} className="p-1.5 rounded-lg hover:bg-muted"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
                   {openMenu === s.salon && (
                     <div className="absolute right-8 top-10 w-48 bg-card border border-border rounded-xl shadow-lg py-1 z-50">
-                      {s.status === 'TRIAL' && (
+                      {normalizeStatus(s.status) === 'trial' && (
                         <button onClick={() => handleAction(s, 'analyze')} className="w-full text-left px-4 py-2 text-sm hover:bg-muted text-emerald-500 font-medium">Validar Compliance (KYC)</button>
                       )}
                       <button onClick={() => handleAction(s, 'cancel')} className="w-full text-left px-4 py-2 text-sm hover:bg-muted text-red-500">Cancelar assinatura</button>
@@ -1003,37 +1013,83 @@ const adminUsers = [
 ];
 
 function UsuariosView() {
-  const [localUsers, setLocalUsers] = useState(adminUsers);
-  const [openMenu, setOpenMenu] = useState<number | null>(null);
+  const [localUsers, setLocalUsers] = useState<any[]>([]);
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [drawerUser, setDrawerUser] = useState<any | null>(null);
+  const [errorMsg, setErrorMsg] = useState("");
 
-  const handleAction = (id: number, action: string) => {
+  const roleLabel = (role: string) => ({
+    superadmin: "Super Admin",
+    admin: "Admin",
+    financeiro: "Financeiro",
+    suporte_n2: "Suporte N2",
+    suporte_n1: "Suporte N1",
+    visualizador: "Visualizador",
+  }[role] || role);
+
+  const fetchUsers = () => {
+    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/superadmin/users`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    })
+      .then(res => res.json())
+      .then(data => setLocalUsers(Array.isArray(data) ? data : adminUsers))
+      .catch(() => setLocalUsers(adminUsers));
+  };
+
+  useEffect(() => { fetchUsers(); }, []);
+
+  const handleAction = async (id: string, action: string) => {
     setOpenMenu(null);
     if (action === 'toggle') {
-      setLocalUsers(prev => prev.map(u => u.id === id ? { ...u, status: u.status === 'active' ? 'inactive' : 'active' } : u));
+      const user = localUsers.find(u => u.id === id);
+      if (!user) return;
+      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/superadmin/users/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+        body: JSON.stringify({ status: user.status === 'active' ? 'inactive' : 'active' })
+      });
+      fetchUsers();
     } else if (action === 'delete') {
       if(window.confirm(`Excluir usuário permanentemente?`)) {
-        setLocalUsers(prev => prev.filter(u => u.id !== id));
+        await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/superadmin/users/${id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        fetchUsers();
       }
     } else if (action === 'edit') {
       const user = localUsers.find(u => u.id === id);
-      if(user) setDrawerUser(user);
+      if(user) setDrawerUser({ ...user, password: "" });
     }
   };
 
   const handleNewUser = () => {
-    setDrawerUser({ id: Date.now(), name: "", email: "", role: "Visualizador", status: "active", permissions: [] });
+    setErrorMsg("");
+    setDrawerUser({ id: "", name: "", email: "", password: "", role: "admin", status: "active", permissions: [] });
   };
 
-  const handleSaveUser = () => {
-    if(!drawerUser.name || !drawerUser.email) return alert("Preencha nome e e-mail");
-    const exists = localUsers.find(u => u.id === drawerUser.id);
-    if (exists) {
-      setLocalUsers(prev => prev.map(u => u.id === drawerUser.id ? drawerUser : u));
-    } else {
-      setLocalUsers([{ ...drawerUser, last: "Nunca" }, ...localUsers]);
+  const handleSaveUser = async () => {
+    if(!drawerUser.name || !drawerUser.email) return setErrorMsg("Preencha nome e e-mail.");
+    if(!drawerUser.id && !drawerUser.password) return setErrorMsg("Informe uma senha temporária para novo usuário.");
+    setErrorMsg("");
+
+    const isEdit = !!drawerUser.id;
+    const payload = { ...drawerUser };
+    if (isEdit && !payload.password) delete payload.password;
+
+    const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/superadmin/users${isEdit ? `/${drawerUser.id}` : ''}`, {
+      method: isEdit ? 'PUT' : 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setErrorMsg(data.error || "Erro ao salvar usuário.");
+      return;
     }
+
     setDrawerUser(null);
+    fetchUsers();
   };
 
   return (
@@ -1062,7 +1118,7 @@ function UsuariosView() {
                   </div>
                 </td>
                 <td className="px-4 py-3">
-                  <Badge variant={u.role === "Super Admin" ? "purple" : "outline"} className={u.role !== "Super Admin" ? "bg-secondary/50" : ""}>{u.role}</Badge>
+                  <Badge variant={u.role === "superadmin" ? "purple" : "outline"} className={u.role !== "superadmin" ? "bg-secondary/50" : ""}>{roleLabel(u.role)}</Badge>
                 </td>
                 <td className="px-4 py-3 text-sm text-muted-foreground">{u.email}</td>
                 <td className="px-4 py-3 text-sm text-muted-foreground">{u.last}</td>
@@ -1089,10 +1145,11 @@ function UsuariosView() {
         <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-sm animate-in fade-in" onClick={() => setDrawerUser(null)}>
           <div className="w-[400px] sm:w-[450px] bg-background h-full shadow-2xl flex flex-col animate-in slide-in-from-right" onClick={e => e.stopPropagation()}>
             <div className="h-14 border-b border-border flex items-center justify-between px-6 shrink-0">
-              <h3 className="font-medium font-serif">{drawerUser.id > 10000 ? 'Novo Usuário' : 'Editar Usuário e Permissões'}</h3>
+              <h3 className="font-medium font-serif">{!drawerUser.id ? 'Novo Usuário' : 'Editar Usuário e Permissões'}</h3>
               <button onClick={() => setDrawerUser(null)} className="p-2 hover:bg-muted rounded-lg text-muted-foreground transition-colors"><X className="w-4 h-4" /></button>
             </div>
             <div className="p-6 flex-1 overflow-y-auto space-y-5">
+              {errorMsg && <div className="text-sm text-red-500 bg-red-50 border border-red-100 rounded-lg p-2">{errorMsg}</div>}
               <div>
                 <label className="text-xs font-medium text-muted-foreground block mb-1">Nome Completo</label>
                 <input value={drawerUser.name} onChange={e => setDrawerUser({...drawerUser, name: e.target.value})} className="w-full h-10 rounded-lg border border-border px-3 text-sm bg-background outline-none focus:border-primary transition-colors" />
@@ -1102,14 +1159,18 @@ function UsuariosView() {
                 <input value={drawerUser.email} onChange={e => setDrawerUser({...drawerUser, email: e.target.value})} type="email" className="w-full h-10 rounded-lg border border-border px-3 text-sm bg-background outline-none focus:border-primary transition-colors" />
               </div>
               <div>
+                <label className="text-xs font-medium text-muted-foreground block mb-1">{drawerUser.id ? "Nova senha (opcional)" : "Senha temporária"}</label>
+                <input value={drawerUser.password || ""} onChange={e => setDrawerUser({...drawerUser, password: e.target.value})} type="password" className="w-full h-10 rounded-lg border border-border px-3 text-sm bg-background outline-none focus:border-primary transition-colors" />
+              </div>
+              <div>
                 <label className="text-xs font-medium text-muted-foreground block mb-1">Cargo / Função (RBAC)</label>
                 <select value={drawerUser.role} onChange={e => setDrawerUser({...drawerUser, role: e.target.value})} className="w-full h-10 rounded-lg border border-border px-3 text-sm bg-background outline-none focus:border-primary transition-colors">
-                  <option>Super Admin</option>
-                  <option>Admin</option>
-                  <option>Financeiro</option>
-                  <option>Suporte N2</option>
-                  <option>Suporte N1</option>
-                  <option>Visualizador</option>
+                  <option value="superadmin">Super Admin</option>
+                  <option value="admin">Admin</option>
+                  <option value="financeiro">Financeiro</option>
+                  <option value="suporte_n2">Suporte N2</option>
+                  <option value="suporte_n1">Suporte N1</option>
+                  <option value="visualizador">Visualizador</option>
                 </select>
               </div>
               
@@ -1121,22 +1182,22 @@ function UsuariosView() {
                       <span className="text-xs font-semibold uppercase text-muted-foreground">{resource === 'salons' ? 'Gestão de Salões' : resource === 'finance' ? 'Financeiro & Pagamentos' : resource === 'tickets' ? 'Suporte & Tickets' : resource === 'plans' ? 'Planos & Assinaturas' : resource === 'users' ? 'Usuários do Sistema' : 'Logs de Auditoria'}</span>
                       <div className="flex gap-4">
                         <label className="flex items-center gap-2 text-sm cursor-pointer">
-                          <input type="checkbox" className="rounded border-border text-primary focus:ring-primary" checked={drawerUser.role === 'Super Admin' || drawerUser.permissions?.includes(`${resource}:read`)} onChange={e => {
-                            if(drawerUser.role === 'Super Admin') return;
+                          <input type="checkbox" className="rounded border-border text-primary focus:ring-primary" checked={drawerUser.role === 'superadmin' || drawerUser.permissions?.includes(`${resource}:read`)} onChange={e => {
+                            if(drawerUser.role === 'superadmin') return;
                             const p = new Set(drawerUser.permissions || []);
                             e.target.checked ? p.add(`${resource}:read`) : p.delete(`${resource}:read`);
                             setDrawerUser({...drawerUser, permissions: Array.from(p)});
-                          }} disabled={drawerUser.role === 'Super Admin'} />
+                          }} disabled={drawerUser.role === 'superadmin'} />
                           Leitura
                         </label>
                         <label className="flex items-center gap-2 text-sm cursor-pointer">
-                          <input type="checkbox" className="rounded border-border text-primary focus:ring-primary" checked={drawerUser.role === 'Super Admin' || drawerUser.permissions?.includes(`${resource}:write`)} onChange={e => {
-                            if(drawerUser.role === 'Super Admin') return;
+                          <input type="checkbox" className="rounded border-border text-primary focus:ring-primary" checked={drawerUser.role === 'superadmin' || drawerUser.permissions?.includes(`${resource}:write`)} onChange={e => {
+                            if(drawerUser.role === 'superadmin') return;
                             const p = new Set(drawerUser.permissions || []);
                             e.target.checked ? p.add(`${resource}:write`) : p.delete(`${resource}:write`);
                             if(e.target.checked) p.add(`${resource}:read`); // write implies read
                             setDrawerUser({...drawerUser, permissions: Array.from(p)});
-                          }} disabled={drawerUser.role === 'Super Admin'} />
+                          }} disabled={drawerUser.role === 'superadmin'} />
                           Escrita
                         </label>
                       </div>
@@ -1350,16 +1411,6 @@ function ComunicacaoView() {
   );
 }
 
-const auditLogs = [
-  { id: "evt-001", action: "LOGIN", user: "Admin beautyOS", resource: "Autenticação", detail: "Login realizado com sucesso", time: "Agora", level: "info" },
-  { id: "evt-002", action: "BLOCK_SALON", user: "Admin beautyOS", resource: "Beauty Club", detail: "Salão bloqueado por inadimplência", time: "5 min", level: "warning" },
-  { id: "evt-003", action: "PLAN_UPDATE", user: "Admin beautyOS", resource: "Plano Premium", detail: "Preço alterado de R$249 para R$299", time: "1h", level: "info" },
-  { id: "evt-004", action: "KYC_APPROVED", user: "Admin beautyOS", resource: "Studio Beauty Prime", detail: "Compliance aprovado e assinatura ativada", time: "2h", level: "success" },
-  { id: "evt-005", action: "USER_CREATED", user: "Admin beautyOS", resource: "carlos@beautyos.app", detail: "Novo usuário de suporte criado (N1)", time: "3h", level: "info" },
-  { id: "evt-006", action: "SETTINGS_UPDATE", user: "Admin beautyOS", resource: "Configurações", detail: "Trial alterado de 7 para 14 dias", time: "1d", level: "info" },
-  { id: "evt-007", action: "LOGIN_FAILED", user: "unknown@email.com", resource: "Autenticação", detail: "Tentativa de login inválida (3x)", time: "1d", level: "danger" },
-];
-
 const auditLevelConfig: Record<string, { label: string; variant: "success" | "warning" | "danger" | "info" | "outline" }> = {
   info: { label: "Info", variant: "info" },
   warning: { label: "Aviso", variant: "warning" },
@@ -1367,13 +1418,52 @@ const auditLevelConfig: Record<string, { label: string; variant: "success" | "wa
   danger: { label: "Alerta", variant: "danger" },
 };
 
+type AuditLog = {
+  id: string;
+  action: string;
+  user: string;
+  resource: string;
+  detail: string;
+  time: string;
+  level: string;
+};
+
 function AuditoriaView() {
   const [filter, setFilter] = useState("Todos");
   const [search, setSearch] = useState("");
+  const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState("");
 
-  const dataToUse = auditLogs.filter(log => {
-    const matchFilter = filter === "Todos" || log.level === filter.toLowerCase();
-    const matchSearch = !search || log.action.includes(search.toUpperCase()) || log.resource.toLowerCase().includes(search.toLowerCase()) || log.detail.toLowerCase().includes(search.toLowerCase());
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const api = import.meta.env.VITE_API_URL || 'http://localhost:3050';
+    setLoading(true);
+    fetch(`${api}/api/superadmin/audit-logs`, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    })
+      .then(res => {
+        if (!res.ok) throw new Error('Falha ao carregar auditoria');
+        return res.json();
+      })
+      .then(data => {
+        setLogs(Array.isArray(data) ? data : []);
+        setErrorMsg("");
+      })
+      .catch(() => {
+        setLogs([]);
+        setErrorMsg("Não foi possível carregar os logs de auditoria agora.");
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const dataToUse = logs.filter(log => {
+    const level = String(log.level || "").toLowerCase();
+    const action = String(log.action || "");
+    const resource = String(log.resource || "");
+    const detail = String(log.detail || "");
+    const matchFilter = filter === "Todos" || level === filter.toLowerCase();
+    const matchSearch = !search || action.includes(search.toUpperCase()) || resource.toLowerCase().includes(search.toLowerCase()) || detail.toLowerCase().includes(search.toLowerCase());
     return matchFilter && matchSearch;
   });
 
@@ -1388,11 +1478,17 @@ function AuditoriaView() {
       </div>
 
       <div className="grid grid-cols-4 gap-4">
-        <StatCard label="Total de eventos" value={auditLogs.length.toString()} icon={Shield} color="primary" />
-        <StatCard label="Alertas de segurança" value={auditLogs.filter(l => l.level === "danger").length.toString()} icon={AlertCircle} color="rose" />
-        <StatCard label="Aprovações KYC" value={auditLogs.filter(l => l.action === "KYC_APPROVED").length.toString()} icon={CheckCircle} color="emerald" />
-        <StatCard label="Logins falhos" value={auditLogs.filter(l => l.action === "LOGIN_FAILED").length.toString()} icon={XCircle} color="amber" />
+        <StatCard label="Total de eventos" value={logs.length.toString()} icon={Shield} color="primary" />
+        <StatCard label="Alertas de segurança" value={logs.filter(l => l.level === "danger").length.toString()} icon={AlertCircle} color="rose" />
+        <StatCard label="Ações concluídas" value={logs.filter(l => l.level === "success").length.toString()} icon={CheckCircle} color="emerald" />
+        <StatCard label="Avisos operacionais" value={logs.filter(l => l.level === "warning").length.toString()} icon={XCircle} color="amber" />
       </div>
+
+      {errorMsg && (
+        <div className="bg-amber-500/10 text-amber-700 border border-amber-500/20 rounded-lg px-3 py-2 text-sm">
+          {errorMsg}
+        </div>
+      )}
 
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2 bg-card border border-border rounded-lg px-3 h-9 text-sm text-muted-foreground flex-1 max-w-sm">
@@ -1436,7 +1532,9 @@ function AuditoriaView() {
           </tbody>
         </table>
         {dataToUse.length === 0 && (
-          <div className="py-12 text-center text-muted-foreground text-sm">Nenhum evento encontrado.</div>
+          <div className="py-12 text-center text-muted-foreground text-sm">
+            {loading ? "Carregando logs..." : "Nenhum evento encontrado."}
+          </div>
         )}
       </div>
     </div>

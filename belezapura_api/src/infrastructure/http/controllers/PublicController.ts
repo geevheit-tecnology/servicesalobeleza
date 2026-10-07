@@ -13,7 +13,9 @@ export class PublicController {
       const salon = await db.salon.findUnique({
         where: { slug: slug as string },
         include: {
-          services: true,
+          services: {
+            where: { status: 'active' }
+          },
           professionals: {
             where: { status: 'active' }
           }
@@ -42,9 +44,19 @@ export class PublicController {
       }
 
       // 1. Busca o serviço para saber o valor
-      const service = await db.service.findUnique({ where: { id: serviceId } });
+      const service = await db.service.findFirst({
+        where: { id: serviceId, status: 'active' }
+      });
       if (!service) {
         res.status(404).json({ error: 'Serviço não encontrado.' });
+        return;
+      }
+
+      const professional = await db.professional.findFirst({
+        where: { id: professionalId, salonId, status: 'active' }
+      });
+      if (!professional) {
+        res.status(404).json({ error: 'Profissional não encontrado.' });
         return;
       }
 
@@ -95,7 +107,9 @@ export class PublicController {
         return;
       }
 
-      const service = await db.service.findUnique({ where: { id: String(serviceId) } });
+      const service = await db.service.findFirst({
+        where: { id: String(serviceId), status: 'active' }
+      });
       if (!service) {
         res.status(404).json({ error: 'Serviço não encontrado' });
         return;

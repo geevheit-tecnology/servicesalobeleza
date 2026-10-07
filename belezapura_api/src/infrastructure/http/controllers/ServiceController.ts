@@ -2,6 +2,12 @@ import { Response } from 'express';
 import { AuthRequest } from '../middlewares/authMiddleware';
 import { prisma } from '../../database/prisma';
 
+const getRouteId = (id: string | string[] | undefined): string | undefined =>
+  typeof id === 'string' ? id : undefined;
+
+const getDeleteMode = (mode: unknown): 'delete' | 'inactive' =>
+  mode === 'inactive' ? 'inactive' : 'delete';
+
 export class ServiceController {
   async create(req: AuthRequest, res: Response): Promise<void> {
     try {
@@ -11,7 +17,7 @@ export class ServiceController {
         return;
       }
 
-      const { name, price, duration } = req.body;
+      const { name, price, duration, status } = req.body;
 
       if (!name || price === undefined || duration === undefined) {
         res.status(400).json({ error: 'Nome, preço e duração são obrigatórios.' });
@@ -37,11 +43,16 @@ export class ServiceController {
   async update(req: AuthRequest, res: Response): Promise<void> {
     try {
       const salonId = req.user?.salonId;
-      const { id } = req.params;
+      const id = getRouteId(req.params.id);
       const { name, price, duration } = req.body;
 
       if (!salonId) {
         res.status(401).json({ error: 'Acesso negado: Salon ID não encontrado.' });
+        return;
+      }
+
+      if (!id) {
+        res.status(400).json({ error: 'ID do serviço é obrigatório.' });
         return;
       }
 
@@ -60,6 +71,7 @@ export class ServiceController {
           name: name ?? service.name,
           price: price !== undefined ? parseFloat(price.toString().replace(',', '.')) : service.price,
           duration: duration !== undefined ? parseInt(duration, 10) : service.duration,
+          status: status ?? service.status,
         }
       });
 
@@ -73,16 +85,21 @@ export class ServiceController {
   async delete(req: AuthRequest, res: Response): Promise<void> {
     try {
       const salonId = req.user?.salonId;
-      const { id } = req.params;
+      const id = getRouteId(req.params.id);
+      const mode = getDeleteMode(req.query.mode);
 
       if (!salonId) {
         res.status(401).json({ error: 'Acesso negado: Salon ID não encontrado.' });
         return;
       }
 
+      if (!id) {
+        res.status(400).json({ error: 'ID do serviço é obrigatório.' });
+        return;
+      }
+
       const service = await prisma.service.findFirst({
-        where: { id, salonId },
-        include: { appointments: true }
+        where: { id, salonId }
       });
 
       if (!service) {
@@ -90,9 +107,25 @@ export class ServiceController {
         return;
       }
 
-      if (service.appointments.length > 0) {
-        // Can't delete service that has appointments without breaking history
-        res.status(409).json({ error: 'Não é possível excluir um serviço que possui agendamentos vinculados.' });
+      const appointmentsCount = await prisma.appointment.count({
+        where: { serviceId: id, salonId }
+      });
+
+      if (mode === 'inactive') {
+        const inactive = await prisma.service.update({
+          where: { id },
+          data: { status: 'inactive' }
+        });
+        res.status(200).json(inactive);
+        return;
+      }
+
+      if (appointmentsCount > 0) {
+        const deleted = await prisma.service.update({
+          where: { id },
+          data: { status: 'deleted' }
+        });
+        res.status(200).json(deleted);
         return;
       }
 

@@ -15,7 +15,7 @@ func GetSalonBySlug(c *gin.Context) {
 
 	var salon db.Salon
 	if err := db.DB.
-		Preload("Services").
+		Preload("Services", "status = ?", "active").
 		Preload("Professionals", "status = ?", "active").
 		Where("slug = ?", slug).
 		First(&salon).Error; err != nil {
@@ -102,6 +102,18 @@ func CreatePublicAppointment(c *gin.Context) {
 		return
 	}
 
+	var service db.Service
+	if err := db.DB.First(&service, "id = ? AND salon_id = ? AND status = ?", body.ServiceID, body.SalonID, "active").Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Serviço não encontrado."})
+		return
+	}
+
+	var professional db.Professional
+	if err := db.DB.First(&professional, "id = ? AND salon_id = ? AND status = ?", body.ProfessionalID, body.SalonID, "active").Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Profissional não encontrado."})
+		return
+	}
+
 	// Upsert client
 	var client db.Client
 	db.DB.Where("salon_id = ? AND name = ?", body.SalonID, body.ClientName).FirstOrCreate(&client, db.Client{
@@ -109,9 +121,6 @@ func CreatePublicAppointment(c *gin.Context) {
 		Name:    body.ClientName,
 		Phone:   &body.ClientPhone,
 	})
-
-	var service db.Service
-	db.DB.First(&service, "id = ?", body.ServiceID)
 
 	appt := db.Appointment{
 		SalonID:        body.SalonID,

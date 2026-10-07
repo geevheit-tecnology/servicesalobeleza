@@ -56,10 +56,18 @@ export class SalonController {
         where: { id: salonId },
         include: {
           services: true,
-          professionals: true,
-          clients: true
+          professionals: {
+            where: { status: { not: 'deleted' } }
+          },
+          clients: {
+            where: { status: { not: 'deleted' } }
+          }
         }
       });
+
+      if (salon) {
+        salon.services = salon.services.filter(service => service.status !== 'deleted');
+      }
 
       res.status(200).json(salon);
     } catch (error: any) {
@@ -76,7 +84,7 @@ export class SalonController {
       }
 
       const clients = await prisma.client.findMany({
-        where: { salonId },
+        where: { salonId, status: { not: 'deleted' } },
         orderBy: { updatedAt: 'desc' }
       });
 

@@ -70,15 +70,24 @@ func main() {
 
 			// Super Admin
 			sa := auth.Group("/superadmin")
+			sa.Use(middleware.SuperAdminRequired())
 			{
 				sa.GET("/overview", handler.GetOverview)
 				sa.GET("/salons", handler.GetSalons)
+				sa.PUT("/salons/:id/block", handler.BlockSalon)
 				sa.GET("/settings", handler.GetSettings)
 				sa.PUT("/settings", handler.UpdateSettings)
 				sa.GET("/plans", handler.GetPlans)
 				sa.POST("/plans", handler.CreatePlan)
 				sa.PUT("/plans/:id", handler.UpdatePlan)
 				sa.DELETE("/plans/:id", handler.DeletePlan)
+				sa.GET("/subscriptions", handler.GetSubscriptions)
+				sa.PUT("/subscriptions/:id/status", handler.UpdateSubscriptionStatus)
+				sa.GET("/users", handler.GetUsers)
+				sa.POST("/users", handler.CreateUser)
+				sa.PUT("/users/:id", handler.UpdateUser)
+				sa.DELETE("/users/:id", handler.DeleteUser)
+				sa.GET("/audit-logs", handler.GetAuditLogs)
 			}
 		}
 	}

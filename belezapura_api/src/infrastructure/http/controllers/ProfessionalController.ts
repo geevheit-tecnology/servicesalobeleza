@@ -2,6 +2,12 @@ import { Response } from 'express';
 import { AuthRequest } from '../middlewares/authMiddleware';
 import { prisma } from '../../database/prisma';
 
+const getRouteId = (id: string | string[] | undefined): string | undefined =>
+  typeof id === 'string' ? id : undefined;
+
+const getDeleteMode = (mode: unknown): 'delete' | 'inactive' =>
+  mode === 'inactive' ? 'inactive' : 'delete';
+
 export class ProfessionalController {
   async create(req: AuthRequest, res: Response): Promise<void> {
     try {
@@ -37,11 +43,17 @@ export class ProfessionalController {
   async update(req: AuthRequest, res: Response): Promise<void> {
     try {
       const salonId = req.user?.salonId;
-      const { id } = req.params;
+      const id = getRouteId(req.params.id);
+      const mode = getDeleteMode(req.query.mode);
       const { name, specialty, commission, status } = req.body;
 
       if (!salonId) {
         res.status(401).json({ error: 'Acesso negado: Salon ID não encontrado.' });
+        return;
+      }
+
+      if (!id) {
+        res.status(400).json({ error: 'ID do profissional é obrigatório.' });
         return;
       }
 
@@ -74,16 +86,21 @@ export class ProfessionalController {
   async delete(req: AuthRequest, res: Response): Promise<void> {
     try {
       const salonId = req.user?.salonId;
-      const { id } = req.params;
+      const id = getRouteId(req.params.id);
+      const mode = getDeleteMode(req.query.mode);
 
       if (!salonId) {
         res.status(401).json({ error: 'Acesso negado: Salon ID não encontrado.' });
         return;
       }
 
+      if (!id) {
+        res.status(400).json({ error: 'ID do profissional é obrigatório.' });
+        return;
+      }
+
       const professional = await prisma.professional.findFirst({
-        where: { id, salonId },
-        include: { appointments: true }
+        where: { id, salonId }
       });
 
       if (!professional) {
@@ -91,8 +108,20 @@ export class ProfessionalController {
         return;
       }
 
-      if (professional.appointments.length > 0) {
-        // Soft delete
+      const appointmentsCount = await prisma.appointment.count({
+        where: { professionalId: id, salonId }
+      });
+
+      if (mode === 'inactive') {
+        const inactive = await prisma.professional.update({
+          where: { id },
+          data: { status: 'inactive' }
+        });
+        res.status(200).json(inactive);
+        return;
+      }
+
+      if (appointmentsCount > 0) {
         const deactivated = await prisma.professional.update({
           where: { id },
           data: { status: 'deleted' }

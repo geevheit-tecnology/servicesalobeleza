@@ -2,6 +2,12 @@ import { Response } from 'express';
 import { AuthRequest } from '../middlewares/authMiddleware';
 import { prisma } from '../../database/prisma';
 
+const getRouteId = (id: string | string[] | undefined): string | undefined =>
+  typeof id === 'string' ? id : undefined;
+
+const getDeleteMode = (mode: unknown): 'delete' | 'inactive' =>
+  mode === 'inactive' ? 'inactive' : 'delete';
+
 export class ClientController {
   async create(req: AuthRequest, res: Response): Promise<void> {
     try {
@@ -11,7 +17,7 @@ export class ClientController {
         return;
       }
 
-      const { name, phone, tags } = req.body;
+      const { name, phone, tags, status } = req.body;
 
       if (!name || !name.trim()) {
         res.status(400).json({ error: 'O nome do cliente é obrigatório.' });
@@ -47,11 +53,16 @@ export class ClientController {
   async update(req: AuthRequest, res: Response): Promise<void> {
     try {
       const salonId = req.user?.salonId;
-      const { id } = req.params;
+      const id = getRouteId(req.params.id);
       const { name, phone, tags } = req.body;
 
       if (!salonId) {
         res.status(401).json({ error: 'Acesso negado.' });
+        return;
+      }
+
+      if (!id) {
+        res.status(400).json({ error: 'ID do cliente é obrigatório.' });
         return;
       }
 
@@ -81,7 +92,8 @@ export class ClientController {
         data: {
           name: name.trim(),
           phone: phone || null,
-          tags: tags || existingClient.tags
+          tags: tags || existingClient.tags,
+          status: status ?? existingClient.status
         }
       });
 
@@ -94,24 +106,44 @@ export class ClientController {
   async delete(req: AuthRequest, res: Response): Promise<void> {
     try {
       const salonId = req.user?.salonId;
-      const { id } = req.params;
+      const id = getRouteId(req.params.id);
+      const mode = getDeleteMode(req.query.mode);
 
       if (!salonId) {
         res.status(401).json({ error: 'Acesso negado.' });
         return;
       }
 
-      const client = await prisma.client.findUnique({ 
-        where: { id },
-        include: { _count: { select: { appointments: true } } }
-      });
+      if (!id) {
+        res.status(400).json({ error: 'ID do cliente é obrigatório.' });
+        return;
+      }
+
+      const client = await prisma.client.findUnique({ where: { id } });
       if (!client || client.salonId !== salonId) {
         res.status(404).json({ error: 'Cliente não encontrado.' });
         return;
       }
 
-      if (client._count.appointments > 0) {
-        res.status(409).json({ error: 'Não é possível excluir o cliente pois ele possui histórico de agendamentos.' });
+      const appointmentsCount = await prisma.appointment.count({
+        where: { clientId: id, salonId }
+      });
+
+      if (mode === 'inactive') {
+        const inactive = await prisma.client.update({
+          where: { id },
+          data: { status: 'inactive' }
+        });
+        res.status(200).json(inactive);
+        return;
+      }
+
+      if (appointmentsCount > 0) {
+        const deleted = await prisma.client.update({
+          where: { id },
+          data: { status: 'deleted' }
+        });
+        res.status(200).json(deleted);
         return;
       }
 

@@ -15,6 +15,7 @@ model User {
   password  String
   name      String
   role      String   @default("owner") // "owner" ou "superadmin"
+  status    String   @default("active")
   salonId   String?  // Opcional: superadmin não tem salão
   salon     Salon?    @relation(fields: [salonId], references: [id])
   createdAt DateTime @default(now())
@@ -43,6 +44,7 @@ model Client {
   salon        Salon         @relation(fields: [salonId], references: [id])
   name         String
   phone        String?
+  status       String        @default("active")
   lastVisit    DateTime?
   visits       Int           @default(0)
   totalSpent   Decimal       @default(0.0)
@@ -72,6 +74,7 @@ model Service {
   name         String
   price        Decimal
   duration     Int           // in minutes
+  status       String        @default("active")
   appointments Appointment[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -129,4 +132,19 @@ model Plan {
   subscriptions    Subscription[]
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
+}
+
+model AdminAuditLog {
+  id        String   @id @default(uuid())
+  action    String
+  userId    String?
+  userName  String?
+  resource  String
+  detail    String
+  level     String   @default("info")
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([action])
+  @@index([level])
 }

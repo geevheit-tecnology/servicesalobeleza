@@ -68,5 +68,6 @@ func Migrate() error {
 		&Subscription{},
 		&Plan{},
 		&SystemSettings{},
+		&AdminAuditLog{},
 	)
 }

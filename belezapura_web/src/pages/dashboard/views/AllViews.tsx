@@ -4,7 +4,7 @@ import {
   DollarSign, BarChart3, Settings, Star, Globe, Menu, X, Bell, ChevronDown,
   TrendingUp, TrendingDown, Plus, Search, Filter, Eye, Edit3, Trash2, MoreHorizontal,
   MessageCircle, Percent, Building2, Zap, ArrowUpRight, ArrowDownRight, Check,
-  ArrowLeft, ChevronRight, LogOut, Package, Download, AlertTriangle
+  ArrowLeft, ChevronRight, LogOut, Package, Download, AlertTriangle, XCircle
 } from "lucide-react";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell
@@ -476,6 +476,7 @@ function ClientsView() {
             visits: c.visits || 0,
             total: `R$ ${c.totalSpent || "0"}`,
             tags: c.tags || [],
+            status: c.status || "active",
             pontos: c.pontos || Math.floor((c.totalSpent || 0) / 10) + 150
           }));
           setData(formatted);
@@ -518,11 +519,12 @@ function ClientsView() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if(!confirm("Tem certeza que deseja excluir este cliente?")) return;
+  const handleClientAction = async (id: string, mode: "delete" | "inactive") => {
+    const actionLabel = mode === "inactive" ? "inativar" : "deletar";
+    if(!confirm(`Tem certeza que deseja ${actionLabel} este cliente?`)) return;
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/salon/clients/${id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/salon/clients/${id}?mode=${mode}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -530,7 +532,7 @@ function ClientsView() {
         const d = await res.json();
         throw new Error(d.error || "Erro ao excluir cliente");
       }
-      alert("Cliente excluído!");
+      alert(mode === "inactive" ? "Cliente inativado!" : "Cliente deletado!");
       if(selected?.id === id) setSelected(null);
       loadClients();
     } catch(e: any) {
@@ -609,7 +611,7 @@ function ClientsView() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border bg-muted/40">
-                  {["Cliente", "Telefone", "Último atend.", "Total gasto", "Pontos", ""].map(h => (
+                  {["Cliente", "Telefone", "Último atend.", "Total gasto", "Pontos", "Status", ""].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">{h}</th>
                   ))}
                 </tr>
@@ -635,6 +637,9 @@ function ClientsView() {
                         {c.pontos}
                       </div>
                     </td>
+                    <td className="px-4 py-3">
+                      <Badge variant={c.status === "inactive" ? "danger" : "success"}>{c.status === "inactive" ? "Inativo" : "Ativo"}</Badge>
+                    </td>
                     <td className="px-4 py-3 text-right">
                       <button className="p-1.5 rounded-lg hover:bg-muted"><ChevronRight className="w-4 h-4 text-muted-foreground" /></button>
                     </td>
@@ -651,10 +656,12 @@ function ClientsView() {
               <div className="p-5 border-b border-border text-center relative">
                 <div className="absolute top-4 right-4 flex gap-1">
                   <button onClick={() => openEditForm(selected)} className="p-2 bg-muted hover:bg-primary/10 hover:text-primary rounded-lg transition-colors" title="Editar"><Edit3 className="w-4 h-4" /></button>
-                  <button onClick={() => handleDelete(selected.id)} className="p-2 bg-muted hover:bg-red-100 text-red-500 rounded-lg transition-colors" title="Excluir"><Trash2 className="w-4 h-4" /></button>
+                  <button onClick={() => handleClientAction(selected.id, "inactive")} className="p-2 bg-muted hover:bg-red-100 text-red-500 rounded-lg transition-colors" title="Inativar"><XCircle className="w-4 h-4" /></button>
+                  <button onClick={() => handleClientAction(selected.id, "delete")} className="p-2 bg-muted hover:bg-red-100 text-red-500 rounded-lg transition-colors" title="Deletar"><Trash2 className="w-4 h-4" /></button>
                 </div>
                 <Avatar name={selected.name} size="xl" className="mx-auto mb-3" />
                 <h3 className="font-serif text-xl font-medium">{selected.name}</h3>
+                <div className="mt-2"><Badge variant={selected.status === "inactive" ? "danger" : "success"}>{selected.status === "inactive" ? "Inativo" : "Ativo"}</Badge></div>
                 <div className="text-muted-foreground text-sm">{selected.phone || "Sem telefone"}</div>
                 <div className="flex justify-center flex-wrap gap-2 mt-3">
                   {selected.tags.map((t: string) => <Badge key={t} variant="purple">{t}</Badge>)}
@@ -1108,7 +1115,7 @@ function ServicosView() {
       .then(r => r.json())
       .then(d => {
         if (d.services) {
-          setServices(d.services.map((s: any) => ({ ...s, cat: 'Serviço', pros: ['Geral'], status: 'active' })));
+          setServices(d.services.map((s: any) => ({ ...s, cat: 'Serviço', pros: ['Geral'], status: s.status || 'active' })));
         }
       })
       .catch(console.error);
@@ -1146,11 +1153,12 @@ function ServicosView() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Tem certeza que deseja excluir este serviço?")) return;
+  const handleServiceAction = async (id: string, mode: "delete" | "inactive") => {
+    const actionLabel = mode === "inactive" ? "inativar" : "deletar";
+    if (!confirm(`Tem certeza que deseja ${actionLabel} este serviço?`)) return;
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/services/${id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/services/${id}?mode=${mode}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -1158,8 +1166,13 @@ function ServicosView() {
         const d = await res.json();
         throw new Error(d.error || "Erro ao excluir serviço");
       }
-      setServices(services.filter(s => s.id !== id));
-      alert("Serviço excluído com sucesso!");
+      if (mode === "inactive") {
+        const data = await res.json();
+        setServices(services.map(s => s.id === id ? { ...s, status: data.status || "inactive" } : s));
+      } else {
+        setServices(services.filter(s => s.id !== id));
+      }
+      alert(mode === "inactive" ? "Serviço inativado!" : "Serviço deletado!");
     } catch(e: any) {
       alert(e.message);
     }
@@ -1224,15 +1237,16 @@ function ServicosView() {
                 <td className="px-4 py-3 text-sm font-semibold text-primary">R$ {Number(s.price).toFixed(2).replace('.', ',')}</td>
                 <td className="px-4 py-3 text-sm text-muted-foreground">{s.pros?.join(", ") || "Geral"}</td>
                 <td className="px-4 py-3">
-                  <button onClick={() => setServices(prev => prev.map(sv => sv.id === s.id ? { ...sv, status: sv.status === "active" ? "inactive" : "active" } : sv))}
-                    className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${s.status === "active" ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100" : "bg-muted text-muted-foreground border-border hover:border-primary/30"}`}>
+                  <button
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${s.status === "active" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-red-50 text-red-600 border-red-200"}`}>
                     {s.status === "active" ? "Ativo" : "Inativo"}
                   </button>
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1">
                     <button className="p-1.5 rounded hover:bg-muted"><Edit3 className="w-3.5 h-3.5 text-muted-foreground" /></button>
-                    <button onClick={() => handleDelete(s.id)} className="p-1.5 rounded hover:bg-red-100 text-red-500 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => handleServiceAction(s.id, "inactive")} className="p-1.5 rounded hover:bg-red-100 text-red-500 transition-colors" title="Inativar"><XCircle className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => handleServiceAction(s.id, "delete")} className="p-1.5 rounded hover:bg-red-100 text-red-500 transition-colors" title="Deletar"><Trash2 className="w-3.5 h-3.5" /></button>
                   </div>
                 </td>
               </tr>
@@ -1267,6 +1281,7 @@ function ProfissionaisView() {
              appointments: 0,
              revenue: "R$ 0",
              commission: `${p.commission || 0}%`,
+             status: p.status || "active",
           }));
           setData(formatted);
         }
@@ -1302,11 +1317,12 @@ function ProfissionaisView() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Tem certeza que deseja excluir este profissional?")) return;
+  const handleProfessionalAction = async (id: string, mode: "delete" | "inactive") => {
+    const actionLabel = mode === "inactive" ? "inativar" : "deletar";
+    if (!confirm(`Tem certeza que deseja ${actionLabel} este profissional?`)) return;
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/professionals/${id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/professionals/${id}?mode=${mode}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -1314,9 +1330,15 @@ function ProfissionaisView() {
         const d = await res.json();
         throw new Error(d.error || "Erro ao excluir profissional");
       }
-      setData(data.filter(p => p.id !== id));
-      setSelected(null);
-      alert("Profissional excluído com sucesso!");
+      if (mode === "inactive") {
+        const resData = await res.json();
+        setData(data.map(p => p.id === id ? { ...p, status: resData.status || "inactive" } : p));
+        setSelected((current: any) => current?.id === id ? { ...current, status: resData.status || "inactive" } : current);
+      } else {
+        setData(data.filter(p => p.id !== id));
+        setSelected(null);
+      }
+      alert(mode === "inactive" ? "Profissional inativado!" : "Profissional deletado!");
     } catch(e: any) {
       alert(e.message);
     }
@@ -1363,7 +1385,7 @@ function ProfissionaisView() {
                 </div>
               </div>
               <div className="flex flex-col items-end gap-2">
-                <Badge variant="success">Ativo</Badge>
+                <Badge variant={p.status === "inactive" ? "danger" : "success"}>{p.status === "inactive" ? "Inativo" : "Ativo"}</Badge>
                 <div className="text-xs text-amber-500">★ 4,9</div>
               </div>
             </div>
@@ -1383,7 +1405,10 @@ function ProfissionaisView() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => handleDelete(selected.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Excluir profissional">
+                  <button onClick={() => handleProfessionalAction(selected.id, "inactive")} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Inativar profissional">
+                    <XCircle className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => handleProfessionalAction(selected.id, "delete")} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Deletar profissional">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>

@@ -56,6 +56,17 @@ func AuthRequired() gin.HandlerFunc {
 	}
 }
 
+func SuperAdminRequired() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.GetString("role") != "superadmin" {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Acesso restrito ao superadmin."})
+			return
+		}
+
+		c.Next()
+	}
+}
+
 // GenerateToken creates a signed JWT for the given user.
 func GenerateToken(userID, salonID, role, name string) (string, error) {
 	claims := &Claims{

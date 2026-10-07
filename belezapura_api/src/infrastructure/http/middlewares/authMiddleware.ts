@@ -5,6 +5,7 @@ export interface AuthRequest extends Request {
   user?: {
     userId: string;
     salonId: string;
+    role: string;
   };
 }
 
@@ -23,7 +24,7 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
 
   try {
     const secret = process.env.JWT_SECRET || 'super-secret-key-belezapura';
-    const decoded = jwt.verify(token, secret) as unknown as { userId: string; salonId: string };
+    const decoded = jwt.verify(token, secret) as unknown as { userId: string; salonId: string; role: string };
     
     // Injeta os dados do usuário na requisição para isolarmos os dados por Salão!
     req.user = decoded;
@@ -32,4 +33,12 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
   } catch (err) {
     return res.status(401).json({ error: 'Token inválido ou expirado.' });
   }
+}
+
+export function superAdminMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
+  if (req.user?.role !== 'superadmin') {
+    return res.status(403).json({ error: 'Acesso restrito ao superadmin.' });
+  }
+
+  return next();
 }

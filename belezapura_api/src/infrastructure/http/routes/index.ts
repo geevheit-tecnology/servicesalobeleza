@@ -8,7 +8,7 @@ import { SalonController } from '../controllers/SalonController';
 import { ServiceController } from '../controllers/ServiceController';
 import { ProfessionalController } from '../controllers/ProfessionalController';
 import { ClientController } from '../controllers/ClientController';
-import { authMiddleware } from '../middlewares/authMiddleware';
+import { authMiddleware, superAdminMiddleware } from '../middlewares/authMiddleware';
 
 export const routes = Router();
 
@@ -56,6 +56,7 @@ routes.put('/salon/clients/:id', (req, res) => clientController.update(req, res)
 routes.delete('/salon/clients/:id', (req, res) => clientController.delete(req, res));
 
 // Rotas do Super Admin
+routes.use('/superadmin', superAdminMiddleware as any);
 routes.get('/superadmin/overview', (req, res) => superAdminController.getOverview(req, res));
 routes.get('/superadmin/salons', (req, res) => superAdminController.getSalons(req, res));
 routes.put('/superadmin/salons/:id/block', (req, res) => superAdminController.blockSalon(req, res));
@@ -68,3 +69,8 @@ routes.delete('/superadmin/plans/:id', (req, res) => superAdminController.delete
 
 routes.get('/superadmin/subscriptions', (req, res) => superAdminController.getSubscriptions(req, res));
 routes.put('/superadmin/subscriptions/:id/status', (req, res) => superAdminController.updateSubscriptionStatus(req, res));
+routes.get('/superadmin/users', (req, res) => superAdminController.getUsers(req, res));
+routes.post('/superadmin/users', (req, res) => superAdminController.createUser(req, res));
+routes.put('/superadmin/users/:id', (req, res) => superAdminController.updateUser(req, res));
+routes.delete('/superadmin/users/:id', (req, res) => superAdminController.deleteUser(req, res));
+routes.get('/superadmin/audit-logs', (req, res) => superAdminController.getAuditLogs(req, res));

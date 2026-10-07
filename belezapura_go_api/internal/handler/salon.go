@@ -15,7 +15,7 @@ func GetSalonDashboard(c *gin.Context) {
 
 	var totalAppointments, totalClients, totalProfessionals int64
 	db.DB.Model(&db.Appointment{}).Where("salon_id = ?", salonID).Count(&totalAppointments)
-	db.DB.Model(&db.Client{}).Where("salon_id = ?", salonID).Count(&totalClients)
+	db.DB.Model(&db.Client{}).Where("salon_id = ? AND status <> ?", salonID, "deleted").Count(&totalClients)
 	db.DB.Model(&db.Professional{}).Where("salon_id = ? AND status = ?", salonID, "active").Count(&totalProfessionals)
 
 	// Revenue this month
@@ -53,8 +53,8 @@ func GetSalonDetails(c *gin.Context) {
 
 	var salon db.Salon
 	if err := db.DB.
-		Preload("Professionals").
-		Preload("Services").
+		Preload("Professionals", "status <> ?", "deleted").
+		Preload("Services", "status <> ?", "deleted").
 		Preload("Subscriptions").
 		First(&salon, "id = ?", salonID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Salão não encontrado."})
@@ -68,6 +68,6 @@ func GetSalonClients(c *gin.Context) {
 	salonID := c.GetString("salonId")
 
 	var clients []db.Client
-	db.DB.Where("salon_id = ?", salonID).Order("name asc").Find(&clients)
+	db.DB.Where("salon_id = ? AND status <> ?", salonID, "deleted").Order("name asc").Find(&clients)
 	c.JSON(http.StatusOK, clients)
 }
