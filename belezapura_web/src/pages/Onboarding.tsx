@@ -248,7 +248,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
         </p>
         <div className="flex items-center gap-2 bg-secondary border border-border rounded-xl px-4 py-2 mb-8 text-sm font-mono">
           <Globe className="w-4 h-4 text-primary" />
-          beautyos.app/<span className="text-primary font-semibold">{salonName.toLowerCase().replace(/\s/g, "-")}</span>
+          <span className="text-primary font-semibold">{window.location.origin}/agendar/{salonName.toLowerCase().replace(/\s/g, "-")}</span>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 mb-8">
           <Button size="lg" onClick={onFinish}>
@@ -728,11 +728,11 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
               <div className="flex items-center gap-2 bg-card border border-border rounded-xl px-3 py-2">
                 <Globe className="w-4 h-4 text-primary shrink-0" />
                 <span className="text-sm font-mono text-muted-foreground flex-1 truncate">
-                  beautyos.app/<span className="text-primary font-semibold">{salonName.toLowerCase().replace(/\s/g, "-")}</span>
+                  <span className="text-primary font-semibold">{window.location.origin}/agendar/{salonName.toLowerCase().replace(/\s/g, "-")}</span>
                 </span>
                 <button onClick={() => {
                   const slug = salonName.toLowerCase().replace(/\s/g, "-");
-                  const link = `beautyos.app/${slug}`;
+                  const link = `${window.location.origin}/agendar/${slug}`;
                   navigator.clipboard.writeText(link);
                   alert("Link copiado: " + link);
                 }} className="text-xs text-primary font-medium hover:underline shrink-0">Copiar</button>
