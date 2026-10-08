@@ -355,8 +355,14 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium block mb-1.5">Telefone / WhatsApp *</label>
-                <input placeholder="(11) 99999-0000" className="w-full h-11 rounded-xl border border-border px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-card" />
+                <label className="text-sm font-medium block mb-1.5">Senha *</label>
+                <input 
+                  type="password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="Sua senha de acesso" 
+                  className="w-full h-11 rounded-xl border border-border px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-card" 
+                />
               </div>
             </div>
 
@@ -724,7 +730,12 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
                 <span className="text-sm font-mono text-muted-foreground flex-1 truncate">
                   beautyos.app/<span className="text-primary font-semibold">{salonName.toLowerCase().replace(/\s/g, "-")}</span>
                 </span>
-                <button className="text-xs text-primary font-medium hover:underline shrink-0">Copiar</button>
+                <button onClick={() => {
+                  const slug = salonName.toLowerCase().replace(/\s/g, "-");
+                  const link = `beautyos.app/${slug}`;
+                  navigator.clipboard.writeText(link);
+                  alert("Link copiado: " + link);
+                }} className="text-xs text-primary font-medium hover:underline shrink-0">Copiar</button>
               </div>
             </div>
 
