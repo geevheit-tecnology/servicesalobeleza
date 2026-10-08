@@ -154,10 +154,11 @@ export default function ClientView() {
     }
   };
 
-  // Tema Pink vibrante da referência
-  const COLOR_PINK = "bg-[#FF4B72]";
-  const TEXT_PINK = "text-[#FF4B72]";
-  const BORDER_PINK = "border-[#FF4B72]";
+  // Tema Dinâmico usando a cor escolhida no Onboarding
+  const mainColor = salonData?.mainColor || "#FF4B72";
+  const dynamicBgStyle = { backgroundColor: mainColor };
+  const dynamicTextStyle = { color: mainColor };
+  const dynamicBorderStyle = { borderColor: mainColor };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 font-sans">
@@ -167,7 +168,7 @@ export default function ClientView() {
           <div className="flex-1 flex flex-col overflow-y-auto pb-6 bg-[#FAFAFA]">
             {/* Header com Imagem e Curva Branca */}
             <div className="relative h-64 shrink-0">
-              <img src={SALON_HERO} alt="Salão" className="w-full h-full object-cover" />
+              <img src={salonData?.cover || SALON_HERO} alt="Salão" className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-black/20" />
               <div className="absolute top-12 left-6 right-6 flex items-center justify-between text-white">
                 <div>
@@ -182,7 +183,7 @@ export default function ClientView() {
 
             {/* Menu Tabs */}
             <div className="flex justify-around px-6 mb-8 mt-2">
-              <button className={`font-bold text-sm pb-2 border-b-2 ${BORDER_PINK} ${TEXT_PINK}`}>Serviços</button>
+              <button className={`font-bold text-sm pb-2 border-b-2`} style={{ ...dynamicTextStyle, ...dynamicBorderStyle }}>Serviços</button>
               <button className="font-bold text-sm pb-2 text-gray-400">Profissionais</button>
               <button className="font-bold text-sm pb-2 text-gray-400">Fotos</button>
             </div>
@@ -195,17 +196,17 @@ export default function ClientView() {
               
               {services.map((s: any, idx: number) => (
                 <div key={s.id} onClick={() => { setSelectedService(s); setStep("booking"); }} className="relative bg-white rounded-3xl shadow-md p-4 flex gap-4 cursor-pointer hover:shadow-lg transition-all border border-gray-100">
-                  <div className={`w-24 h-24 rounded-2xl overflow-hidden shrink-0 ${COLOR_PINK}`}>
+                  <div className={`w-24 h-24 rounded-2xl overflow-hidden shrink-0`} style={dynamicBgStyle}>
                     <img src={SERVICE_IMGS[idx % SERVICE_IMGS.length]} alt="Serviço" className="w-full h-full object-cover opacity-90 mix-blend-multiply" />
                   </div>
                   <div className="flex-1 flex flex-col justify-center">
                     <h3 className="font-bold text-gray-800 text-lg mb-1">{s.name}</h3>
                     <p className="text-xs text-gray-500 mb-3">{s.duration} min de puro cuidado.</p>
                     <div className="flex justify-between items-center mt-auto">
-                      <span className={`font-bold text-lg ${TEXT_PINK}`}>R$ {s.price}</span>
+                      <span className={`font-bold text-lg`} style={dynamicTextStyle}>R$ {s.price}</span>
                     </div>
                   </div>
-                  <button className={`absolute right-0 bottom-0 ${COLOR_PINK} text-white px-5 py-3 rounded-tl-3xl rounded-br-3xl font-bold text-sm shadow-md`}>
+                  <button className={`absolute right-0 bottom-0 text-white px-5 py-3 rounded-tl-3xl rounded-br-3xl font-bold text-sm shadow-md`} style={dynamicBgStyle}>
                     Agendar ➔
                   </button>
                 </div>
@@ -235,8 +236,8 @@ export default function ClientView() {
         {step === "booking" && (
           <div className="flex-1 flex flex-col bg-white overflow-y-auto">
             
-            {/* Header curvo rosa gigante */}
-            <div className={`relative w-full ${COLOR_PINK} pt-12 pb-24 px-6 shrink-0`}>
+            {/* Header curvo gigante */}
+            <div className={`relative w-full pt-12 pb-24 px-6 shrink-0`} style={dynamicBgStyle}>
               <div className="flex items-center gap-4 mb-4">
                 <button onClick={() => setStep("home")} className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white">
                   <ArrowLeft className="w-5 h-5" />
@@ -266,9 +267,10 @@ export default function ClientView() {
                       <button 
                         key={i}
                         onClick={() => setSelectedDate(d.dateObj)}
+                        style={isSelected ? dynamicBgStyle : {}}
                         className={`shrink-0 w-[85px] h-[110px] rounded-[2rem] flex flex-col items-center justify-center transition-all ${
                           isSelected 
-                            ? `${COLOR_PINK} text-white shadow-lg shadow-pink-200/50 scale-105` 
+                            ? `text-white shadow-lg shadow-black/10 scale-105` 
                             : "bg-white text-gray-400 border border-gray-100 hover:border-pink-200"
                         }`}
                       >
@@ -305,9 +307,10 @@ export default function ClientView() {
                       onClick={() => setSelectedTime(t)}
                       className={`py-3.5 rounded-[1.5rem] text-sm font-bold transition-all ${
                         selectedTime === t 
-                          ? `${COLOR_PINK} text-white shadow-md shadow-pink-200/50 border-transparent` 
-                          : "bg-gray-50 text-gray-500 border border-transparent hover:bg-pink-50 hover:text-pink-500"
+                          ? `text-white shadow-md shadow-black/10 border-transparent` 
+                          : "bg-gray-50 text-gray-500 border border-transparent hover:bg-gray-100"
                       }`}
+                      style={selectedTime === t ? dynamicBgStyle : {}}
                     >
                       {t}
                     </button>
@@ -323,7 +326,8 @@ export default function ClientView() {
               <button 
                 disabled={!selectedDate || !selectedTime || !selectedService || !selectedPro}
                 onClick={() => setStep("data")}
-                className={`w-full h-14 rounded-full ${COLOR_PINK} disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold text-lg shadow-lg shadow-pink-300 transition-all`}
+                style={(!selectedDate || !selectedTime || !selectedService || !selectedPro) ? {} : dynamicBgStyle}
+                className={`w-full h-14 rounded-full disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold text-lg shadow-lg shadow-black/10 transition-all`}
               >
                 Confirmar Horário
               </button>
@@ -334,7 +338,7 @@ export default function ClientView() {
         {/* Step: Dados e Pagamento integrados */}
         {step === "data" && (
           <div className="flex-1 flex flex-col bg-white overflow-y-auto">
-            <div className={`relative w-full ${COLOR_PINK} pt-12 pb-24 px-6 shrink-0`}>
+            <div className={`relative w-full pt-12 pb-24 px-6 shrink-0`} style={dynamicBgStyle}>
               <div className="flex items-center gap-4 mb-4">
                 <button onClick={() => setStep("booking")} className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white">
                   <ArrowLeft className="w-5 h-5" />
@@ -387,7 +391,7 @@ export default function ClientView() {
                 </div>
                 <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-100">
                   <span className="font-bold text-gray-800 text-lg">Sinal (20%)</span>
-                  <span className={`font-bold text-2xl ${TEXT_PINK}`}>R$ {(parseFloat(selectedService?.price || "0") * 0.2).toFixed(2).replace('.', ',')}</span>
+                  <span className={`font-bold text-2xl`} style={dynamicTextStyle}>R$ {(parseFloat(selectedService?.price || "0") * 0.2).toFixed(2).replace('.', ',')}</span>
                 </div>
               </div>
             </div>
@@ -396,7 +400,8 @@ export default function ClientView() {
               <button 
                 disabled={!clientName || !clientPhone}
                 onClick={handleReserveAndGeneratePix}
-                className={`w-full h-14 rounded-full ${COLOR_PINK} disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold text-lg shadow-lg shadow-pink-300 transition-all`}
+                style={(!clientName || !clientPhone) ? {} : dynamicBgStyle}
+                className={`w-full h-14 rounded-full disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold text-lg shadow-lg shadow-black/10 transition-all`}
               >
                 Continuar para o PIX
               </button>
@@ -406,7 +411,7 @@ export default function ClientView() {
 
         {step === "pix" && (
           <div className="flex-1 flex flex-col bg-white overflow-y-auto">
-            <div className={`relative w-full ${COLOR_PINK} pt-12 pb-24 px-6 shrink-0`}>
+            <div className={`relative w-full pt-12 pb-24 px-6 shrink-0`} style={dynamicBgStyle}>
               <div className="flex items-center gap-4 mb-4">
                 <button onClick={() => setStep("data")} className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white">
                   <ArrowLeft className="w-5 h-5" />
@@ -418,7 +423,7 @@ export default function ClientView() {
             <div className="px-6 flex-1 -mt-16 relative z-20 pb-24 text-center flex flex-col items-center">
               <div className="bg-white rounded-[2rem] shadow-xl shadow-gray-200/50 p-8 mb-8 border border-gray-50 w-full max-w-sm">
                 <h3 className="font-bold text-gray-800 mb-2 text-lg">Sinal da Reserva</h3>
-                <div className={`font-bold text-4xl mb-6 ${TEXT_PINK}`}>
+                <div className={`font-bold text-4xl mb-6`} style={dynamicTextStyle}>
                   R$ {(parseFloat(selectedService?.price || "0") * 0.2).toFixed(2).replace('.', ',')}
                 </div>
                 
@@ -438,7 +443,8 @@ export default function ClientView() {
             <div className="absolute bottom-0 left-0 right-0 p-6 bg-white border-t border-gray-100">
               <button 
                 onClick={() => setStep("confirm")}
-                className={`w-full h-14 rounded-full ${COLOR_PINK} text-white font-bold text-lg shadow-lg shadow-pink-300 transition-all`}
+                style={dynamicBgStyle}
+                className={`w-full h-14 rounded-full text-white font-bold text-lg shadow-lg shadow-black/10 transition-all`}
               >
                 Simular Pagamento Realizado
               </button>
@@ -447,9 +453,9 @@ export default function ClientView() {
         )}
 
         {step === "confirm" && (
-          <div className={`p-8 flex-1 flex flex-col items-center justify-center text-center ${COLOR_PINK}`}>
+          <div className={`p-8 flex-1 flex flex-col items-center justify-center text-center`} style={dynamicBgStyle}>
             <div className={`w-28 h-28 rounded-full bg-white/20 flex items-center justify-center mb-8 backdrop-blur-md`}>
-              <div className={`w-20 h-20 rounded-full bg-white flex items-center justify-center ${TEXT_PINK} shadow-2xl`}>
+              <div className={`w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-2xl`} style={dynamicTextStyle}>
                 <Check className="w-10 h-10" />
               </div>
             </div>
@@ -459,7 +465,8 @@ export default function ClientView() {
             </p>
             <button 
               onClick={() => setStep("home")}
-              className="w-full h-14 rounded-full bg-white text-pink-500 font-bold text-lg shadow-xl"
+              style={dynamicTextStyle}
+              className="w-full h-14 rounded-full bg-white font-bold text-lg shadow-xl"
             >
               Voltar ao início
             </button>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   Store, Image, Scissors, UserCheck, Clock, CreditCard, Globe,
   Check, ArrowRight, ArrowLeft, Sparkles, Upload, Plus, X, ChevronRight, Lock
@@ -94,6 +94,7 @@ const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, callback: (ba
 
 export default function Onboarding({ onFinish }: { onFinish: () => void }) {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const planId = searchParams.get("planId");
 
   const [step, setStep] = useState(1);
@@ -248,13 +249,13 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
         </p>
         <div className="flex items-center gap-2 bg-secondary border border-border rounded-xl px-4 py-2 mb-8 text-sm font-mono">
           <Globe className="w-4 h-4 text-primary" />
-          <span className="text-primary font-semibold">{window.location.origin}/agendar/{salonName.toLowerCase().replace(/\s/g, "-")}</span>
+          <span className="text-primary font-semibold">{window.location.origin}/agendar/{localStorage.getItem('salonSlug') || salonName.toLowerCase().replace(/\s/g, "-")}</span>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 mb-8">
-          <Button size="lg" onClick={onFinish}>
-            <Globe className="w-4 h-4" /> Publicar meu salão
+          <Button size="lg" onClick={() => navigate(`/agendar/${localStorage.getItem('salonSlug') || salonName.toLowerCase().replace(/\s/g, "-")}`)}>
+            <Globe className="w-4 h-4" /> Ver página do salão
           </Button>
-          <Button variant="outline" size="lg" onClick={onFinish}>
+          <Button variant="outline" size="lg" onClick={() => navigate('/admin')}>
             Ver painel do salão
           </Button>
         </div>
@@ -360,7 +361,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
                   type="password"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  placeholder="Sua senha de acesso" 
+                  placeholder="Mínimo 6 caracteres" 
                   className="w-full h-11 rounded-xl border border-border px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-card" 
                 />
               </div>
