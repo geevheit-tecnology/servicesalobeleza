@@ -108,6 +108,14 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
   const [done, setDone] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const [newServiceName, setNewServiceName] = useState("");
+  const [newServiceCat, setNewServiceCat] = useState("Cabelo");
+  const [newServiceDur, setNewServiceDur] = useState("");
+  const [newServicePrice, setNewServicePrice] = useState("");
+
+  const [newProName, setNewProName] = useState("");
+  const [newProSpec, setNewProSpec] = useState("");
+
   const [logo, setLogo] = useState<string | null>(null);
   const [cover, setCover] = useState<string>("https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&h=300&fit=crop&auto=format");
   const [gallery, setGallery] = useState<string[]>([
@@ -517,7 +525,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
                     <div className="text-xs text-muted-foreground">{s.cat} · {s.duration}</div>
                   </div>
                   <span className="text-primary font-semibold text-sm">{s.price}</span>
-                  <button className="p-1 rounded hover:bg-muted"><X className="w-4 h-4 text-muted-foreground" /></button>
+                  <button onClick={() => setServices(prev => prev.filter((_, j) => j !== i))} className="p-1 rounded hover:bg-muted"><X className="w-4 h-4 text-muted-foreground" /></button>
                 </div>
               ))}
             </div>
@@ -525,15 +533,22 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
             <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4">
               <h4 className="text-sm font-semibold mb-3 flex items-center gap-2"><Plus className="w-4 h-4 text-primary" /> Adicionar serviço</h4>
               <div className="grid sm:grid-cols-2 gap-3 mb-3">
-                <input placeholder="Nome do serviço" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
-                <select className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card appearance-none">
+                <input value={newServiceName} onChange={e => setNewServiceName(e.target.value)} placeholder="Nome do serviço" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
+                <select value={newServiceCat} onChange={e => setNewServiceCat(e.target.value)} className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card appearance-none">
                   {serviceCategories.map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
               <div className="grid grid-cols-3 gap-3">
-                <input placeholder="Duração" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
-                <input placeholder="Preço" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
-                <Button size="sm" className="h-10">Adicionar</Button>
+                <input value={newServiceDur} onChange={e => setNewServiceDur(e.target.value)} placeholder="Duração" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
+                <input value={newServicePrice} onChange={e => setNewServicePrice(e.target.value)} placeholder="Preço" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
+                <Button size="sm" className="h-10" onClick={() => {
+                  if (newServiceName && newServicePrice) {
+                    setServices(prev => [...prev, { name: newServiceName, cat: newServiceCat, duration: newServiceDur || "60 min", price: newServicePrice, active: true }]);
+                    setNewServiceName("");
+                    setNewServiceDur("");
+                    setNewServicePrice("");
+                  }
+                }}>Adicionar</Button>
               </div>
             </div>
           </div>
@@ -553,7 +568,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
                     <div className="text-xs text-muted-foreground">{p.specialty}</div>
                   </div>
                   <Badge variant="success">Ativo</Badge>
-                  <button className="p-1 rounded hover:bg-muted"><X className="w-4 h-4 text-muted-foreground" /></button>
+                  <button onClick={() => setPros(prev => prev.filter((_, j) => j !== i))} className="p-1 rounded hover:bg-muted"><X className="w-4 h-4 text-muted-foreground" /></button>
                 </div>
               ))}
             </div>
@@ -561,12 +576,18 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
             <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4">
               <h4 className="text-sm font-semibold mb-3 flex items-center gap-2"><Plus className="w-4 h-4 text-primary" /> Adicionar profissional</h4>
               <div className="grid sm:grid-cols-2 gap-3 mb-3">
-                <input placeholder="Nome completo" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
-                <input placeholder="Especialidade" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
+                <input value={newProName} onChange={e => setNewProName(e.target.value)} placeholder="Nome completo" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
+                <input value={newProSpec} onChange={e => setNewProSpec(e.target.value)} placeholder="Especialidade" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
               </div>
               <div className="grid sm:grid-cols-2 gap-3">
                 <input placeholder="Telefone / WhatsApp" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
-                <Button size="sm" className="h-10">Adicionar</Button>
+                <Button size="sm" className="h-10" onClick={() => {
+                  if (newProName) {
+                    setPros(prev => [...prev, { name: newProName, specialty: newProSpec, active: true }]);
+                    setNewProName("");
+                    setNewProSpec("");
+                  }
+                }}>Adicionar</Button>
               </div>
             </div>
           </div>
