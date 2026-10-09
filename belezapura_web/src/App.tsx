@@ -5,6 +5,7 @@ import SalonDashboard from "@/pages/SalonDashboard";
 import SuperAdmin from "@/pages/SuperAdmin";
 import Onboarding from "@/pages/Onboarding";
 import Login from "@/pages/Login";
+import SuperAdminLogin from "@/pages/SuperAdminLogin";
 
 export default function App() {
   return (
@@ -12,6 +13,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Marketing />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/login-admin" element={<SuperAdminLogin />} />
         <Route path="/admin" element={<SalonDashboard />} />
         <Route path="/superadmin" element={<SuperAdmin />} />
         <Route path="/onboarding" element={<Onboarding onFinish={() => {}} />} />

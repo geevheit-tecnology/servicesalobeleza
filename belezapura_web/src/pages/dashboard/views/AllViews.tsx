@@ -1105,7 +1105,7 @@ const allServices = [
 function ServicosView() {
   const [services, setServices] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [newSvc, setNewSvc] = useState({ name: "", duration: "", price: "" });
+  const [newSvc, setNewSvc] = useState({ name: "", duration: "", price: "", cat: "Cabelo" });
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -2131,7 +2131,7 @@ function EstoqueView() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <span className={`font-bold text-sm ${isLow ? 'text-red-500' : 'text-foreground'}`}>{p.qtde} un.</span>
-                      {isLow && <AlertTriangle className="w-4 h-4 text-red-500" title="Estoque abaixo do mínimo" />}
+                      {isLow && <AlertTriangle className="w-4 h-4 text-red-500" />}
                     </div>
                   </td>
                   <td className="px-4 py-3 text-sm text-muted-foreground">{p.min} un.</td>

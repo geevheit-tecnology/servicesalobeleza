@@ -66,23 +66,21 @@ export default function ClientView() {
   }, [slug]);
 
   useEffect(() => {
-    if (selectedDate && selectedPro && selectedService) {
+    if (selectedDate && selectedPro && selectedService && salonData) {
       // Ajusta data
-      const dateStr = selectedDate.toISOString();
-      fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/public/availability?date=${dateStr}&professionalId=${selectedPro.id}&serviceId=${selectedService.id}`)
+      const dateStr = selectedDate.toISOString().split('T')[0];
+      fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/public/availability?salonId=${salonData.id}&date=${dateStr}&professionalId=${selectedPro.id}&serviceId=${selectedService.id}`)
         .then(res => res.json())
         .then(data => {
-          if (data.slots) {
-            const times = data.slots.map((s: string) => {
-               const d = new Date(s);
-               return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-            });
-            setAvailableTimes(times);
+          if (data.available) {
+            setAvailableTimes(data.available);
+          } else {
+            setAvailableTimes([]);
           }
         })
         .catch(console.error);
     }
-  }, [selectedDate, selectedPro, selectedService]);
+  }, [selectedDate, selectedPro, selectedService, salonData]);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-500">Carregando...</div>;
   if (!salonData && slug) return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-red-500">Salão não encontrado</div>;

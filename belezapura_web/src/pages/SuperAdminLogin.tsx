@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Sparkles, ArrowRight, Lock, Mail, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui";
 
-export default function Login() {
+export default function SuperAdminLogin() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,15 +28,15 @@ export default function Login() {
         throw new Error(data.error || "Erro ao fazer login");
       }
 
-      if (data.user.role === "superadmin") {
-         throw new Error("Acesso negado. Administradores devem usar o portal /login-admin.");
+      if (data.user.role !== "superadmin") {
+         throw new Error("Acesso negado. Use o portal do lojista.");
       }
 
       localStorage.setItem("token", data.token);
       localStorage.setItem("role", data.user.role);
       if (data.user.salonSlug) localStorage.setItem("salonSlug", data.user.salonSlug);
 
-      navigate("/admin");
+      navigate("/superadmin");
 
     } catch (err: any) {
       if (err.message === "Failed to fetch") {
@@ -50,14 +50,14 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-zinc-900 p-4">
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center shadow-lg mb-4 cursor-pointer hover:scale-105 transition-transform" onClick={() => navigate("/")}>
-            <Sparkles className="w-6 h-6 text-white" />
+          <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-lg mb-4 cursor-pointer hover:scale-105 transition-transform" onClick={() => navigate("/")}>
+            <Lock className="w-6 h-6 text-white" />
           </div>
-          <h1 className="font-serif text-3xl font-medium text-foreground">Acesse sua conta</h1>
-          <p className="text-muted-foreground mt-2 text-center">Bem-vindo(a) de volta ao beautyOS</p>
+          <h1 className="font-serif text-3xl font-medium text-white">Portal do SuperAdmin</h1>
+          <p className="text-zinc-400 mt-2 text-center">Gestão da Plataforma beautyOS</p>
         </div>
 
         <div className="bg-card border border-border rounded-3xl p-8 shadow-xl">

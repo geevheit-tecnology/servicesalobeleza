@@ -279,11 +279,11 @@ function SaloesView({ salonsData }: { salonsData: any }) {
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [drawerInfo, setDrawerInfo] = useState<{ salonName: string, type: 'history' | 'edit' } | null>(null);
 
-  const initialData = Array.isArray(salonsData) && salonsData.length > 0 ? salonsData : saloes;
+  const initialData = Array.isArray(salonsData) ? salonsData : [];
   const [localSalons, setLocalSalons] = useState<any[]>(initialData);
 
   useEffect(() => {
-    setLocalSalons(Array.isArray(salonsData) && salonsData.length > 0 ? salonsData : saloes);
+    setLocalSalons(Array.isArray(salonsData) ? salonsData : []);
   }, [salonsData]);
 
   if (salonsData && salonsData.error) {
@@ -1591,7 +1591,7 @@ export default function SuperAdmin() {
       .then(res => { if (!res.ok) throw new Error('Unauthorized'); return res.json(); })
       .then(data => setOverviewData(data))
       .catch(err => {
-        if (err.message === 'Unauthorized') { navigate('/login', { replace: true }); }
+        if (err.message === 'Unauthorized') { navigate('/login-admin', { replace: true }); }
         else { setOverviewData({ error: err.message }); }
       });
 

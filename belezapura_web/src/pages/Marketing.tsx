@@ -278,34 +278,34 @@ export default function Marketing() {
                 )}
                 
                 <div className="mb-6">
-                  <h3 className={`text-xl font-bold mb-2 ${p.highlight ? "text-white" : "text-foreground"}`}>{p.name}</h3>
+                  <h3 className={`text-xl font-bold mb-2 ${(p as any).highlight ? "text-white" : "text-foreground"}`}>{(p as any).name}</h3>
                   <div className="flex items-end gap-1">
-                    <span className={`font-serif text-4xl font-medium tracking-tight ${p.highlight ? "text-white" : "text-foreground"}`}>
-                      {p.price.toString().startsWith('R$') ? p.price : `R$ ${p.price}`}
+                    <span className={`font-serif text-4xl font-medium tracking-tight ${(p as any).highlight ? "text-white" : "text-foreground"}`}>
+                      {(p as any).price.toString().startsWith('R$') ? (p as any).price : `R$ ${(p as any).price}`}
                     </span>
-                    <span className={`text-sm mb-1.5 font-medium ${p.highlight ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{p.period || p.per || '/mês'}</span>
+                    <span className={`text-sm mb-1.5 font-medium ${(p as any).highlight ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{(p as any).period || (p as any).per || '/mês'}</span>
                   </div>
                 </div>
 
-                <div className={`h-[1px] w-full mb-6 ${p.highlight ? 'bg-primary-foreground/20' : 'bg-border'}`} />
+                <div className={`h-[1px] w-full mb-6 ${(p as any).highlight ? 'bg-primary-foreground/20' : 'bg-border'}`} />
 
                 <ul className="space-y-4 mb-8 flex-1">
-                  {(p.features || []).map((f: string) => (
+                  {((p as any).features || []).map((f: string) => (
                     <li key={f} className="flex items-start gap-3">
-                      <Check className={`w-5 h-5 shrink-0 mt-0.5 ${p.highlight ? "text-emerald-300" : "text-emerald-500"}`} />
-                      <span className={`text-sm font-medium leading-tight ${p.highlight ? "text-white" : "text-muted-foreground"}`}>{f}</span>
+                      <Check className={`w-5 h-5 shrink-0 mt-0.5 ${(p as any).highlight ? "text-emerald-300" : "text-emerald-500"}`} />
+                      <span className={`text-sm font-medium leading-tight ${(p as any).highlight ? "text-white" : "text-muted-foreground"}`}>{f}</span>
                     </li>
                   ))}
                 </ul>
                 
                 <Button 
-                  onClick={() => navigate(`/onboarding${p.id ? `?planId=${p.id}` : ''}`)}
-                  variant={p.highlight ? "secondary" : "default"}
-                  className={`w-full h-12 font-bold text-base ${p.highlight ? 'bg-white text-primary hover:bg-zinc-100' : ''}`}
+                  onClick={() => navigate(`/onboarding${(p as any).id ? `?planId=${(p as any).id}` : ''}`)}
+                  variant={(p as any).highlight ? "secondary" : "primary"}
+                  className={`w-full h-12 font-bold text-base ${(p as any).highlight ? 'bg-white text-primary hover:bg-zinc-100' : ''}`}
                 >
                   Testar 14 dias grátis
                 </Button>
-                <p className={`text-center text-xs mt-3 font-medium ${p.highlight ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                <p className={`text-center text-xs mt-3 font-medium ${(p as any).highlight ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
                   Sem cartão de crédito
                 </p>
               </div>
