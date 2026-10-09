@@ -25,70 +25,36 @@ const NAV = [
   { id: "configuracoes", label: "Configurações", icon: Settings },
 ];
 
-const mrrData = [
-  { name: "Abr", value: 28000 }, { name: "Mai", value: 32400 }, { name: "Jun", value: 35800 },
-  { name: "Jul", value: 38200 }, { name: "Ago", value: 41600 }, { name: "Set", value: 44800 },
-  { name: "Out", value: 49200 },
-];
-const growthData = [
-  { name: "Abr", saloes: 180 }, { name: "Mai", saloes: 210 }, { name: "Jun", saloes: 250 },
-  { name: "Jul", saloes: 310 }, { name: "Ago", saloes: 380 }, { name: "Set", saloes: 450 },
-  { name: "Out", saloes: 540 },
-];
-const churnData = [
-  { name: "Abr", novos: 42, cancelados: 8 }, { name: "Mai", novos: 38, cancelados: 6 },
-  { name: "Jun", novos: 52, cancelados: 9 }, { name: "Jul", novos: 68, cancelados: 7 },
-  { name: "Ago", novos: 78, cancelados: 10 }, { name: "Set", novos: 82, cancelados: 8 },
-  { name: "Out", novos: 94, cancelados: 11 },
-];
-
-const saloes = [
-  { name: "Salão Rosé", owner: "Rosé Silva", units: 4, plan: "Empresarial", status: "active", since: "Jan 2024", appointments: 1240, lastAccess: "Agora" },
-  { name: "Studio Carla", owner: "Carla Mendes", units: 1, plan: "Profissional", status: "active", since: "Mar 2024", appointments: 380, lastAccess: "1h atrás" },
-  { name: "Bella Estética", owner: "Patrícia Lima", units: 3, plan: "Premium", status: "active", since: "Fev 2024", appointments: 920, lastAccess: "3h atrás" },
-  { name: "Hair Design", owner: "Ana Costa", units: 1, plan: "Básico", status: "trial", since: "Out 2024", appointments: 45, lastAccess: "Hoje" },
-  { name: "Top Nails", owner: "Luciana Rocha", units: 1, plan: "Profissional", status: "late", since: "Jun 2024", appointments: 210, lastAccess: "2 dias" },
-  { name: "Beauty Club", owner: "Fernanda Matos", units: 2, plan: "Premium", status: "blocked", since: "Ago 2024", appointments: 180, lastAccess: "5 dias" },
-];
-
-const subscriptions = [
-  { salon: "Studio Beauty Prime", plan: "Profissional", value: "R$ 149", status: "pending", next: "Aguardando aprovação" },
-  { salon: "Salão Rosé", plan: "Empresarial", value: "R$ 499", status: "active", next: "01/11/2024" },
-  { salon: "Studio Carla", plan: "Profissional", value: "R$ 149", status: "active", next: "15/11/2024" },
-  { salon: "Bella Estética", plan: "Premium", value: "R$ 299", status: "active", next: "20/11/2024" },
-  { salon: "Hair Design", plan: "Básico", value: "R$ 0", status: "trial", next: "—" },
-  { salon: "Top Nails", plan: "Profissional", value: "R$ 149", status: "late", next: "Vencida" },
-];
+const mrrData: any[] = [];
+const growthData: any[] = [];
+const churnData: any[] = [];
+const saloes: any[] = [];
+const subscriptions: any[] = [];
 
 const plans = [
   {
     name: "Básico", price: "R$ 59,90", period: "/mês", color: "#E8E0D8",
     features: ["1 profissional", "50 agendamentos/mês", "Agenda online", "Página do salão", "PIX básico"],
-    users: 180, revenue: "R$ 10.782",
+    users: 0, revenue: "R$ 0",
   },
   {
     name: "Profissional", price: "R$ 149,90", period: "/mês", color: "#9B7EA8",
     features: ["Até 5 profissionais", "Ilimitado", "Financeiro", "Comissões", "Relatórios", "Lembretes WhatsApp"],
-    users: 620, revenue: "R$ 92.938",
+    users: 0, revenue: "R$ 0",
   },
   {
     name: "Premium", price: "R$ 299,90", period: "/mês", color: "#B8614A",
     features: ["Até 15 profissionais", "Até 3 unidades", "CRM avançado", "Personalização", "Tudo do Pro"],
-    users: 280, revenue: "R$ 83.972",
+    users: 0, revenue: "R$ 0",
   },
   {
     name: "Empresarial", price: "Sob consulta", period: "", color: "#1C1714",
     features: ["Ilimitado", "Unidades ilimitadas", "API + integrações", "Gerente de Conta", "SLA"],
-    users: 42, revenue: "R$ 126.000",
+    users: 0, revenue: "R$ 0",
   },
 ];
 
-const tickets = [
-  { id: "#001", salon: "Top Nails", subject: "PIX não processando pagamento", status: "open", priority: "alta", time: "2h" },
-  { id: "#002", salon: "Hair Design", subject: "Como configurar horários", status: "open", priority: "média", time: "4h" },
-  { id: "#003", salon: "Bella Estética", subject: "Exportar relatório financeiro", status: "resolved", priority: "baixa", time: "1d" },
-  { id: "#004", salon: "Studio Carla", subject: "Integração Instagram", status: "open", priority: "média", time: "1d" },
-];
+const tickets: any[] = [];
 
 function StatCard({ label, value, sub, icon: Icon, trend, color = "primary" }: {
   label: string; value: string; sub?: string; icon: any; trend?: number; color?: string;

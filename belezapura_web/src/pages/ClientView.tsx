@@ -55,6 +55,7 @@ export default function ClientView() {
 
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
   const [pixCode, setPixCode] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (!slug) { setLoading(false); return; }
@@ -83,7 +84,7 @@ export default function ClientView() {
   }, [selectedDate, selectedPro, selectedService, salonData]);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-500">Carregando...</div>;
-  if (!salonData && slug) return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-red-500">Salão não encontrado</div>;
+  if (!salonData) return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-red-500">Salão não encontrado</div>;
 
   const services = salonData?.services || [];
   const professionals = salonData?.professionals || [];
@@ -121,10 +122,12 @@ export default function ClientView() {
   const currentMonthName = currentDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
 
   const handleReserveAndGeneratePix = async () => {
+    if (!salonData || !selectedDate || !selectedTime || !selectedService || !selectedPro || isSubmitting) return;
+    setIsSubmitting(true);
     try {
       // Combina a data e a hora selecionada
-      const finalDate = new Date(selectedDate!);
-      const [hours, minutes] = selectedTime!.split(':');
+      const finalDate = new Date(selectedDate);
+      const [hours, minutes] = selectedTime.split(':');
       finalDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
 
       const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/public/appointments`, {
@@ -137,7 +140,7 @@ export default function ClientView() {
           serviceId: selectedService.id,
           professionalId: selectedPro.id,
           date: finalDate.toISOString(),
-          value: parseFloat(selectedService.price)
+          value: parseFloat(selectedService.price || "0")
         })
       });
       const data = await res.json();
@@ -149,6 +152,8 @@ export default function ClientView() {
       }
     } catch (e) {
       alert('Erro ao confirmar agendamento.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -163,7 +168,7 @@ export default function ClientView() {
       <div className="relative w-full max-w-md h-[100dvh] sm:h-[850px] bg-white sm:rounded-[3rem] overflow-hidden shadow-2xl flex flex-col">
         
         {step === "home" && (
-          <div className="flex-1 flex flex-col overflow-y-auto pb-6 bg-[#FAFAFA]">
+          <div className="flex-1 flex flex-col overflow-y-auto pb-6 bg-[#FAFAFA] animate-fade-up">
             {/* Header com Imagem e Curva Branca */}
             <div className="relative h-64 shrink-0">
               <img src={salonData?.cover || SALON_HERO} alt="Salão" className="w-full h-full object-cover" />
@@ -193,7 +198,7 @@ export default function ClientView() {
               </div>
               
               {services.map((s: any, idx: number) => (
-                <div key={s.id} onClick={() => { setSelectedService(s); setStep("booking"); }} className="relative bg-white rounded-3xl shadow-md p-4 flex gap-4 cursor-pointer hover:shadow-lg transition-all border border-gray-100">
+                <div key={s.id} onClick={() => { setSelectedService(s); setStep("booking"); }} className="relative bg-white rounded-3xl shadow-md p-4 flex gap-4 cursor-pointer hover:shadow-lg transition-all border border-gray-100 hover-lift">
                   <div className={`w-24 h-24 rounded-2xl overflow-hidden shrink-0`} style={dynamicBgStyle}>
                     <img src={SERVICE_IMGS[idx % SERVICE_IMGS.length]} alt="Serviço" className="w-full h-full object-cover opacity-90 mix-blend-multiply" />
                   </div>
@@ -232,7 +237,7 @@ export default function ClientView() {
 
         {/* Step: Booking (Agendamento completo com Onda Pink) */}
         {step === "booking" && (
-          <div className="flex-1 flex flex-col bg-white overflow-y-auto">
+          <div className="flex-1 flex flex-col bg-white overflow-y-auto animate-fade-up">
             
             {/* Header curvo gigante */}
             <div className={`relative w-full pt-12 pb-24 px-6 shrink-0`} style={dynamicBgStyle}>
@@ -266,7 +271,7 @@ export default function ClientView() {
                         key={i}
                         onClick={() => setSelectedDate(d.dateObj)}
                         style={isSelected ? dynamicBgStyle : {}}
-                        className={`shrink-0 w-[85px] h-[110px] rounded-[2rem] flex flex-col items-center justify-center transition-all ${
+                        className={`shrink-0 w-[85px] h-[110px] rounded-[2rem] flex flex-col items-center justify-center transition-all hover-lift ${
                           isSelected 
                             ? `text-white shadow-lg shadow-black/10 scale-105` 
                             : "bg-white text-gray-400 border border-gray-100 hover:border-pink-200"
@@ -286,7 +291,7 @@ export default function ClientView() {
                 <h3 className="text-gray-800 font-bold text-lg mb-4">Com quem?</h3>
                 <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
                   {professionals.map((p: any, idx: number) => (
-                    <div key={p.id} className="flex flex-col items-center flex-shrink-0 cursor-pointer" onClick={() => setSelectedPro(p)}>
+                    <div key={p.id} className="flex flex-col items-center flex-shrink-0 cursor-pointer hover-lift" onClick={() => setSelectedPro(p)}>
                       <div className={`w-[70px] h-[70px] rounded-full p-1 mb-2 transition-all ${selectedPro?.id === p.id ? "bg-gradient-to-tr from-pink-400 to-orange-300 shadow-md" : "bg-transparent"}`}>
                         <img src={PRO_IMGS[idx % PRO_IMGS.length]} alt="Profissional" className="w-full h-full rounded-full object-cover border-2 border-white" />
                       </div>
@@ -303,7 +308,7 @@ export default function ClientView() {
                     <button 
                       key={t}
                       onClick={() => setSelectedTime(t)}
-                      className={`py-3.5 rounded-[1.5rem] text-sm font-bold transition-all ${
+                      className={`py-3.5 rounded-[1.5rem] text-sm font-bold transition-all hover-lift ${
                         selectedTime === t 
                           ? `text-white shadow-md shadow-black/10 border-transparent` 
                           : "bg-gray-50 text-gray-500 border border-transparent hover:bg-gray-100"
@@ -325,7 +330,7 @@ export default function ClientView() {
                 disabled={!selectedDate || !selectedTime || !selectedService || !selectedPro}
                 onClick={() => setStep("data")}
                 style={(!selectedDate || !selectedTime || !selectedService || !selectedPro) ? {} : dynamicBgStyle}
-                className={`w-full h-14 rounded-full disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold text-lg shadow-lg shadow-black/10 transition-all`}
+                className={`w-full h-14 rounded-full disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold text-lg shadow-lg shadow-black/10 transition-all hover-lift`}
               >
                 Confirmar Horário
               </button>
@@ -335,7 +340,7 @@ export default function ClientView() {
 
         {/* Step: Dados e Pagamento integrados */}
         {step === "data" && (
-          <div className="flex-1 flex flex-col bg-white overflow-y-auto">
+          <div className="flex-1 flex flex-col bg-white overflow-y-auto animate-fade-up">
             <div className={`relative w-full pt-12 pb-24 px-6 shrink-0`} style={dynamicBgStyle}>
               <div className="flex items-center gap-4 mb-4">
                 <button onClick={() => setStep("booking")} className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white">
@@ -396,19 +401,19 @@ export default function ClientView() {
 
             <div className="absolute bottom-0 left-0 right-0 p-6 bg-white border-t border-gray-100">
               <button 
-                disabled={!clientName || !clientPhone}
+                disabled={!clientName || !clientPhone || isSubmitting}
                 onClick={handleReserveAndGeneratePix}
-                style={(!clientName || !clientPhone) ? {} : dynamicBgStyle}
-                className={`w-full h-14 rounded-full disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold text-lg shadow-lg shadow-black/10 transition-all`}
+                style={(!clientName || !clientPhone || isSubmitting) ? {} : dynamicBgStyle}
+                className={`w-full h-14 rounded-full disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold text-lg shadow-lg shadow-black/10 transition-all hover-lift`}
               >
-                Continuar para o PIX
+                {isSubmitting ? "Gerando PIX..." : "Continuar para o PIX"}
               </button>
             </div>
           </div>
         )}
 
         {step === "pix" && (
-          <div className="flex-1 flex flex-col bg-white overflow-y-auto">
+          <div className="flex-1 flex flex-col bg-white overflow-y-auto animate-fade-up">
             <div className={`relative w-full pt-12 pb-24 px-6 shrink-0`} style={dynamicBgStyle}>
               <div className="flex items-center gap-4 mb-4">
                 <button onClick={() => setStep("data")} className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white">
@@ -431,7 +436,7 @@ export default function ClientView() {
                 
                 <button 
                   onClick={() => { navigator.clipboard.writeText(pixCode || ""); alert("Copiado!"); }}
-                  className="flex items-center justify-center gap-2 w-full h-12 rounded-xl bg-gray-100 text-gray-700 font-bold mb-4 hover:bg-gray-200 transition-all"
+                  className="flex items-center justify-center gap-2 w-full h-12 rounded-xl bg-gray-100 text-gray-700 font-bold mb-4 hover:bg-gray-200 transition-all hover-lift"
                 >
                   <Copy className="w-4 h-4" /> Copiar código PIX
                 </button>
@@ -442,7 +447,7 @@ export default function ClientView() {
               <button 
                 onClick={() => setStep("confirm")}
                 style={dynamicBgStyle}
-                className={`w-full h-14 rounded-full text-white font-bold text-lg shadow-lg shadow-black/10 transition-all`}
+                className={`w-full h-14 rounded-full text-white font-bold text-lg shadow-lg shadow-black/10 transition-all hover-lift`}
               >
                 Simular Pagamento Realizado
               </button>
@@ -451,7 +456,7 @@ export default function ClientView() {
         )}
 
         {step === "confirm" && (
-          <div className={`p-8 flex-1 flex flex-col items-center justify-center text-center`} style={dynamicBgStyle}>
+          <div className={`p-8 flex-1 flex flex-col items-center justify-center text-center animate-fade-up`} style={dynamicBgStyle}>
             <div className={`w-28 h-28 rounded-full bg-white/20 flex items-center justify-center mb-8 backdrop-blur-md`}>
               <div className={`w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-2xl`} style={dynamicTextStyle}>
                 <Check className="w-10 h-10" />
@@ -464,7 +469,7 @@ export default function ClientView() {
             <button 
               onClick={() => setStep("home")}
               style={dynamicTextStyle}
-              className="w-full h-14 rounded-full bg-white font-bold text-lg shadow-xl"
+              className="w-full h-14 rounded-full bg-white font-bold text-lg shadow-xl hover-lift"
             >
               Voltar ao início
             </button>

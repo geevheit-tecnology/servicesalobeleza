@@ -19,16 +19,8 @@ const STEPS = [
 
 const serviceCategories = ["Cabelo", "Unhas", "Massagem", "Estética", "Maquiagem", "Sobrancelhas", "Bronzeamento", "Outros"];
 
-const defaultServices = [
-  { name: "Manicure", cat: "Unhas", duration: "45 min", price: "R$ 50", active: true },
-  { name: "Escova", cat: "Cabelo", duration: "60 min", price: "R$ 80", active: true },
-  { name: "Massagem Relaxante", cat: "Massagem", duration: "60 min", price: "R$ 120", active: false },
-];
-
-const defaultPros = [
-  { name: "Ana Carvalho", specialty: "Cabelos", active: true },
-  { name: "Mariana Souza", specialty: "Unhas", active: true },
-];
+const defaultServices: any[] = [];
+const defaultPros: any[] = [];
 
 const weekDays = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
 const defaultSchedule = [

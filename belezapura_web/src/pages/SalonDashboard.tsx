@@ -11,7 +11,7 @@ import {
 } from "recharts";
 import { Button, Badge, Avatar, Card, Stars } from "@/components/ui";
 
-import { NAV, DashboardView, AgendaView, AppointmentsView, ClientsView, FinanceiroView, ComissoesView, AvaliacoesView, PaginaSalaoView, ServicosView, ProfissionaisView, HorariosView, RelatoriosView, ConfiguracoesView, NovoAgendamentoModal, LoginScreen, EstoqueView } from './dashboard/views/AllViews';
+import { NAV, DashboardView, AgendaView, AppointmentsView, ClientsView, FinanceiroView, ComissoesView, AvaliacoesView, PaginaSalaoView, ServicosView, ProfissionaisView, HorariosView, RelatoriosView, ConfiguracoesView, NovoAgendamentoModal, LoginScreen, EstoqueView } from './dashboard/views';
 
 export default function SalonDashboard() {
   const [activeSection, setActiveSection] = useState("dashboard");

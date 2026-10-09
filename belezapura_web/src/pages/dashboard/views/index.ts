@@ -1,0 +1,17 @@
+export { DashboardView } from "./DashboardView";
+export { AgendaView } from "./AgendaView";
+export { AppointmentsView } from "./AppointmentsView";
+export { ClientsView } from "./ClientsView";
+export { FinanceiroView } from "./FinanceiroView";
+export { ComissoesView } from "./ComissoesView";
+export { AvaliacoesView } from "./AvaliacoesView";
+export { PaginaSalaoView } from "./PaginaSalaoView";
+export { ServicosView } from "./ServicosView";
+export { ProfissionaisView } from "./ProfissionaisView";
+export { HorariosView } from "./HorariosView";
+export { RelatoriosView } from "./RelatoriosView";
+export { ConfiguracoesView } from "./ConfiguracoesView";
+export { NovoAgendamentoModal } from "./NovoAgendamentoModal";
+export { LoginScreen } from "./LoginScreen";
+export { EstoqueView } from "./EstoqueView";
+export { NAV } from "./shared";
