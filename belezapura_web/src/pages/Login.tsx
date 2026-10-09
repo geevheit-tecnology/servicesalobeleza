@@ -114,6 +114,10 @@ export default function Login() {
         <p className="text-center text-sm text-muted-foreground mt-8">
           Ainda não tem conta? <button onClick={() => navigate("/onboarding")} className="text-primary font-medium hover:underline">Crie seu salão grátis</button>
         </p>
+
+        <p className="text-center text-xs text-muted-foreground mt-6 opacity-60 hover:opacity-100 transition-opacity">
+          É dono da plataforma? <button onClick={() => navigate("/login-admin")} className="font-medium hover:underline text-primary">Acessar Admin Global</button>
+        </p>
       </div>
     </div>
   );

@@ -89,7 +89,7 @@ export default function Marketing() {
             🔥 O fim dos clientes que marcam e não vão
           </Badge>
           <h1 className="font-serif text-4xl md:text-6xl lg:text-7xl font-medium text-white leading-[1.1] max-w-3xl mb-6">
-            Acabe com os furos na agenda e <span className="text-gradient italic font-light">zere o tempo perdido no WhatsApp.</span>
+            Acabe com os furos na agenda e <span className="font-semibold text-primary">zere o tempo perdido no WhatsApp.</span>
           </h1>
           <p className="text-zinc-300 text-lg md:text-xl max-w-2xl mb-10 leading-relaxed">
             O sistema que funciona como uma secretária 24 horas: agenda, cobra um sinal via PIX automaticamente e lota o seu salão enquanto você foca apenas em atender.
@@ -136,7 +136,7 @@ export default function Marketing() {
       <section id="beneficios" className="py-24 max-w-6xl mx-auto px-5">
         <div className="text-center mb-16 md:mb-20 animate-fade-up">
           <Badge className="mb-4 bg-secondary text-primary hover:bg-secondary">O problema que resolvemos</Badge>
-          <h2 className="font-serif text-3xl md:text-5xl font-medium mb-5 tracking-tight text-zinc-900 dark:text-white">Pare de perder <span className="text-gradient">dinheiro e tempo.</span></h2>
+          <h2 className="font-serif text-3xl md:text-5xl font-medium mb-5 tracking-tight text-zinc-900 dark:text-white">Pare de perder <span className="font-bold">dinheiro e tempo.</span></h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">Trabalhar muito e sobrar pouco no fim do mês acabou. O beautyOS foi desenhado para eliminar os piores gargalos do seu salão.</p>
         </div>
         <div className="grid md:grid-cols-3 gap-8">
@@ -341,10 +341,11 @@ export default function Marketing() {
             </div>
             <p className="text-sm text-muted-foreground">© 2026 Geevheith software solutions. Todos os direitos reservados.</p>
           </div>
-          <div className="flex gap-6 text-sm font-medium text-muted-foreground">
+          <div className="flex flex-wrap gap-6 text-sm font-medium text-muted-foreground">
             <a href="#" className="hover:text-primary transition-colors">Termos de Uso</a>
             <a href="#" className="hover:text-primary transition-colors">Privacidade</a>
-            <a href="#" className="hover:text-primary transition-colors">Contato e Suporte</a>
+            <a href="#" className="hover:text-primary transition-colors">Contato</a>
+            <button onClick={() => navigate("/login-admin")} className="hover:text-primary transition-colors">Portal Admin</button>
           </div>
         </div>
       </footer>
