@@ -33,18 +33,18 @@ const subscriptions: any[] = [];
 
 const plans = [
   {
-    name: "Básico", price: "R$ 59,90", period: "/mês", color: "#E8E0D8",
-    features: ["1 profissional", "50 agendamentos/mês", "Agenda online", "Página do salão", "PIX básico"],
+    name: "Básico", price: "R$ 49,99", period: "/mês", color: "#B8614A",
+    features: ["1 profissional", "Página do salão (Link na Bio)", "Agendamento Automático 24h", "Cobrança de Sinal (PIX)", "Apenas 10 vagas disponíveis"],
     users: 0, revenue: "R$ 0",
   },
   {
-    name: "Profissional", price: "R$ 149,90", period: "/mês", color: "#9B7EA8",
-    features: ["Até 5 profissionais", "Ilimitado", "Financeiro", "Comissões", "Relatórios", "Lembretes WhatsApp"],
+    name: "Profissional", price: "R$ 99,99", period: "/mês", color: "#9B7EA8",
+    features: ["Até 5 profissionais", "Agendamentos Ilimitados", "Cálculo de Comissões", "Controle Financeiro", "Suporte VIP", "Apenas 10 vagas disponíveis"],
     users: 0, revenue: "R$ 0",
   },
   {
-    name: "Premium", price: "R$ 299,90", period: "/mês", color: "#B8614A",
-    features: ["Até 15 profissionais", "Até 3 unidades", "CRM avançado", "Personalização", "Tudo do Pro"],
+    name: "Premium", price: "R$ 219,99", period: "/mês", color: "#5558e3",
+    features: ["Chatbot WhatsApp 24h (IA)", "Cobrança de Sinal no Zap", "Lembrete Anti-Furo 2h Antes", "Profissionais Ilimitados", "Múltiplas unidades (até 3)", "Apenas 5 vagas exclusivas"],
     users: 0, revenue: "R$ 0",
   },
   {
@@ -587,7 +587,7 @@ function AssinaturasView() {
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Titular</span>
-                    <span className="text-sm font-medium">BELEZA PURA ESTETICA LTDA</span>
+                    <span className="text-sm font-medium">GEEVHEIT HAIR & ESTETICA LTDA</span>
                   </div>
                 </div>
                 
@@ -972,10 +972,10 @@ function PagamentosView() {
 }
 
 const adminUsers = [
-  { id: 1, name: "Admin beautyOS", role: "Super Admin", email: "admin@beautyos.app", last: "Agora", status: "active", permissions: ["all"] },
-  { id: 2, name: "Carlos Mendes", role: "Suporte N1", email: "carlos@beautyos.app", last: "2h atrás", status: "active", permissions: ["tickets:read", "tickets:write"] },
-  { id: 3, name: "Fernanda Ramos", role: "Suporte N2", email: "fernanda@beautyos.app", last: "Hoje", status: "active", permissions: ["tickets:read", "tickets:write", "salons:read"] },
-  { id: 4, name: "Rodrigo Lima", role: "Financeiro", email: "rodrigo@beautyos.app", last: "Ontem", status: "inactive", permissions: ["finance:read", "finance:write"] },
+  { id: 1, name: "Admin GeevheitHair", role: "Super Admin", email: "admin@geevheithair.com", last: "Agora", status: "active", permissions: ["all"] },
+  { id: 2, name: "Carlos Mendes", role: "Suporte N1", email: "carlos@geevheithair.com", last: "2h atrás", status: "active", permissions: ["tickets:read", "tickets:write"] },
+  { id: 3, name: "Fernanda Ramos", role: "Suporte N2", email: "fernanda@geevheithair.com", last: "Hoje", status: "active", permissions: ["tickets:read", "tickets:write", "salons:read"] },
+  { id: 4, name: "Rodrigo Lima", role: "Financeiro", email: "rodrigo@geevheithair.com", last: "Ontem", status: "inactive", permissions: ["finance:read", "finance:write"] },
 ];
 
 function UsuariosView() {
@@ -1189,7 +1189,7 @@ function ConfiguracoesAdminView() {
   });
 
   const [trialData, setTrialData] = useState({
-    trialDays: 14,
+    trialDays: 10,
     defaultPlanId: ""
   });
 
@@ -1208,12 +1208,12 @@ function ConfiguracoesAdminView() {
       .then(res => res.json())
       .then(data => {
         setPlatformData({
-          platformName: data.platformName || "beautyOS",
-          domain: data.domain || "beautyos.app",
-          supportEmail: data.supportEmail || "suporte@beautyos.app"
+          platformName: data.platformName || "GeevheitHair",
+          domain: data.domain || "geevheithair.com",
+          supportEmail: data.supportEmail || "geevheittecnology@gmail.com"
         });
         setTrialData({
-          trialDays: data.trialDays || 14,
+          trialDays: data.trialDays || 10,
           defaultPlanId: data.defaultPlanId || ""
         });
       })
@@ -1523,7 +1523,7 @@ export default function SuperAdmin() {
   const [overviewData, setOverviewData] = useState<any>(null);
   const [salonsData, setSalonsData] = useState<any[]>([]);
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains("dark"));
-  const [adminName, setAdminName] = useState("Admin beautyOS");
+  const [adminName, setAdminName] = useState("Admin GeevheitHair");
 
   const toggleDarkMode = () => {
     if (isDark) {
@@ -1593,7 +1593,7 @@ export default function SuperAdmin() {
             <Sparkles className="w-3.5 h-3.5 text-white" />
           </div>
           <div>
-            <div className="text-white font-serif text-sm font-medium">beautyOS</div>
+            <div className="text-white font-serif text-sm font-medium">GeevheitHair</div>
             <div className="text-white/40 text-xs">Super Admin</div>
           </div>
         </div>

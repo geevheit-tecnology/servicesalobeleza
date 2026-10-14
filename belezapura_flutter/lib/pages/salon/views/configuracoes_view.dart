@@ -39,7 +39,7 @@ class ConfiguracoesView extends StatelessWidget {
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    Expanded(child: _FormGroup(label: 'E-mail', value: 'contato@salaorose.com')),
+                    Expanded(child: _FormGroup(label: 'E-mail', value: 'contato@geevheithair.com')),
                     const SizedBox(width: 16),
                     Expanded(child: _FormGroup(label: 'Telefone', value: '(11) 99999-0000')),
                   ],
@@ -51,7 +51,7 @@ class ConfiguracoesView extends StatelessWidget {
                 const SizedBox(height: 24),
                 Row(
                   children: [
-                    Expanded(child: _FormGroup(label: 'Chave PIX', value: 'contato@salaorose.com')),
+                    Expanded(child: _FormGroup(label: 'Chave PIX', value: 'contato@geevheithair.com')),
                     const SizedBox(width: 16),
                     const Expanded(child: SizedBox()),
                   ],

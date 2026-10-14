@@ -8,16 +8,16 @@ import 'package:belezapura_flutter/pages/salon/salon_page.dart';
 import 'package:belezapura_flutter/pages/superadmin/superadmin_page.dart';
 
 void main() {
-  runApp(const BeautyOSApp());
+  runApp(const GeevheitHairApp());
 }
 
-class BeautyOSApp extends StatelessWidget {
-  const BeautyOSApp({super.key});
+class GeevheitHairApp extends StatelessWidget {
+  const GeevheitHairApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'beautyOS Protótipo',
+      title: 'GeevheitHair',
       theme: AppTheme.lightTheme,
       home: const PrototypeHost(),
       debugShowCheckedModeBanner: false,

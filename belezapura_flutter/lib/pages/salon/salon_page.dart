@@ -73,7 +73,7 @@ class _SalonPageState extends State<SalonPage> {
                         child: const Icon(LucideIcons.sparkles, size: 16, color: Colors.white),
                       ),
                       const SizedBox(width: 12),
-                      const Text('beautyOS', style: TextStyle(fontFamily: 'Fraunces', fontSize: 20, fontWeight: FontWeight.w500)),
+                      const Text('GeevheitHair', style: TextStyle(fontFamily: 'Fraunces', fontSize: 20, fontWeight: FontWeight.w500)),
                     ],
                   ),
                 ),

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -39,6 +40,8 @@ type onboardingRequest struct {
 	SalonName     string            `json:"salonName" binding:"required"`
 	Email         string            `json:"email" binding:"required,email"`
 	Password      string            `json:"password" binding:"required,min=6"`
+	Document      *string           `json:"document"`
+	Phone         *string           `json:"phone"`
 	PlanID        *string           `json:"planId"`
 	PixKey        *string           `json:"pixKey"`
 	Logo          *string           `json:"logo"`
@@ -94,11 +97,59 @@ func Onboarding(c *gin.Context) {
 		return
 	}
 
-	// Check duplicate email
+	// 1. Anti-Cheat: Check duplicate email
 	var existing db.User
-	if err := db.DB.Where("email = ?", req.Email).First(&existing).Error; err == nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "E-mail já cadastrado."})
+	if err := db.DB.Where("LOWER(email) = ?", strings.ToLower(strings.TrimSpace(req.Email))).First(&existing).Error; err == nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "Este e-mail já foi utilizado no período de demonstração gratuita ou possui uma conta cadastrada. Faça login para continuar."})
 		return
+	}
+
+	// 2. Anti-Cheat: Check duplicate Document (CPF / CNPJ)
+	if req.Document != nil && strings.TrimSpace(*req.Document) != "" {
+		cleanDoc := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(strings.TrimSpace(*req.Document), ".", ""), "-", ""), "/", "")
+		var existingSalon db.Salon
+		if err := db.DB.Where("document = ? OR REPLACE(REPLACE(REPLACE(document, '.', ''), '-', ''), '/', '') = ?", *req.Document, cleanDoc).First(&existingSalon).Error; err == nil {
+			c.JSON(http.StatusConflict, gin.H{"error": "Este CPF/CNPJ já utilizou o período de demonstração gratuita de 10 dias. Não é permitido criar novas contas de teste com o mesmo documento."})
+			return
+		}
+	}
+
+	// 3. Anti-Cheat: Check duplicate PIX Key
+	if req.PixKey != nil && strings.TrimSpace(*req.PixKey) != "" {
+		var existingSalon db.Salon
+		if err := db.DB.Where("pix_key = ?", strings.TrimSpace(*req.PixKey)).First(&existingSalon).Error; err == nil {
+			c.JSON(http.StatusConflict, gin.H{"error": "Esta chave PIX já foi cadastrada em outra conta de demonstração. Por favor, acesse seu salão existente."})
+			return
+		}
+	}
+
+	// 4. Plan Subscriber Spots Limit Check (10 Básico, 10 Profissional, 5 Premium)
+	var selectedPlan db.Plan
+	if req.PlanID != nil && *req.PlanID != "" {
+		if err := db.DB.First(&selectedPlan, "id = ?", *req.PlanID).Error; err == nil {
+			limit := selectedPlan.MaxSubscriptions
+			if limit == 0 {
+				planNameLower := strings.ToLower(selectedPlan.Name)
+				if strings.Contains(planNameLower, "básico") || strings.Contains(planNameLower, "basico") {
+					limit = 10
+				} else if strings.Contains(planNameLower, "profissional") {
+					limit = 10
+				} else if strings.Contains(planNameLower, "premium") {
+					limit = 5
+				}
+			}
+
+			if limit > 0 {
+				var count int64
+				db.DB.Model(&db.Subscription{}).Where("plan_id = ? AND status IN (?)", selectedPlan.ID, []string{"ACTIVE", "TRIAL"}).Count(&count)
+				if int(count) >= limit {
+					c.JSON(http.StatusForbidden, gin.H{
+						"error": fmt.Sprintf("As %d vagas exclusivas do Plano %s já foram preenchidas. Por favor, selecione outro plano disponível.", limit, selectedPlan.Name),
+					})
+					return
+				}
+			}
+		}
 	}
 
 	slug := slugify(req.SalonName)
@@ -118,6 +169,8 @@ func Onboarding(c *gin.Context) {
 	salon := db.Salon{
 		Name:        req.SalonName,
 		Slug:        slug,
+		Document:    req.Document,
+		Phone:       req.Phone,
 		PixKey:      req.PixKey,
 		Logo:        req.Logo,
 		Cover:       req.Cover,
@@ -165,8 +218,11 @@ func Onboarding(c *gin.Context) {
 		tx.Create(&srv)
 	}
 
-	// Insert professionals
-	for _, p := range req.Professionals {
+	// Insert professionals (respect plan limit if basic)
+	for i, p := range req.Professionals {
+		if selectedPlan.MaxProfessionals > 0 && i >= selectedPlan.MaxProfessionals {
+			break // do not exceed plan limit
+		}
 		specialty := p.Specialty
 		pro := db.Professional{
 			SalonID:   salon.ID,
@@ -177,15 +233,25 @@ func Onboarding(c *gin.Context) {
 		tx.Create(&pro)
 	}
 
-	// Create subscription if planId is provided
-	if req.PlanID != nil && *req.PlanID != "" {
-		sub := db.Subscription{
-			SalonID: salon.ID,
-			PlanID:  *req.PlanID,
-			Status:  "ACTIVE",
-		}
-		tx.Create(&sub)
+	// Create subscription with exact 10 days of trial
+	trialEnds := time.Now().Add(10 * 24 * time.Hour)
+	planIDToSave := ""
+	planPrice := 49.99
+	if selectedPlan.ID != "" {
+		planIDToSave = selectedPlan.ID
+		planPrice = selectedPlan.Price
+	} else if req.PlanID != nil {
+		planIDToSave = *req.PlanID
 	}
+
+	sub := db.Subscription{
+		SalonID:   salon.ID,
+		PlanID:    planIDToSave,
+		Status:    "TRIAL",
+		Price:     planPrice,
+		TrialEnds: &trialEnds,
+	}
+	tx.Create(&sub)
 
 	tx.Commit()
 

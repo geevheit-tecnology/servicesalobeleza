@@ -69,7 +69,7 @@ class _SuperAdminPageState extends State<SuperAdminPage> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('beautyOS', style: TextStyle(fontFamily: 'Fraunces', fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white)),
+                          const Text('GeevheitHair', style: TextStyle(fontFamily: 'Fraunces', fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white)),
                           Text('Super Admin', style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12)),
                         ],
                       ),
@@ -122,12 +122,12 @@ class _SuperAdminPageState extends State<SuperAdminPage> {
                   decoration: BoxDecoration(border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.1)))),
                   child: Row(
                     children: [
-                      const AppAvatar(name: 'Admin beautyOS', radius: 16),
+                      const AppAvatar(name: 'Admin GeevheitHair', radius: 16),
                       const SizedBox(width: 12),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Admin beautyOS', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white)),
+                          const Text('Admin GeevheitHair', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white)),
                           Text('Super Administrador', style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12)),
                         ],
                       ),
@@ -166,7 +166,7 @@ class _SuperAdminPageState extends State<SuperAdminPage> {
                         children: [
                           IconButton(icon: const Icon(LucideIcons.bell, size: 20, color: AppTheme.mutedForeground), onPressed: () {}),
                           const SizedBox(width: 8),
-                          const AppAvatar(name: 'Admin beautyOS', radius: 16),
+                          const AppAvatar(name: 'Admin GeevheitHair', radius: 16),
                         ],
                       ),
                     ],

@@ -40,6 +40,7 @@ export function ClientsView() {
   useEffect(() => { loadClients(); }, []);
 
   const handleSave = async () => {
+    if (loading) return;
     if(!formData.name.trim()) { setErrorMsg("Nome é obrigatório."); return; }
     setLoading(true);
     setErrorMsg("");

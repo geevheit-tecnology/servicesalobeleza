@@ -48,12 +48,12 @@ class _PaginaSalaoViewState extends State<PaginaSalaoView> {
                       const Text('Personalizar página', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
                       const SizedBox(height: 24),
                       ...[
-                        {'l': 'Nome do salão', 'v': 'Salão Rosé'},
-                        {'l': 'Descrição', 'v': 'Cabelo, unhas e estética com cuidado especial'},
-                        {'l': 'Endereço', 'v': 'Rua das Flores, 142 — Moema, SP'},
+                        {'l': 'Nome do salão', 'v': 'GeevheitHair Studio'},
+                        {'l': 'Descrição', 'v': 'Cabelo, estética e atendimento VIP de alto padrão'},
+                        {'l': 'Endereço', 'v': 'Av. Paulista, 1000 — Jardins, SP'},
                         {'l': 'Telefone', 'v': '(11) 99999-0000'},
                         {'l': 'WhatsApp', 'v': '(11) 99999-0000'},
-                        {'l': 'Instagram', 'v': '@salarose'},
+                        {'l': 'Instagram', 'v': '@geevheithair'},
                       ].map((f) => Padding(
                         padding: const EdgeInsets.only(bottom: 16),
                         child: Column(

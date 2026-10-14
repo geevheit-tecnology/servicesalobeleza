@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -17,11 +18,28 @@ func GetSalonBySlug(c *gin.Context) {
 	if err := db.DB.
 		Preload("Services", "status = ?", "active").
 		Preload("Professionals", "status = ?", "active").
+		Preload("Subscriptions.Plan").
 		Where("slug = ?", slug).
 		First(&salon).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Salão não encontrado."})
 		return
 	}
+
+	// Check 10-day trial expiration: block if expired and not paid
+	if len(salon.Subscriptions) > 0 {
+		sub := salon.Subscriptions[0]
+		isExpired := sub.Status == "EXPIRED" || 
+			(sub.Status == "TRIAL" && sub.TrialEnds != nil && time.Now().After(*sub.TrialEnds)) || 
+			(sub.Status == "TRIAL" && time.Since(sub.CreatedAt) > 10*24*time.Hour)
+		if isExpired {
+			c.JSON(http.StatusPaymentRequired, gin.H{
+				"error": "O período de demonstração gratuita (10 dias) deste salão expirou. Os agendamentos online estão temporariamente suspensos até a ativação do plano.",
+				"suspended": true,
+			})
+			return
+		}
+	}
+
 	c.JSON(http.StatusOK, salon)
 }
 
@@ -98,7 +116,37 @@ func CreatePublicAppointment(c *gin.Context) {
 
 	date, err := time.Parse(time.RFC3339, body.Date)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid date format"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Formato de data inválido."})
+		return
+	}
+
+	// 1. Check if salon exists and verify 10-day trial status
+	var salon db.Salon
+	if err := db.DB.Preload("Subscriptions").First(&salon, "id = ?", body.SalonID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Salão não encontrado."})
+		return
+	}
+
+	if len(salon.Subscriptions) > 0 {
+		sub := salon.Subscriptions[0]
+		isExpired := sub.Status == "EXPIRED" || 
+			(sub.Status == "TRIAL" && sub.TrialEnds != nil && time.Now().After(*sub.TrialEnds)) || 
+			(sub.Status == "TRIAL" && time.Since(sub.CreatedAt) > 10*24*time.Hour)
+		if isExpired {
+			c.JSON(http.StatusPaymentRequired, gin.H{
+				"error": "Os agendamentos online deste salão estão suspensos pois o período de demonstração de 10 dias expirou.",
+			})
+			return
+		}
+	}
+
+	// 2. Anti-duplicity check: prevent double booking for the exact same slot and professional
+	var duplicate db.Appointment
+	if err := db.DB.Where(
+		"salon_id = ? AND professional_id = ? AND date = ? AND status != ?",
+		body.SalonID, body.ProfessionalID, date, "cancelled",
+	).First(&duplicate).Error; err == nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "Este horário já foi reservado por outro cliente. Por favor, escolha outro horário."})
 		return
 	}
 
@@ -138,5 +186,17 @@ func CreatePublicAppointment(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, appt)
+	pixKey := "financeiro@salao.com"
+	if salon.PixKey != nil && *salon.PixKey != "" {
+		pixKey = *salon.PixKey
+	}
+	depositVal := service.Price * 0.20
+	pixPayload := fmt.Sprintf("00020126580014BR.GOV.BCB.PIX0136%s520400005303986540%0.2f5802BR5913%s6008SAOPAULO62070503***6304", pixKey, depositVal, salon.Name)
+
+	c.JSON(http.StatusCreated, gin.H{
+		"appointment": appt,
+		"pixCode":     pixPayload,
+		"deposit":     depositVal,
+		"message":     "Agendamento criado com sucesso.",
+	})
 }

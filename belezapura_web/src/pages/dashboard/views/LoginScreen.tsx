@@ -15,7 +15,7 @@ export function LoginScreen({ onLogin }: { onLogin: (token: string, role: string
     try {
       // Simulating API behavior based on role
       const nameMap: Record<string, string> = {
-        owner: "Rosé Silva (Dona)",
+        owner: "Geevheit Gestão (Dona)",
         receptionist: "Ana Souza (Recepcionista)",
         professional: "Juliana (Profissional)"
       };
@@ -33,7 +33,7 @@ export function LoginScreen({ onLogin }: { onLogin: (token: string, role: string
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
             <Scissors className="w-4 h-4 text-white" />
           </div>
-          <span className="font-serif font-medium text-lg">beautyOS</span>
+          <span className="font-serif font-medium text-lg">GeevheitHair</span>
         </div>
         <h2 className="text-xl font-semibold text-center mb-6">Acesso ao Painel</h2>
         {error && <div className="bg-red-50 text-red-500 p-3 rounded-lg text-sm mb-4">{error}</div>}

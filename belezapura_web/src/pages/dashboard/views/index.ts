@@ -14,4 +14,5 @@ export { ConfiguracoesView } from "./ConfiguracoesView";
 export { NovoAgendamentoModal } from "./NovoAgendamentoModal";
 export { LoginScreen } from "./LoginScreen";
 export { EstoqueView } from "./EstoqueView";
+export { ChatbotWhatsAppView } from "./ChatbotWhatsAppView";
 export { NAV } from "./shared";

@@ -40,8 +40,8 @@ class UsuariosView extends StatelessWidget {
                   ),
                 ),
                 ...[
-                  {'n': 'Admin Master', 'e': 'admin@beautyos.com', 'r': 'Super Admin', 'st': 'Ativo'},
-                  {'n': 'Suporte N1', 'e': 'suporte@beautyos.com', 'r': 'Atendimento', 'st': 'Ativo'},
+                  {'n': 'Admin Master', 'e': 'admin@geevheithair.com', 'r': 'Super Admin', 'st': 'Ativo'},
+                  {'n': 'Suporte N1', 'e': 'suporte@geevheithair.com', 'r': 'Atendimento', 'st': 'Ativo'},
                 ].map((u) => Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: AppTheme.border))),

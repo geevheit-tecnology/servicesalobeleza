@@ -5,6 +5,7 @@ import {
   Check, ArrowRight, ArrowLeft, Sparkles, Upload, Plus, X, ChevronRight, Lock
 } from "lucide-react";
 import { Button, Badge, Avatar } from "@/components/ui";
+import { optimizeImage, PRESETS } from "@/utils/imageOptimizer";
 
 const STEPS = [
   { id: 1, icon: Store, label: "Dados do salão", sub: "Informações básicas" },
@@ -54,34 +55,19 @@ function StepIndicator({ current }: { current: number }) {
   );
 }
 
-const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, callback: (base64: string) => void) => {
+const handleImageUpload = async (
+  e: React.ChangeEvent<HTMLInputElement>,
+  callback: (base64: string) => void,
+  preset?: { maxWidth: number; maxHeight: number; quality: number }
+) => {
   const file = e.target.files?.[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (event) => {
-    const img = new window.Image();
-    img.src = event.target?.result as string;
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-      const MAX_SIZE = 800;
-      let width = img.width;
-      let height = img.height;
-      if (width > height && width > MAX_SIZE) {
-        height *= MAX_SIZE / width;
-        width = MAX_SIZE;
-      } else if (height > MAX_SIZE) {
-        width *= MAX_SIZE / height;
-        height = MAX_SIZE;
-      }
-      canvas.width = width;
-      canvas.height = height;
-      ctx?.drawImage(img, 0, 0, width, height);
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
-      callback(dataUrl);
-    };
-  };
-  reader.readAsDataURL(file);
+  try {
+    const optimized = await optimizeImage(file, preset || PRESETS.gallery);
+    callback(optimized);
+  } catch (err: any) {
+    alert(err.message || "Erro ao processar imagem.");
+  }
 };
 
 export default function Onboarding({ onFinish }: { onFinish: () => void }) {
@@ -110,16 +96,13 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
   const [newProSpec, setNewProSpec] = useState("");
 
   const [logo, setLogo] = useState<string | null>(null);
-  const [cover, setCover] = useState<string>("https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&h=300&fit=crop&auto=format");
-  const [gallery, setGallery] = useState<string[]>([
-    "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=200&h=200&fit=crop&auto=format",
-    "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=200&h=200&fit=crop&auto=format",
-    "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=200&h=200&fit=crop&auto=format"
-  ]);
+  const [cover, setCover] = useState<string>("");
+  const [gallery, setGallery] = useState<string[]>([]);
   const [mainColor, setMainColor] = useState<string>("#B8614A");
 
   const [tipoConta, setTipoConta] = useState("PJ");
   const [documento, setDocumento] = useState("");
+  const [phone, setPhone] = useState("");
   const [cep, setCep] = useState("");
   const [endereco, setEndereco] = useState("");
   const [numero, setNumero] = useState("");
@@ -173,15 +156,19 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
   };
 
   const next = async () => {
+    if (loading) return; // Anti-double click
     if (step < 8) {
       setStep(s => s + 1);
     } else {
       setLoading(true);
+      setPaymentError("");
       try {
         const payload = {
           salonName,
           email,
           password,
+          document: documento,
+          phone,
           services: services.filter(s => s.active),
           professionals: pros,
           schedule: schedule.filter(s => s.open),
@@ -202,6 +189,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
         if (res.ok) {
           const data = await res.json();
           localStorage.setItem('token', data.token);
+          localStorage.setItem('hasUsedTrial', 'true');
           if (data.user?.salonSlug) {
             localStorage.setItem('salonSlug', data.user.salonSlug);
           }
@@ -210,15 +198,19 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
           }
           setDone(true);
         } else {
-          if (res.status === 402) {
+          const errData = await res.json().catch(()=>({}));
+          if (res.status === 409) {
+            setPaymentError(errData.error || 'Este CPF/CNPJ, e-mail ou chave PIX já utilizou a demonstração gratuita de 10 dias. Não é permitido criar novas contas de teste.');
+          } else if (res.status === 403) {
+            setPaymentError(errData.error || 'As vagas exclusivas deste plano foram esgotadas. Por favor, escolha outro plano.');
+          } else if (res.status === 402) {
             setPaymentError('O pagamento não foi autorizado pela operadora. Verifique os dados ou utilize outro cartão.');
           } else {
-            const errData = await res.json().catch(()=>({}));
-            setPaymentError(errData.error || 'Não conseguimos concluir o pagamento neste momento. Tente novamente em alguns instantes.');
+            setPaymentError(errData.error || 'Não conseguimos concluir o cadastro neste momento. Tente novamente em instantes.');
           }
         }
       } catch (e) {
-        setPaymentError('Não foi possível conectar ao serviço de pagamento. Verifique sua conexão e tente novamente.');
+        setPaymentError('Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.');
       } finally {
         setLoading(false);
       }
@@ -278,7 +270,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
               <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
                 <Sparkles className="w-3.5 h-3.5 text-white" />
               </div>
-              <span className="font-serif font-medium text-sm">beautyOS</span>
+              <span className="font-serif font-medium text-sm">GeevheitHair</span>
             </div>
             <div className="text-xs text-muted-foreground">Etapa {step} de {STEPS.length}</div>
           </div>
@@ -444,17 +436,29 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
             <div>
               <label className="text-sm font-medium block mb-2">Foto de capa</label>
               <label className="border-2 border-dashed border-border rounded-2xl overflow-hidden cursor-pointer hover:border-primary/40 transition-colors relative h-44 bg-muted/30 group block">
-                <input type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, setCover)} />
-                <img
-                  src={cover}
-                  alt="Capa"
-                  className="w-full h-full object-cover opacity-60 group-hover:opacity-70 transition-opacity"
-                />
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-                  <div className="bg-white/80 rounded-xl px-4 py-2 flex items-center gap-2 text-sm font-medium shadow text-black">
-                    <Upload className="w-4 h-4 text-primary" /> Trocar foto de capa
+                <input type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, setCover, PRESETS.cover)} />
+                {cover ? (
+                  <>
+                    <img
+                      src={cover}
+                      alt="Capa"
+                      className="w-full h-full object-cover opacity-80 group-hover:opacity-90 transition-opacity"
+                    />
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                      <div className="bg-white/90 rounded-xl px-4 py-2 flex items-center gap-2 text-sm font-medium shadow text-black">
+                        <Upload className="w-4 h-4 text-primary" /> Trocar foto de capa
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-2 p-4 text-center">
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                      <Upload className="w-5 h-5 text-primary" />
+                    </div>
+                    <p className="text-sm font-medium">Clique para enviar a foto de capa</p>
+                    <p className="text-xs text-muted-foreground">Recomendado 1000x500 · Fachada ou interior do salão</p>
                   </div>
-                </div>
+                )}
               </label>
             </div>
 
@@ -747,11 +751,16 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
               <p className="text-muted-foreground text-sm">Falta pouco para liberar seu painel completo.</p>
             </div>
             <div className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-2xl p-6">
-              <div className="flex justify-between items-center mb-4">
+              <div className="flex justify-between items-center mb-3">
                 <span className="font-semibold text-lg text-primary">Plano Escolhido</span>
-                <span className="font-serif text-2xl font-medium text-foreground">
-                  {planId === '2' ? 'R$ 97/mês' : planId === '3' ? 'R$ 197/mês' : 'Básico'}
+                <span className="font-serif text-2xl font-bold text-foreground">
+                  {planId === '2' ? 'R$ 99,99/mês' : planId === '3' ? 'R$ 219,99/mês' : 'R$ 49,99/mês'}
                 </span>
+              </div>
+              <div className="mb-4">
+                <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-[11px] font-bold py-0.5 px-2.5">
+                  🎁 10 Dias de Demonstração Gratuita Inclusos
+                </Badge>
               </div>
               <ul className="space-y-2 mb-6">
                 <li className="flex items-center gap-2 text-sm"><Check className="w-4 h-4 text-emerald-500" /> Agenda online 24h (Página web)</li>

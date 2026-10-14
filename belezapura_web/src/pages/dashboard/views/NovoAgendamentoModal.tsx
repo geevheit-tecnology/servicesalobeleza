@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { LayoutDashboard, Calendar, ListOrdered, Users, Scissors, UserCheck, Clock, DollarSign, BarChart3, Settings, Star, Globe, Menu, X, Bell, ChevronDown, TrendingUp, TrendingDown, Plus, Search, Filter, Eye, Edit3, Trash2, MoreHorizontal, MessageCircle, Percent, Building2, Zap, ArrowUpRight, ArrowDownRight, Check, ArrowLeft, ChevronRight, LogOut, Package, Download, AlertTriangle, XCircle } from "lucide-react";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Button, Badge, Avatar, Card, Stars } from "@/components/ui";
-import { NAV, revenueData, appointmentsData, servicesPie, PIE_COLORS, appointments, clients, professionals, reviewsList, AGENDA_HOURS, AGENDA_PROS, AGENDA_ITEMS, statusColors, statusLabel, StatCard } from "./shared";
+import { NAV, revenueData, appointmentsData, servicesPie, PIE_COLORS, appointments, clients, professionals, reviewsList, AGENDA_HOURS, AGENDA_PROS, AGENDA_ITEMS, statusColors, statusLabel, StatCard, allServices } from "./shared";
 
 export function NovoAgendamentoModal({ onClose }: { onClose: () => void }) {
   const [step, setStep] = useState(1);
@@ -12,6 +12,7 @@ export function NovoAgendamentoModal({ onClose }: { onClose: () => void }) {
   const [selTime, setSelTime] = useState("");
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const done = step === 4;
 
@@ -120,9 +121,56 @@ export function NovoAgendamentoModal({ onClose }: { onClose: () => void }) {
             <Button variant="ghost" size="sm" onClick={() => step > 1 ? setStep(s => s - 1) : onClose()}>
               {step === 1 ? "Cancelar" : <><ArrowLeft className="w-4 h-4" /> Voltar</>}
             </Button>
-            <Button size="sm" disabled={step === 1 && (!selService || !selPro)}
-              onClick={() => step < 3 ? setStep(s => s + 1) : setStep(4)}>
-              {step === 3 ? <><Check className="w-4 h-4" /> Confirmar</> : <>Continuar <ChevronRight className="w-4 h-4" /></>}
+            <Button
+              size="sm"
+              disabled={
+                isSubmitting ||
+                (step === 1 && (!selService || !selPro)) ||
+                (step === 2 && (!selDate || !selTime)) ||
+                (step === 3 && (!clientName.trim() || !clientPhone.trim()))
+              }
+              onClick={async () => {
+                if (step < 3) {
+                  setStep(s => s + 1);
+                } else {
+                  if (isSubmitting) return;
+                  setIsSubmitting(true);
+                  try {
+                    const token = localStorage.getItem('token');
+                    if (token) {
+                      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/appointments`, {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                          clientName,
+                          clientPhone,
+                          serviceName: selService,
+                          professionalName: selPro,
+                          date: selDate,
+                          time: selTime
+                        })
+                      });
+                    }
+                    setStep(4);
+                  } catch (err) {
+                    console.error(err);
+                    setStep(4);
+                  } finally {
+                    setIsSubmitting(false);
+                  }
+                }
+              }}
+            >
+              {isSubmitting ? (
+                "Salvando..."
+              ) : step === 3 ? (
+                <><Check className="w-4 h-4" /> Confirmar</>
+              ) : (
+                <>Continuar <ChevronRight className="w-4 h-4" /></>
+              )}
             </Button>
           </div>
         )}

@@ -23,9 +23,9 @@ export function ConfiguracoesView() {
   ];
 
   const usersList = [
-    { name: "Rosé Silva", role: "Administradora", email: "rose@salaorose.com.br", status: "active" },
-    { name: "Ana Carvalho", role: "Profissional", email: "ana@salaorose.com.br", status: "active" },
-    { name: "Mariana Souza", role: "Profissional", email: "mariana@salaorose.com.br", status: "active" },
+    { name: "Gestor(a) Geevheit", role: "Administradora", email: "gestao@geevheithair.com", status: "active" },
+    { name: "Ana Carvalho", role: "Profissional", email: "ana@geevheithair.com", status: "active" },
+    { name: "Mariana Souza", role: "Profissional", email: "mariana@geevheithair.com", status: "active" },
   ];
 
   return (
@@ -44,12 +44,12 @@ export function ConfiguracoesView() {
       {tab === "empresa" && (
         <div className="bg-card border border-border rounded-2xl shadow-sm hover:shadow-md transition-shadow p-5 space-y-4 max-w-xl">
           {[
-            { label: "Nome do salão", value: "Salão Rosé" },
+            { label: "Nome do salão", value: "GeevheitHair Studio" },
             { label: "CNPJ", value: "00.000.000/0001-00" },
             { label: "Telefone principal", value: "(11) 99999-0000" },
-            { label: "E-mail", value: "contato@salaorose.com.br" },
-            { label: "Endereço", value: "Rua das Flores, 142 — Moema, SP" },
-            { label: "Instagram", value: "@salaorose" },
+            { label: "E-mail", value: "contato@geevheithair.com" },
+            { label: "Endereço", value: "Av. Paulista, 1000 — Jardins, SP" },
+            { label: "Instagram", value: "@geevheithair" },
           ].map(f => (
             <div key={f.label}>
               <label className="text-xs font-medium text-muted-foreground block mb-1">{f.label}</label>

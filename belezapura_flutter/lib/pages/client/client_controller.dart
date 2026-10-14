@@ -56,7 +56,7 @@ class ClientController extends ChangeNotifier {
 
   Future<void> _loadSalonData() async {
     try {
-      final res = await http.get(Uri.parse('http://localhost:3050/api/public/salons/beleza-pura-matriz'));
+      final res = await http.get(Uri.parse('http://localhost:3050/api/public/salons/geevheithair-studio'));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         salonId = data['id'];

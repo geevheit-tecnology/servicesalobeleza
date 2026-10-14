@@ -57,7 +57,7 @@ export default function Login() {
             <Sparkles className="w-6 h-6 text-white" />
           </div>
           <h1 className="font-serif text-3xl font-medium text-foreground">Acesse sua conta</h1>
-          <p className="text-muted-foreground mt-2 text-center">Bem-vindo(a) de volta ao beautyOS</p>
+          <p className="text-muted-foreground mt-2 text-center">Bem-vindo(a) de volta ao GeevheitHair</p>
         </div>
 
         <div className="bg-card border border-border rounded-3xl p-8 shadow-xl">

@@ -172,7 +172,7 @@ class _OnboardingHeader extends StatelessWidget {
                         child: const Icon(LucideIcons.sparkles, size: 14, color: Colors.white),
                       ),
                       const SizedBox(width: 8),
-                      const Text('beautyOS', style: TextStyle(fontFamily: 'Fraunces', fontWeight: FontWeight.w500)),
+                      const Text('GeevheitHair', style: TextStyle(fontFamily: 'Fraunces', fontWeight: FontWeight.w500)),
                     ],
                   ),
                   Text('Etapa $step de ${_steps.length}', style: const TextStyle(fontSize: 12, color: AppTheme.mutedForeground)),

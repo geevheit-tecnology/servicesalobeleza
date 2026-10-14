@@ -60,7 +60,7 @@ class _MarketingHeader extends StatelessWidget {
             child: const Icon(LucideIcons.sparkles, size: 16, color: Colors.white),
           ),
           const SizedBox(width: 8),
-          const Text('beautyOS', style: TextStyle(fontFamily: 'Fraunces', fontSize: 20, color: AppTheme.foreground)),
+          const Text('GeevheitHair', style: TextStyle(fontFamily: 'Fraunces', fontSize: 20, color: AppTheme.foreground)),
         ],
       ),
       actions: [
@@ -130,13 +130,13 @@ class _HeroSection extends StatelessWidget {
                       children: [
                         Icon(LucideIcons.sparkles, color: Colors.white, size: 12),
                         SizedBox(width: 6),
-                        Text('Nova plataforma para salões de beleza', style: TextStyle(color: Colors.white, fontSize: 12)),
+                        Text('GeevheitHair: O ecossistema inteligente para salões de elite', style: TextStyle(color: Colors.white, fontSize: 12)),
                       ],
                     ),
                   ),
                   const SizedBox(height: 24),
                   const Text(
-                    'Seu salão mais organizado.\nSeus clientes mais conectados.',
+                    'Transforme seu talento\nem um negócio de elite.',
                     style: TextStyle(
                       fontFamily: 'Fraunces',
                       fontSize: 48,
@@ -147,7 +147,7 @@ class _HeroSection extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   const Text(
-                    'Agende, receba, organize e acompanhe seu salão em um só lugar. Sem aplicativo para instalar.',
+                    'Agendamento VIP 24h, sinal garantido no PIX e controle financeiro total na palma da sua mão.',
                     style: TextStyle(color: Colors.white70, fontSize: 18),
                   ),
                   const SizedBox(height: 32),

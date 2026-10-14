@@ -5,7 +5,7 @@ import {
   DollarSign, BarChart3, Settings, Star, Globe, Menu, X, Bell, ChevronDown,
   TrendingUp, TrendingDown, Plus, Search, Filter, Eye, Edit3, Trash2, MoreHorizontal,
   MessageCircle, Percent, Building2, Zap, ArrowUpRight, ArrowDownRight, Check,
-  ArrowLeft, ChevronRight, LogOut, Package, Download, AlertTriangle, XCircle
+  ArrowLeft, ChevronRight, LogOut, Package, Download, AlertTriangle, XCircle, Bot
 } from "lucide-react";
 
 import {
@@ -27,7 +27,7 @@ const NAV = [
   { id: "estoque", label: "Estoque", icon: Package },
   { id: "pagina", label: "Página do Salão", icon: Globe },
   { id: "avaliacoes", label: "Avaliações", icon: Star },
-  { id: "marketing", label: "Marketing & Zap", icon: MessageCircle },
+  { id: "chatbot", label: "Chatbot WhatsApp IA", icon: Bot, badge: "PREMIUM" },
   { id: "relatorios", label: "Relatórios", icon: BarChart3 },
   { id: "configuracoes", label: "Configurações", icon: Settings },
 ];
@@ -101,4 +101,4 @@ const weekDaysShort = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 
 const defaultSchedule = weekDaysShort.map((d, i) => ({ day: d, open: i < 6, start: "09:00", end: i === 5 ? "17:00" : "19:00" }));
 
-export { NAV, revenueData, appointmentsData, servicesPie, PIE_COLORS, appointments, clients, professionals, reviewsList, AGENDA_HOURS, AGENDA_PROS, AGENDA_ITEMS, statusColors, statusLabel, StatCard };
+export { NAV, revenueData, appointmentsData, servicesPie, PIE_COLORS, appointments, clients, professionals, reviewsList, AGENDA_HOURS, AGENDA_PROS, AGENDA_ITEMS, statusColors, statusLabel, StatCard, allServices };

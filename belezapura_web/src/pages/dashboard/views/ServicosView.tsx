@@ -24,6 +24,7 @@ export function ServicosView() {
   }, []);
 
   const handleSave = async () => {
+    if (loading) return;
     if (!newSvc.name.trim() || !newSvc.price || !newSvc.duration) {
       setErrorMsg("Preencha nome, preço e duração.");
       return;

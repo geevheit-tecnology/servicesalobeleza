@@ -40,7 +40,8 @@ type Salon struct {
 	ID            string         `gorm:"primaryKey;type:uuid" json:"id"`
 	Slug          string         `gorm:"uniqueIndex;not null" json:"slug"`
 	Name          string         `gorm:"not null" json:"name"`
-	Document      *string        `json:"document"`
+	Document      *string        `gorm:"index" json:"document"`
+	Phone         *string        `json:"phone"`
 	PixKey        *string        `json:"pixKey"`
 	Logo          *string        `gorm:"type:text" json:"logo"`
 	Cover         *string        `gorm:"type:text" json:"cover"`
@@ -95,6 +96,7 @@ type Professional struct {
 	Salon        Salon          `gorm:"foreignKey:SalonID" json:"-"`
 	Name         string         `gorm:"not null" json:"name"`
 	Specialty    *string        `json:"specialty"`
+	Avatar       *string        `gorm:"type:text" json:"avatar"`
 	Commission   float64        `gorm:"default:0.0;type:decimal(5,2)" json:"commission"`
 	Status       string         `gorm:"default:active" json:"status"`
 	Appointments []Appointment  `gorm:"foreignKey:ProfessionalID" json:"appointments,omitempty"`
@@ -165,6 +167,7 @@ type Plan struct {
 	Highlight        bool           `gorm:"default:false" json:"highlight"`
 	Features         string         `gorm:"type:text" json:"featuresRaw"` // JSON array stored as text
 	MaxProfessionals int            `gorm:"default:0" json:"maxProfessionals"`
+	MaxSubscriptions int            `gorm:"default:0" json:"maxSubscriptions"`
 	Color            string         `gorm:"default:#000000" json:"color"`
 	Subscriptions    []Subscription `gorm:"foreignKey:PlanID" json:"subscriptions,omitempty"`
 	CreatedAt        time.Time      `json:"createdAt"`
@@ -185,8 +188,9 @@ type Subscription struct {
 	Salon     Salon          `gorm:"foreignKey:SalonID" json:"salon,omitempty"`
 	PlanID    string         `gorm:"not null" json:"planId"`
 	Plan      *Plan          `gorm:"foreignKey:PlanID" json:"plan,omitempty"`
-	Status    string         `gorm:"default:TRIAL" json:"status"` // ACTIVE | CANCELED | TRIAL
+	Status    string         `gorm:"default:TRIAL" json:"status"` // ACTIVE | CANCELED | TRIAL | EXPIRED
 	Price     float64        `gorm:"type:decimal(10,2)" json:"price"`
+	TrialEnds *time.Time     `json:"trialEnds"`
 	CreatedAt time.Time      `json:"createdAt"`
 	UpdatedAt time.Time      `json:"updatedAt"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
@@ -201,10 +205,10 @@ func (s *Subscription) BeforeCreate(tx *gorm.DB) error {
 
 type SystemSettings struct {
 	ID            string    `gorm:"primaryKey;type:uuid" json:"id"`
-	PlatformName  string    `gorm:"default:beautyOS" json:"platformName"`
-	Domain        string    `gorm:"default:beautyos.app" json:"domain"`
-	SupportEmail  string    `gorm:"default:suporte@beautyos.app" json:"supportEmail"`
-	TrialDays     int       `gorm:"default:14" json:"trialDays"`
+	PlatformName  string    `gorm:"default:GeevheitHair" json:"platformName"`
+	Domain        string    `gorm:"default:geevheithair.com" json:"domain"`
+	SupportEmail  string    `gorm:"default:geevheittecnology@gmail.com" json:"supportEmail"`
+	TrialDays     int       `gorm:"default:10" json:"trialDays"`
 	DefaultPlanID *string   `json:"defaultPlanId"`
 	UpdatedAt     time.Time `json:"updatedAt"`
 }

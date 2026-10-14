@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 
 	"belezapura_go_api/internal/db"
 	"belezapura_go_api/internal/handler"
@@ -32,6 +33,9 @@ func main() {
 
 	r := gin.Default()
 
+	// Security Headers (Anti-XSS, anti-sniff, clickjacking protection)
+	r.Use(middleware.SecurityHeaders())
+
 	// CORS — allow the Vite dev server and any origin in dev
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"*"},
@@ -44,16 +48,17 @@ func main() {
 	// ── Public routes ──────────────────────────────────────────────
 	api := r.Group("/api")
 	{
-		api.POST("/auth/login", handler.Login)
-		api.POST("/public/onboarding", handler.Onboarding)
+		api.POST("/auth/login", middleware.RateLimiter(20, time.Minute), handler.Login)
+		api.POST("/public/onboarding", middleware.RateLimiter(10, time.Minute), handler.Onboarding)
 		api.GET("/public/salons/:slug", handler.GetSalonBySlug)
-		api.POST("/public/appointments", handler.CreatePublicAppointment)
+		api.POST("/public/appointments", middleware.RateLimiter(30, time.Minute), handler.CreatePublicAppointment)
 		api.GET("/public/availability", handler.GetAvailability)
 		api.GET("/public/plans", handler.GetPlans)
 
 		// ── Protected routes ────────────────────────────────────────
 		auth := api.Group("/")
 		auth.Use(middleware.AuthRequired())
+		auth.Use(middleware.TrialEnforcer())
 		{
 			// Appointments
 			auth.POST("/appointments", handler.CreateAppointment)
@@ -62,6 +67,8 @@ func main() {
 			// Salon (owner dashboard)
 			auth.GET("/salon/dashboard", handler.GetSalonDashboard)
 			auth.GET("/salon/details", handler.GetSalonDetails)
+			auth.PUT("/salon/details", handler.UpdateSalonDetails)
+			auth.POST("/salon/upgrade-plan", handler.UpgradePlan)
 			auth.GET("/salon/clients", handler.GetSalonClients)
 
 			// Services & professionals
@@ -96,7 +103,7 @@ func main() {
 	if port == "" {
 		port = "3050"
 	}
-	log.Printf("🚀 beautyOS API (Go) running on :%s", port)
+	log.Printf("🚀 GeevheitHair API (Go) running on :%s", port)
 	if err := r.Run(":" + port); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}

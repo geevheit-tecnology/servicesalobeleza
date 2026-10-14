@@ -57,7 +57,7 @@ export default function SuperAdminLogin() {
             <Lock className="w-6 h-6 text-white" />
           </div>
           <h1 className="font-serif text-3xl font-medium text-white">Portal do SuperAdmin</h1>
-          <p className="text-zinc-400 mt-2 text-center">Gestão da Plataforma beautyOS</p>
+          <p className="text-zinc-400 mt-2 text-center">Gestão da Plataforma GeevheitHair</p>
         </div>
 
         <div className="bg-card border border-border rounded-3xl p-8 shadow-xl">

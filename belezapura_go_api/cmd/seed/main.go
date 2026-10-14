@@ -25,9 +25,9 @@ func main() {
 		log.Fatalf("Migrate error: %v", err)
 	}
 
-	email := "admin@beautyos.app"
+	email := "admin@geevheithair.com"
 	password := "admin123"
-	name := "Admin beautyOS"
+	name := "Admin GeevheitHair"
 
 	// Check if already exists
 	var existing db.User
