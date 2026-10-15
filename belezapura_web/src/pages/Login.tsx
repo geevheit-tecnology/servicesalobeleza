@@ -15,11 +15,13 @@ export default function Login() {
     setError("");
     setLoading(true);
 
+    const cleanEmail = email.trim().toLowerCase();
+
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email: cleanEmail, password })
       });
 
       const data = await res.json();
@@ -34,6 +36,7 @@ export default function Login() {
 
       localStorage.setItem("token", data.token);
       localStorage.setItem("role", data.user.role);
+      localStorage.setItem("userName", data.user.name || "Gestão");
       if (data.user.salonSlug) localStorage.setItem("salonSlug", data.user.salonSlug);
 
       navigate("/admin");
@@ -56,8 +59,8 @@ export default function Login() {
           <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center shadow-lg mb-4 cursor-pointer hover:scale-105 transition-transform" onClick={() => navigate("/")}>
             <Sparkles className="w-6 h-6 text-white" />
           </div>
-          <h1 className="font-serif text-3xl font-medium text-foreground">Acesse sua conta</h1>
-          <p className="text-muted-foreground mt-2 text-center">Bem-vindo(a) de volta ao GeevheitHair</p>
+          <h1 className="font-bold text-3xl tracking-tight text-foreground">Beauty<span className="text-primary">OS</span></h1>
+          <p className="text-muted-foreground mt-1.5 text-center text-sm">Acesse o painel do seu salão ou clínica</p>
         </div>
 
         <div className="bg-card border border-border rounded-3xl p-8 shadow-xl">

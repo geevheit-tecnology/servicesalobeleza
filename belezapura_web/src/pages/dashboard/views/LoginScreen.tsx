@@ -1,61 +1,100 @@
-import { useState, useEffect } from "react";
-import { LayoutDashboard, Calendar, ListOrdered, Users, Scissors, UserCheck, Clock, DollarSign, BarChart3, Settings, Star, Globe, Menu, X, Bell, ChevronDown, TrendingUp, TrendingDown, Plus, Search, Filter, Eye, Edit3, Trash2, MoreHorizontal, MessageCircle, Percent, Building2, Zap, ArrowUpRight, ArrowDownRight, Check, ArrowLeft, ChevronRight, LogOut, Package, Download, AlertTriangle, XCircle } from "lucide-react";
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { Button, Badge, Avatar, Card, Stars } from "@/components/ui";
-import { NAV, revenueData, appointmentsData, servicesPie, PIE_COLORS, appointments, clients, professionals, reviewsList, AGENDA_HOURS, AGENDA_PROS, AGENDA_ITEMS, statusColors, statusLabel, StatCard } from "./shared";
+import { useState } from "react";
+import { Scissors, Sparkles, Loader2, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui";
 
 export function LoginScreen({ onLogin }: { onLogin: (token: string, role: string, name: string) => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("owner");
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    const cleanEmail = email.trim().toLowerCase();
+
     try {
-      // Simulating API behavior based on role
-      const nameMap: Record<string, string> = {
-        owner: "Geevheit Gestão (Dona)",
-        receptionist: "Ana Souza (Recepcionista)",
-        professional: "Juliana (Profissional)"
-      };
-      
-      onLogin("fake-jwt-token-123", role, nameMap[role]);
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: cleanEmail, password })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Credenciais inválidas. Verifique seu e-mail e senha.");
+      }
+
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("role", data.user.role || "owner");
+      localStorage.setItem("userName", data.user.name || "Gestão");
+      if (data.user.salonSlug) {
+        localStorage.setItem("salonSlug", data.user.salonSlug);
+      }
+
+      onLogin(data.token, data.user.role || "owner", data.user.name || "Gestão");
     } catch (err: any) {
-      setError(err.message);
+      if (err.message === "Failed to fetch") {
+        setError("Não foi possível conectar ao servidor. Verifique se a API está ativa.");
+      } else {
+        setError(err.message);
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="flex h-screen items-center justify-center bg-background">
-      <div className="w-full max-w-sm bg-card p-8 rounded-3xl border border-border shadow-2xl">
-        <div className="flex items-center gap-2 justify-center mb-6">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <Scissors className="w-4 h-4 text-white" />
+    <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
+      <div className="w-full max-w-sm bg-card p-7 sm:p-8 rounded-3xl border border-border shadow-2xl">
+        <div className="flex flex-col items-center justify-center mb-6">
+          <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center shadow-md mb-3">
+            <Sparkles className="w-5 h-5 text-white" />
           </div>
-          <span className="font-serif font-medium text-lg">GeevheitHair</span>
+          <span className="font-bold text-lg tracking-tight">Beauty<span className="text-primary">OS</span></span>
+          <p className="text-xs text-muted-foreground mt-1">Acesso ao Painel de Gestão</p>
         </div>
-        <h2 className="text-xl font-semibold text-center mb-6">Acesso ao Painel</h2>
-        {error && <div className="bg-red-50 text-red-500 p-3 rounded-lg text-sm mb-4">{error}</div>}
+
+        {error && (
+          <div className="bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 p-3 rounded-xl text-xs font-medium mb-4 border border-red-200 dark:border-red-800 text-center">
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1 block">Entrar como:</label>
-            <select value={role} onChange={e => setRole(e.target.value)} className="w-full h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-background">
-              <option value="owner">Dono(a) do Salão (Acesso Total)</option>
-              <option value="receptionist">Recepcionista (S/ Financeiro)</option>
-              <option value="professional">Profissional (Apenas Agenda)</option>
-            </select>
-          </div>
-          <div>
             <label className="text-xs font-medium text-muted-foreground mb-1 block">E-mail</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-background" />
+            <input 
+              type="email" 
+              required
+              value={email} 
+              onChange={e => setEmail(e.target.value)} 
+              placeholder="seu@email.com"
+              className="w-full h-11 rounded-xl border border-border px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-background transition-all" 
+            />
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1 block">Senha</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-background" />
+            <input 
+              type="password" 
+              required
+              value={password} 
+              onChange={e => setPassword(e.target.value)} 
+              placeholder="••••••••"
+              className="w-full h-11 rounded-xl border border-border px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-background transition-all" 
+            />
           </div>
-          <Button className="w-full h-10">Entrar</Button>
+          <Button type="submit" disabled={loading} className="w-full h-11 font-semibold text-sm">
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Entrar no Painel"}
+          </Button>
         </form>
+
+        <p className="text-xs text-muted-foreground text-center mt-5">
+          Ainda não tem conta? <a href="/onboarding" className="text-primary font-medium hover:underline">Cadastre seu salão</a>
+        </p>
       </div>
     </div>
   );

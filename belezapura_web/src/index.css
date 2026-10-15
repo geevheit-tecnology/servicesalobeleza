@@ -30,20 +30,20 @@
 }
 
 :root {
-  --background: #FAFAFA;
+  --background: #FFFFFF;
   --foreground: #09090B;
   --card: #FFFFFF;
   --card-foreground: #09090B;
-  --primary: #09090B;
-  --primary-foreground: #FAFAFA;
+  --primary: #FF3D6B;
+  --primary-foreground: #FFFFFF;
   --secondary: #F4F4F5;
   --secondary-foreground: #18181B;
   --muted: #F4F4F5;
   --muted-foreground: #71717A;
-  --accent: #8B5CF6; /* Vibrant Purple/Indigo for magic/premium touch */
+  --accent: #E11D48;
   --accent-foreground: #FFFFFF;
   --border: #E4E4E7;
-  --ring: #8B5CF6;
+  --ring: #FF3D6B;
   --radius: 0.75rem;
 }
 
@@ -52,16 +52,16 @@
   --foreground: #FAFAFA;
   --card: #121214;
   --card-foreground: #FAFAFA;
-  --primary: #FAFAFA;
-  --primary-foreground: #09090B;
-  --secondary: #27272A;
+  --primary: #FF3D6B;
+  --primary-foreground: #FFFFFF;
+  --secondary: #18181B;
   --secondary-foreground: #FAFAFA;
-  --muted: #27272A;
+  --muted: #18181B;
   --muted-foreground: #A1A1AA;
-  --accent: #A78BFA;
-  --accent-foreground: #09090B;
+  --accent: #FB7185;
+  --accent-foreground: #FFFFFF;
   --border: #27272A;
-  --ring: #A78BFA;
+  --ring: #FF3D6B;
 }
 
 html, body, #root {
@@ -131,4 +131,44 @@ html, body, #root {
 }
 .dark .text-gradient {
   background-image: linear-gradient(to right, #ffffff, var(--accent));
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  animation: marquee 35s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.brand-text-gradient {
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-image: linear-gradient(135deg, #FF3D6B 0%, #E11D48 50%, #C026D3 100%);
+}
+
+.brand-badge {
+  background: rgba(255, 61, 107, 0.08);
+  border: 1px solid rgba(255, 61, 107, 0.25);
+  color: #FF3D6B;
+}
+
+.mask-fade {
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
 }

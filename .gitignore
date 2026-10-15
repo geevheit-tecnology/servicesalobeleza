@@ -1,1 +1,4 @@
 .vercel
+belezapura_go_api/server
+dist
+node_modules

@@ -38,11 +38,12 @@ export default function SuperAdminLogin() {
 
       navigate("/superadmin");
 
-    } catch (err: any) {
-      if (err.message === "Failed to fetch") {
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "Erro inesperado ao fazer login";
+      if (errMsg === "Failed to fetch") {
         setError("Erro de conexão com o servidor. Verifique se o backend está rodando.");
       } else {
-        setError(err.message);
+        setError(errMsg);
       }
     } finally {
       setLoading(false);
@@ -57,7 +58,7 @@ export default function SuperAdminLogin() {
             <Lock className="w-6 h-6 text-white" />
           </div>
           <h1 className="font-serif text-3xl font-medium text-white">Portal do SuperAdmin</h1>
-          <p className="text-zinc-400 mt-2 text-center">Gestão da Plataforma GeevheitHair</p>
+          <p className="text-zinc-400 mt-2 text-center">Gestão da Plataforma BelezaPura</p>
         </div>
 
         <div className="bg-card border border-border rounded-3xl p-8 shadow-xl">

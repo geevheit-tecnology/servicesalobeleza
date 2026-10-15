@@ -25,15 +25,15 @@ func GetSalonBySlug(c *gin.Context) {
 		return
 	}
 
-	// Check 10-day trial expiration: block if expired and not paid
+	// Check trial expiration: block if expired and not paid
 	if len(salon.Subscriptions) > 0 {
 		sub := salon.Subscriptions[0]
 		isExpired := sub.Status == "EXPIRED" || 
 			(sub.Status == "TRIAL" && sub.TrialEnds != nil && time.Now().After(*sub.TrialEnds)) || 
-			(sub.Status == "TRIAL" && time.Since(sub.CreatedAt) > 10*24*time.Hour)
+			(sub.Status == "TRIAL" && sub.TrialEnds == nil && time.Since(sub.CreatedAt) > 14*24*time.Hour)
 		if isExpired {
 			c.JSON(http.StatusPaymentRequired, gin.H{
-				"error": "O período de demonstração gratuita (10 dias) deste salão expirou. Os agendamentos online estão temporariamente suspensos até a ativação do plano.",
+				"error": "O período de demonstração gratuita (14 dias) deste salão expirou. Os agendamentos online estão temporariamente suspensos até a ativação do plano.",
 				"suspended": true,
 			})
 			return
@@ -120,21 +120,22 @@ func CreatePublicAppointment(c *gin.Context) {
 		return
 	}
 
-	// 1. Check if salon exists and verify 10-day trial status
+	// 1. Check if salon exists by ID or Slug and verify trial status
 	var salon db.Salon
-	if err := db.DB.Preload("Subscriptions").First(&salon, "id = ?", body.SalonID).Error; err != nil {
+	if err := db.DB.Preload("Subscriptions").First(&salon, "id = ? OR slug = ?", body.SalonID, body.SalonID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Salão não encontrado."})
 		return
 	}
+	body.SalonID = salon.ID // Normalize to UUID for downstream relations
 
 	if len(salon.Subscriptions) > 0 {
 		sub := salon.Subscriptions[0]
 		isExpired := sub.Status == "EXPIRED" || 
 			(sub.Status == "TRIAL" && sub.TrialEnds != nil && time.Now().After(*sub.TrialEnds)) || 
-			(sub.Status == "TRIAL" && time.Since(sub.CreatedAt) > 10*24*time.Hour)
+			(sub.Status == "TRIAL" && sub.TrialEnds == nil && time.Since(sub.CreatedAt) > 14*24*time.Hour)
 		if isExpired {
 			c.JSON(http.StatusPaymentRequired, gin.H{
-				"error": "Os agendamentos online deste salão estão suspensos pois o período de demonstração de 10 dias expirou.",
+				"error": "Os agendamentos online deste salão estão temporariamente suspensos pois o período de demonstração gratuita expirou.",
 			})
 			return
 		}

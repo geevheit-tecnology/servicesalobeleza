@@ -1593,7 +1593,7 @@ export default function SuperAdmin() {
             <Sparkles className="w-3.5 h-3.5 text-white" />
           </div>
           <div>
-            <div className="text-white font-serif text-sm font-medium">GeevheitHair</div>
+            <div className="text-white font-serif text-sm font-medium">BelezaPura</div>
             <div className="text-white/40 text-xs">Super Admin</div>
           </div>
         </div>

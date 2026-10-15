@@ -65,7 +65,11 @@ export function ChatbotWhatsAppView() {
       .then(res => res.json())
       .then(data => {
         if (data && data.subscriptions && data.subscriptions.length > 0) {
-          const sub = data.subscriptions.find((s: any) => s.status === "ACTIVE" || s.status === "TRIAL") || data.subscriptions[0];
+          interface SubItem {
+            status?: string;
+            plan?: { name?: string };
+          }
+          const sub = (data.subscriptions as SubItem[]).find((s) => s.status === "ACTIVE" || s.status === "TRIAL") || data.subscriptions[0];
           if (sub?.plan?.name) {
             setPlanName(sub.plan.name);
           }
@@ -82,8 +86,12 @@ export function ChatbotWhatsAppView() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
 
-  // Se o plano for Premium ou Trial liberado
-  const isPremium = planName.toLowerCase().includes("premium") || planName.toLowerCase().includes("trial");
+  // Se o plano for Studio, Elite, Premium ou Trial liberado
+  const isPremium = planName.toLowerCase().includes("premium") || 
+    planName.toLowerCase().includes("trial") || 
+    planName.toLowerCase().includes("studio") || 
+    planName.toLowerCase().includes("elite") || 
+    planName.toLowerCase().includes("pro");
 
   // Enviar mensagem no simulador
   const handleSendMessage = (textToSend?: string) => {
@@ -213,7 +221,7 @@ export function ChatbotWhatsAppView() {
           <div className="text-center pt-2">
             <Button size="lg" className="h-13 px-8 text-sm font-bold shadow-lg shadow-primary/20">
               <Crown className="w-4 h-4 mr-2 text-amber-300" />
-              Fazer Upgrade para Plano Premium (R$ 197/mês)
+              Fazer Upgrade para Plano Studio (R$ 119,90/mês)
             </Button>
             <p className="text-xs text-muted-foreground mt-2">
               Sem contrato de fidelidade • Cancele quando quiser
@@ -299,7 +307,12 @@ export function ChatbotWhatsAppView() {
                   </label>
                   <select 
                     value={botTone}
-                    onChange={e => setBotTone(e.target.value as any)}
+                    onChange={e => {
+                      const val = e.target.value;
+                      if (val === "amigavel" || val === "elegante" || val === "direto") {
+                        setBotTone(val);
+                      }
+                    }}
                     className="w-full h-10 rounded-xl border border-border px-3 text-xs bg-background outline-none focus:border-primary transition-colors text-foreground"
                   >
                     <option value="amigavel">Amigável & Caloroso (Emojis ✨)</option>

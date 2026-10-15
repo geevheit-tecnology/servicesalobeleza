@@ -86,12 +86,12 @@ func TrialEnforcer() gin.HandlerFunc {
 		if err := db.DB.Where("salon_id = ?", salonID).Order("created_at desc").First(&sub).Error; err == nil {
 			isExpired := sub.Status == "EXPIRED" || 
 				(sub.Status == "TRIAL" && sub.TrialEnds != nil && time.Now().After(*sub.TrialEnds)) || 
-				(sub.Status == "TRIAL" && time.Since(sub.CreatedAt) > 10*24*time.Hour)
+				(sub.Status == "TRIAL" && sub.TrialEnds == nil && time.Since(sub.CreatedAt) > 14*24*time.Hour)
 
 			if isExpired {
 				c.AbortWithStatusJSON(http.StatusPaymentRequired, gin.H{
 					"error":        "TRIAL_EXPIRED",
-					"message":      "O seu período de demonstração de 10 dias expirou. Para continuar utilizando o sistema, selecione um plano ativo.",
+					"message":      "O seu período de demonstração gratuita de 14 dias expirou. Para continuar utilizando o sistema, selecione um plano ativo.",
 					"trialExpired": true,
 				})
 				return

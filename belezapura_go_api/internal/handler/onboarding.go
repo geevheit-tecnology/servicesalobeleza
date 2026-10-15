@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -97,10 +96,12 @@ func Onboarding(c *gin.Context) {
 		return
 	}
 
+	cleanEmail := strings.ToLower(strings.TrimSpace(req.Email))
+
 	// 1. Anti-Cheat: Check duplicate email
 	var existing db.User
-	if err := db.DB.Where("LOWER(email) = ?", strings.ToLower(strings.TrimSpace(req.Email))).First(&existing).Error; err == nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "Este e-mail já foi utilizado no período de demonstração gratuita ou possui uma conta cadastrada. Faça login para continuar."})
+	if err := db.DB.Where("LOWER(TRIM(email)) = ?", cleanEmail).First(&existing).Error; err == nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "Este e-mail já foi utilizado ou possui uma conta cadastrada. Faça login para continuar."})
 		return
 	}
 
@@ -109,7 +110,7 @@ func Onboarding(c *gin.Context) {
 		cleanDoc := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(strings.TrimSpace(*req.Document), ".", ""), "-", ""), "/", "")
 		var existingSalon db.Salon
 		if err := db.DB.Where("document = ? OR REPLACE(REPLACE(REPLACE(document, '.', ''), '-', ''), '/', '') = ?", *req.Document, cleanDoc).First(&existingSalon).Error; err == nil {
-			c.JSON(http.StatusConflict, gin.H{"error": "Este CPF/CNPJ já utilizou o período de demonstração gratuita de 10 dias. Não é permitido criar novas contas de teste com o mesmo documento."})
+			c.JSON(http.StatusConflict, gin.H{"error": "Este CPF/CNPJ já utilizou o período de demonstração gratuita. Não é permitido criar novas contas de teste com o mesmo documento."})
 			return
 		}
 	}
@@ -118,37 +119,26 @@ func Onboarding(c *gin.Context) {
 	if req.PixKey != nil && strings.TrimSpace(*req.PixKey) != "" {
 		var existingSalon db.Salon
 		if err := db.DB.Where("pix_key = ?", strings.TrimSpace(*req.PixKey)).First(&existingSalon).Error; err == nil {
-			c.JSON(http.StatusConflict, gin.H{"error": "Esta chave PIX já foi cadastrada em outra conta de demonstração. Por favor, acesse seu salão existente."})
+			c.JSON(http.StatusConflict, gin.H{"error": "Esta chave PIX já foi cadastrada em outra conta. Por favor, acesse seu salão existente."})
 			return
 		}
 	}
 
-	// 4. Plan Subscriber Spots Limit Check (10 Básico, 10 Profissional, 5 Premium)
+	// 4. Plan Subscriber Spots Limit Check
 	var selectedPlan db.Plan
 	if req.PlanID != nil && *req.PlanID != "" {
-		if err := db.DB.First(&selectedPlan, "id = ?", *req.PlanID).Error; err == nil {
-			limit := selectedPlan.MaxSubscriptions
-			if limit == 0 {
-				planNameLower := strings.ToLower(selectedPlan.Name)
-				if strings.Contains(planNameLower, "básico") || strings.Contains(planNameLower, "basico") {
-					limit = 10
-				} else if strings.Contains(planNameLower, "profissional") {
-					limit = 10
-				} else if strings.Contains(planNameLower, "premium") {
-					limit = 5
-				}
-			}
+		pId := strings.TrimSpace(*req.PlanID)
+		if err := db.DB.First(&selectedPlan, "id = ?", pId).Error; err != nil {
+			// Search by name if id is a slug/name
+			db.DB.Where("LOWER(name) = ?", strings.ToLower(pId)).First(&selectedPlan)
+		}
+	}
 
-			if limit > 0 {
-				var count int64
-				db.DB.Model(&db.Subscription{}).Where("plan_id = ? AND status IN (?)", selectedPlan.ID, []string{"ACTIVE", "TRIAL"}).Count(&count)
-				if int(count) >= limit {
-					c.JSON(http.StatusForbidden, gin.H{
-						"error": fmt.Sprintf("As %d vagas exclusivas do Plano %s já foram preenchidas. Por favor, selecione outro plano disponível.", limit, selectedPlan.Name),
-					})
-					return
-				}
-			}
+	if selectedPlan.ID == "" {
+		// Default to Studio if available, or first plan
+		db.DB.Where("LOWER(name) LIKE ?", "%studio%").First(&selectedPlan)
+		if selectedPlan.ID == "" {
+			db.DB.Order("price asc").First(&selectedPlan)
 		}
 	}
 
@@ -195,7 +185,7 @@ func Onboarding(c *gin.Context) {
 	}
 
 	user := db.User{
-		Email:    req.Email,
+		Email:    cleanEmail,
 		Password: string(hashed),
 		Name:     "Admin " + req.SalonName,
 		Role:     "owner",
@@ -233,10 +223,10 @@ func Onboarding(c *gin.Context) {
 		tx.Create(&pro)
 	}
 
-	// Create subscription with exact 10 days of trial
-	trialEnds := time.Now().Add(10 * 24 * time.Hour)
+	// Create subscription with exact 14 days of trial
+	trialEnds := time.Now().Add(14 * 24 * time.Hour)
 	planIDToSave := ""
-	planPrice := 49.99
+	planPrice := 119.90
 	if selectedPlan.ID != "" {
 		planIDToSave = selectedPlan.ID
 		planPrice = selectedPlan.Price
@@ -267,6 +257,9 @@ func Onboarding(c *gin.Context) {
 		"token":    token,
 		"salonId":  salon.ID,
 		"user": gin.H{
+			"id":        user.ID,
+			"name":      user.Name,
+			"email":     user.Email,
 			"salonSlug": salon.Slug,
 			"role":      user.Role,
 		},

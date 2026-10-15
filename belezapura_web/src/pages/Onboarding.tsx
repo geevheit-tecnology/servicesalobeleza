@@ -20,8 +20,75 @@ const STEPS = [
 
 const serviceCategories = ["Cabelo", "Unhas", "Massagem", "Estética", "Maquiagem", "Sobrancelhas", "Bronzeamento", "Outros"];
 
-const defaultServices: any[] = [];
-const defaultPros: any[] = [];
+interface OnboardingService {
+  name: string;
+  cat?: string;
+  duration?: string;
+  price: string;
+  active: boolean;
+}
+
+interface OnboardingPro {
+  name: string;
+  specialty?: string;
+  active: boolean;
+}
+
+const defaultServices: OnboardingService[] = [];
+const defaultPros: OnboardingPro[] = [];
+
+export const ONBOARDING_PLANS = [
+  {
+    id: "essencial",
+    name: "Essencial",
+    price: "R$ 59,90",
+    period: "/mês",
+    desc: "Para profissionais autônomos que atendem sozinhos",
+    features: [
+      "1 profissional",
+      "Página exclusiva na Bio do Instagram",
+      "Agendamento online 24h",
+      "Sinal antecipado via PIX sem taxas",
+      "Lembretes automáticos para clientes",
+      "Controle de atendimentos e clientes"
+    ]
+  },
+  {
+    id: "studio",
+    name: "Studio",
+    price: "R$ 119,90",
+    period: "/mês",
+    highlight: true,
+    badge: "MAIS ESCOLHIDO",
+    trialBadge: "🎁 14 DIAS GRÁTIS NO STUDIO COMPLETO",
+    desc: "Para salões e barbearias em equipe (até 5 profissionais)",
+    features: [
+      "Tudo do Essencial",
+      "Até 5 profissionais com acessos individuais",
+      "Divisão e cálculo automático de comissões",
+      "Painel financeiro com controle de entradas",
+      "Lembretes anti-no show no WhatsApp",
+      "Controle de comandas e serviços",
+      "🎁 14 dias de teste grátis"
+    ]
+  },
+  {
+    id: "elite",
+    name: "Elite",
+    price: "R$ 249,90",
+    period: "/mês",
+    desc: "Para grandes espaços, redes e clínicas (profissionais ilimitados)",
+    features: [
+      "Tudo do Studio",
+      "Profissionais ilimitados",
+      "Automação completa no WhatsApp",
+      "Fidelização e mensagens de retorno",
+      "Controle de estoque e produtos",
+      "Multi-unidades (filiais)",
+      "Suporte prioritário VIP"
+    ]
+  }
+];
 
 const weekDays = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
 const defaultSchedule = [
@@ -36,22 +103,39 @@ const defaultSchedule = [
 
 function StepIndicator({ current }: { current: number }) {
   return (
-    <div className="flex items-center gap-0">
-      {STEPS.map((s, i) => (
-        <div key={s.id} className="flex items-center">
-          <div className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-semibold transition-all ${
-            s.id < current ? "bg-emerald-500 text-white" :
-            s.id === current ? "bg-primary text-primary-foreground shadow-md" :
-            "bg-muted text-muted-foreground"
-          }`}>
-            {s.id < current ? <Check className="w-4 h-4" /> : s.id}
-          </div>
-          {i < STEPS.length - 1 && (
-            <div className={`h-0.5 w-8 mx-0.5 transition-all ${s.id < current ? "bg-emerald-400" : "bg-border"}`} />
-          )}
+    <>
+      {/* Mobile progress: compact and never overflows */}
+      <div className="sm:hidden w-full">
+        <div className="flex items-center justify-between text-xs mb-1.5">
+          <span className="font-semibold text-foreground">{STEPS[current - 1]?.label}</span>
+          <span className="text-muted-foreground font-mono">{current} / {STEPS.length}</span>
         </div>
-      ))}
-    </div>
+        <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-primary rounded-full transition-all duration-300" 
+            style={{ width: `${(current / STEPS.length) * 100}%` }} 
+          />
+        </div>
+      </div>
+
+      {/* Desktop progress */}
+      <div className="hidden sm:flex items-center justify-center gap-0 overflow-x-auto py-1">
+        {STEPS.map((s, i) => (
+          <div key={s.id} className="flex items-center shrink-0">
+            <div className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-semibold transition-all ${
+              s.id < current ? "bg-emerald-500 text-white" :
+              s.id === current ? "bg-primary text-primary-foreground shadow-md ring-4 ring-primary/20" :
+              "bg-muted text-muted-foreground"
+            }`}>
+              {s.id < current ? <Check className="w-4 h-4" /> : s.id}
+            </div>
+            {i < STEPS.length - 1 && (
+              <div className={`h-0.5 w-6 lg:w-8 mx-0.5 transition-all ${s.id < current ? "bg-emerald-400" : "bg-border"}`} />
+            )}
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 
@@ -65,15 +149,22 @@ const handleImageUpload = async (
   try {
     const optimized = await optimizeImage(file, preset || PRESETS.gallery);
     callback(optimized);
-  } catch (err: any) {
-    alert(err.message || "Erro ao processar imagem.");
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Erro ao processar imagem.";
+    alert(msg);
   }
 };
 
 export default function Onboarding({ onFinish }: { onFinish: () => void }) {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const planId = searchParams.get("planId");
+  
+  const [selectedPlanId, setSelectedPlanId] = useState<string>(() => {
+    const p = (searchParams.get("planId") || "").toLowerCase();
+    if (p === "1" || p === "essencial" || p === "starter" || p === "basico" || p === "básico") return "essencial";
+    if (p === "3" || p === "elite" || p === "business" || p === "premium") return "elite";
+    return "studio"; // Padrão Studio com 14 dias grátis
+  });
 
   const [step, setStep] = useState(1);
   const [salonName, setSalonName] = useState("Meu Salão");
@@ -98,7 +189,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
   const [logo, setLogo] = useState<string | null>(null);
   const [cover, setCover] = useState<string>("");
   const [gallery, setGallery] = useState<string[]>([]);
-  const [mainColor, setMainColor] = useState<string>("#B8614A");
+  const [mainColor, setMainColor] = useState<string>("#FF3D6B");
 
   const [tipoConta, setTipoConta] = useState("PJ");
   const [documento, setDocumento] = useState("");
@@ -165,7 +256,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
       try {
         const payload = {
           salonName,
-          email,
+          email: email.trim().toLowerCase(),
           password,
           document: documento,
           phone,
@@ -177,7 +268,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
           cover,
           gallery,
           mainColor,
-          planId
+          planId: selectedPlanId
         };
 
         const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/public/onboarding`, {
@@ -190,21 +281,20 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
           const data = await res.json();
           localStorage.setItem('token', data.token);
           localStorage.setItem('hasUsedTrial', 'true');
+          localStorage.setItem('role', data.user?.role || 'owner');
+          localStorage.setItem('userName', data.user?.name || salonName);
           if (data.user?.salonSlug) {
             localStorage.setItem('salonSlug', data.user.salonSlug);
-          }
-          if (data.user?.role) {
-            localStorage.setItem('role', data.user.role);
           }
           setDone(true);
         } else {
           const errData = await res.json().catch(()=>({}));
           if (res.status === 409) {
-            setPaymentError(errData.error || 'Este CPF/CNPJ, e-mail ou chave PIX já utilizou a demonstração gratuita de 10 dias. Não é permitido criar novas contas de teste.');
+            setPaymentError(errData.error || 'Este CPF/CNPJ ou e-mail já possui uma conta cadastrada. Faça login para continuar.');
           } else if (res.status === 403) {
-            setPaymentError(errData.error || 'As vagas exclusivas deste plano foram esgotadas. Por favor, escolha outro plano.');
+            setPaymentError(errData.error || 'Não foi possível selecionar este plano no momento. Escolha outro plano.');
           } else if (res.status === 402) {
-            setPaymentError('O pagamento não foi autorizado pela operadora. Verifique os dados ou utilize outro cartão.');
+            setPaymentError('O cartão informado não foi autorizado. Verifique os dados ou utilize outro cartão.');
           } else {
             setPaymentError(errData.error || 'Não conseguimos concluir o cadastro neste momento. Tente novamente em instantes.');
           }
@@ -270,7 +360,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
               <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
                 <Sparkles className="w-3.5 h-3.5 text-white" />
               </div>
-              <span className="font-serif font-medium text-sm">GeevheitHair</span>
+              <span className="font-serif font-bold text-sm text-foreground">BelezaPura</span>
             </div>
             <div className="text-xs text-muted-foreground">Etapa {step} de {STEPS.length}</div>
           </div>
@@ -744,76 +834,150 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
         )}
 
         {/* Step 8: Assinatura */}
-        {step === 8 && (
-          <div className="space-y-6">
-            <div className="text-center mb-6">
-              <h3 className="font-serif text-2xl font-medium">Assine e comece a faturar</h3>
-              <p className="text-muted-foreground text-sm">Falta pouco para liberar seu painel completo.</p>
-            </div>
-            <div className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-2xl p-6">
-              <div className="flex justify-between items-center mb-3">
-                <span className="font-semibold text-lg text-primary">Plano Escolhido</span>
-                <span className="font-serif text-2xl font-bold text-foreground">
-                  {planId === '2' ? 'R$ 99,99/mês' : planId === '3' ? 'R$ 219,99/mês' : 'R$ 49,99/mês'}
-                </span>
+        {step === 8 && (() => {
+          const currentPlan = ONBOARDING_PLANS.find(p => p.id === selectedPlanId) || ONBOARDING_PLANS[1];
+          return (
+            <div className="space-y-6">
+              <div className="text-center mb-5">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-2">
+                  <Sparkles className="w-3.5 h-3.5" /> Setup quase finalizado
+                </div>
+                <h3 className="font-bold text-2xl tracking-tight text-foreground">Comece seus 14 dias grátis</h3>
+                <p className="text-muted-foreground text-xs sm:text-sm max-w-md mx-auto mt-1">
+                  Teste todas as funcionalidades sem compromisso. Cancele com 1 clique antes do 15º dia e nada será cobrado.
+                </p>
               </div>
-              <div className="mb-4">
-                <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-[11px] font-bold py-0.5 px-2.5">
-                  🎁 10 Dias de Demonstração Gratuita Inclusos
-                </Badge>
+
+              {/* Seletor rápido de planos */}
+              <div className="grid grid-cols-3 gap-2 p-1.5 bg-muted/60 rounded-2xl border border-border">
+                {ONBOARDING_PLANS.map(p => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setSelectedPlanId(p.id)}
+                    className={`py-2 px-1 text-center rounded-xl transition-all cursor-pointer ${
+                      selectedPlanId === p.id 
+                        ? "bg-card text-foreground font-bold shadow-sm border border-border/80" 
+                        : "text-muted-foreground hover:text-foreground text-xs"
+                    }`}
+                  >
+                    <div className="text-xs sm:text-sm leading-tight">{p.name}</div>
+                    <div className="text-[11px] font-mono text-primary font-semibold">{p.price}</div>
+                  </button>
+                ))}
               </div>
-              <ul className="space-y-2 mb-6">
-                <li className="flex items-center gap-2 text-sm"><Check className="w-4 h-4 text-emerald-500" /> Agenda online 24h (Página web)</li>
-                <li className="flex items-center gap-2 text-sm"><Check className="w-4 h-4 text-emerald-500" /> Cobrança via PIX (Sinal)</li>
-                <li className="flex items-center gap-2 text-sm"><Check className="w-4 h-4 text-emerald-500" /> Painel de gestão inteligente</li>
-              </ul>
-              
-              <div className="bg-card rounded-xl p-4 border border-border">
-                <div className="text-sm font-medium mb-3">Cartão de Crédito</div>
+
+              {/* Detalhes do plano ativo */}
+              <div className="rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-5 sm:p-6 shadow-lg shadow-primary/5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-lg sm:text-xl text-foreground">Plano {currentPlan.name}</span>
+                      {currentPlan.badge && (
+                        <span className="text-[10px] font-bold uppercase tracking-wider bg-primary text-white px-2 py-0.5 rounded-full shadow-sm">
+                          {currentPlan.badge}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">{currentPlan.desc}</p>
+                  </div>
+                  <div className="text-left sm:text-right">
+                    <span className="text-2xl sm:text-3xl font-black text-foreground font-mono">{currentPlan.price}</span>
+                    <span className="text-xs text-muted-foreground font-medium">{currentPlan.period}</span>
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <div className="inline-flex items-center gap-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-bold py-1 px-3 rounded-lg">
+                    🎁 14 Dias de Demonstração Gratuita Inclusos
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-1.5">
+                    Cobrança no valor de {currentPlan.price} somente após 14 dias se você decidir continuar.
+                  </p>
+                </div>
+
+                <ul className="space-y-2 mb-2 pt-3 border-t border-border/50">
+                  {currentPlan.features.map(f => (
+                    <li key={f} className="flex items-center gap-2 text-xs sm:text-sm text-foreground/90">
+                      <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Formulário do Cartão 100% alinhado */}
+              <div className="bg-card rounded-2xl p-4 sm:p-5 border border-border shadow-md">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <CreditCard className="w-4 h-4 text-primary" /> Dados do Cartão para o Trial
+                  </span>
+                  <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded font-medium">Anti-bot</span>
+                </div>
+
                 {paymentError && (
-                  <div className="mb-4 p-3 text-sm text-red-700 bg-red-100 border border-red-200 rounded-lg">
+                  <div className="mb-4 p-3 text-xs font-medium text-red-700 bg-red-100 border border-red-200 rounded-xl">
                     {paymentError}
                   </div>
                 )}
+
                 <div className="space-y-3">
-                  <input 
-                    placeholder="0000 0000 0000 0000" 
-                    maxLength={19}
-                    value={cardNumber}
-                    onChange={e => setCardNumber(e.target.value.replace(/\D/g, '').replace(/(\d{4})(?=\d)/g, '$1 '))}
-                    className="w-full h-11 rounded-lg border border-border px-3 text-sm bg-background transition-colors focus:border-primary focus:ring-1 focus:ring-primary outline-none" 
-                  />
-                  <div className="flex gap-3">
+                  <div>
+                    <label className="text-[11px] font-medium text-muted-foreground block mb-1">Número do cartão</label>
                     <input 
-                      placeholder="MM/AA" 
-                      maxLength={5}
-                      value={cardExp}
-                      onChange={e => {
-                        let val = e.target.value.replace(/\D/g, '');
-                        if (val.length > 2) val = val.substring(0,2) + '/' + val.substring(2);
-                        setCardExp(val);
-                      }}
-                      className="flex-1 h-11 rounded-lg border border-border px-3 text-sm bg-background transition-colors focus:border-primary focus:ring-1 focus:ring-primary outline-none" 
-                    />
-                    <input 
-                      placeholder="CVC" 
-                      maxLength={4}
-                      value={cardCvc}
-                      onChange={e => setCardCvc(e.target.value.replace(/\D/g, ''))}
-                      className="w-24 min-w-[80px] h-11 rounded-lg border border-border px-3 text-sm bg-background text-center transition-colors focus:border-primary focus:ring-1 focus:ring-primary outline-none" 
+                      placeholder="0000 0000 0000 0000" 
+                      maxLength={19}
+                      value={cardNumber}
+                      onChange={e => setCardNumber(e.target.value.replace(/\D/g, '').replace(/(\d{4})(?=\d)/g, '$1 '))}
+                      className="w-full h-11 rounded-xl border border-border px-3 text-sm bg-background transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none font-mono" 
                     />
                   </div>
-                  <input 
-                    placeholder="Nome impresso no cartão" 
-                    value={cardName}
-                    onChange={e => setCardName(e.target.value)}
-                    className="w-full h-11 rounded-lg border border-border px-3 text-sm bg-background uppercase transition-colors focus:border-primary focus:ring-1 focus:ring-primary outline-none" 
-                  />
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="min-w-0">
+                      <label className="text-[11px] font-medium text-muted-foreground block mb-1">Validade (MM/AA)</label>
+                      <input 
+                        placeholder="MM/AA" 
+                        maxLength={5}
+                        value={cardExp}
+                        onChange={e => {
+                          let val = e.target.value.replace(/\D/g, '');
+                          if (val.length > 2) val = val.substring(0,2) + '/' + val.substring(2);
+                          setCardExp(val);
+                        }}
+                        className="w-full h-11 rounded-xl border border-border px-3 text-sm bg-background text-center transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none font-mono" 
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <label className="text-[11px] font-medium text-muted-foreground block mb-1">CVC / Segurança</label>
+                      <input 
+                        placeholder="123" 
+                        maxLength={4}
+                        value={cardCvc}
+                        onChange={e => setCardCvc(e.target.value.replace(/\D/g, ''))}
+                        className="w-full h-11 rounded-xl border border-border px-3 text-sm bg-background text-center transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none font-mono" 
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-medium text-muted-foreground block mb-1">Nome impresso no cartão</label>
+                    <input 
+                      placeholder="NOME COMO NO CARTÃO" 
+                      value={cardName}
+                      onChange={e => setCardName(e.target.value)}
+                      className="w-full h-11 rounded-xl border border-border px-3 text-sm bg-background uppercase transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none" 
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 mt-4 text-[10px] text-muted-foreground justify-center">
+                  <Lock className="w-3 h-3 text-emerald-500" /> Criptografia de 256 bits · Cancelamento sem multa a qualquer momento
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Navigation */}
         <div className="flex items-center justify-between mt-8 pt-6 border-t border-border">

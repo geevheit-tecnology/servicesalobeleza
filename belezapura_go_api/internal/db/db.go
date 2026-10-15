@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"gorm.io/driver/postgres"
@@ -74,43 +75,43 @@ func Migrate() error {
 		return err
 	}
 
-	// Seed / Update official plans with prices and spots: 49.99 (10 vagas), 99.99 (10 vagas), 219.99 (5 vagas)
+	// Seed / Update official BelezaPura plans: Essencial R$59,90, Studio R$119,90 [14 dias grátis], Elite R$249,90
 	seedPlans := []Plan{
 		{
-			Name:             "Básico",
-			Price:            49.99,
+			Name:             "Essencial",
+			Price:            59.90,
 			Period:           "/mês",
 			Highlight:        false,
 			MaxProfessionals: 1,
-			MaxSubscriptions: 10,
-			Features:         `["1 profissional","Página do salão (Link na Bio)","Agendamento Automático 24h","Cobrança de Sinal (PIX)","Apenas 10 vagas disponíveis"]`,
+			MaxSubscriptions: 0,
+			Features:         `["1 profissional","Página exclusiva para bio do Instagram","Agendamento online 24h","Sinal antecipado via PIX sem taxas","Lembretes automáticos para clientes","Controle de atendimentos"]`,
 			Color:            "#B8614A",
 		},
 		{
-			Name:             "Profissional",
-			Price:            99.99,
+			Name:             "Studio",
+			Price:            119.90,
 			Period:           "/mês",
 			Highlight:        true,
 			MaxProfessionals: 5,
-			MaxSubscriptions: 10,
-			Features:         `["Tudo do plano Básico, mais:","Até 5 profissionais","Agendamentos Ilimitados","Cálculo de Comissões","Controle Financeiro","Suporte VIP","Apenas 10 vagas disponíveis"]`,
-			Color:            "#9B7EA8",
+			MaxSubscriptions: 0,
+			Features:         `["Tudo do Essencial","Até 5 profissionais com acessos individuais","Divisão e cálculo automático de comissões","Painel financeiro com controle de entradas","Lembretes anti-no show no WhatsApp","Controle de comandas e serviços","🎁 14 dias de teste grátis"]`,
+			Color:            "#E11D48",
 		},
 		{
-			Name:             "Premium",
-			Price:            219.99,
+			Name:             "Elite",
+			Price:            249.90,
 			Period:           "/mês",
 			Highlight:        false,
 			MaxProfessionals: 0,
-			MaxSubscriptions: 5,
-			Features:         `["Tudo do plano Profissional, mais:","🤖 Chatbot WhatsApp IA (Atendente 24h)","💬 Agendamento e Cobrança no WhatsApp","⏰ Lembrete Anti-Furo 2h Antes","Profissionais Ilimitados","Múltiplas unidades (até 3)","Gestão de Estoque Completa","Apenas 5 vagas exclusivas"]`,
-			Color:            "#5558e3",
+			MaxSubscriptions: 0,
+			Features:         `["Tudo do Studio","Profissionais ilimitados","Automação completa no WhatsApp","Fidelização e mensagens de retorno","Controle de produtos e estoque","Multi-unidades (filiais)","Suporte prioritário VIP"]`,
+			Color:            "#8B5CF6",
 		},
 	}
 
 	for _, sp := range seedPlans {
 		var p Plan
-		if err := DB.Where("name = ?", sp.Name).First(&p).Error; err != nil {
+		if err := DB.Where("LOWER(name) = ?", strings.ToLower(sp.Name)).First(&p).Error; err != nil {
 			DB.Create(&sp)
 		} else {
 			DB.Model(&p).Updates(map[string]interface{}{
@@ -119,6 +120,7 @@ func Migrate() error {
 				"max_subscriptions": sp.MaxSubscriptions,
 				"features":          sp.Features,
 				"highlight":         sp.Highlight,
+				"color":             sp.Color,
 			})
 		}
 	}
