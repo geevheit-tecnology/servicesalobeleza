@@ -63,7 +63,7 @@ func RateLimiter(maxRequests int, window time.Duration) gin.HandlerFunc {
 	}
 }
 
-// TrialEnforcer verifies that the salon's 10-day trial is not expired for modifying actions
+// TrialEnforcer verifies that the salon's 14-day trial is not expired for modifying actions
 func TrialEnforcer() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		salonID := c.GetString("salonId")
@@ -84,8 +84,8 @@ func TrialEnforcer() gin.HandlerFunc {
 
 		var sub db.Subscription
 		if err := db.DB.Where("salon_id = ?", salonID).Order("created_at desc").First(&sub).Error; err == nil {
-			isExpired := sub.Status == "EXPIRED" || 
-				(sub.Status == "TRIAL" && sub.TrialEnds != nil && time.Now().After(*sub.TrialEnds)) || 
+			isExpired := sub.Status == "EXPIRED" ||
+				(sub.Status == "TRIAL" && sub.TrialEnds != nil && time.Now().After(*sub.TrialEnds)) ||
 				(sub.Status == "TRIAL" && sub.TrialEnds == nil && time.Since(sub.CreatedAt) > 14*24*time.Hour)
 
 			if isExpired {

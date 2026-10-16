@@ -25,13 +25,18 @@ export function DashboardView({ onNewAppointment }: { onNewAppointment: () => vo
         <Button size="sm" onClick={onNewAppointment}><Plus className="w-4 h-4" /> Novo agendamento</Button>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        <StatCard label="Agendamentos hoje" value={stats ? String(stats.appointmentsToday) : "0"} icon={Calendar} color="primary" />
-        <StatCard label="Faturamento" value={stats ? `R$ ${stats.revenue}` : "R$ 0"} icon={DollarSign} color="emerald" />
-        <StatCard label="Total Agendamentos" value={stats ? String(stats.totalAppointments) : "0"} icon={BarChart3} color="sky" />
-        <StatCard label="Total Clientes" value={stats ? String(stats.clientsCount) : "0"} icon={Users} color="purple" />
-        <StatCard label="Profissionais" value={stats ? String(stats.prosCount) : "0"} icon={UserCheck} color="rose" />
-        <StatCard label="Serviços" value={stats ? String(stats.servicesCount) : "0"} icon={Scissors} color="amber" />
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
+        <StatCard label="Agendamentos hoje" value={String(stats?.appointmentsToday ?? 0)} icon={Calendar} color="primary" />
+        <StatCard 
+          label="Faturamento do mês" 
+          value={`R$ ${(Number(stats?.monthlyRevenue ?? stats?.revenue ?? 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
+          icon={DollarSign} 
+          color="emerald" 
+        />
+        <StatCard label="Total Agendamentos" value={String(stats?.totalAppointments ?? 0)} icon={BarChart3} color="sky" />
+        <StatCard label="Total Clientes" value={String(stats?.totalClients ?? stats?.clientsCount ?? 0)} icon={Users} color="purple" />
+        <StatCard label="Profissionais" value={String(stats?.totalProfessionals ?? stats?.prosCount ?? 0)} icon={UserCheck} color="rose" />
+        <StatCard label="Serviços" value={String(stats?.servicesCount ?? 0)} icon={Scissors} color="amber" />
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
@@ -40,44 +45,58 @@ export function DashboardView({ onNewAppointment }: { onNewAppointment: () => vo
             <h3 className="font-semibold">Faturamento mensal</h3>
             <Badge variant="outline">Últimos 6 meses</Badge>
           </div>
-          <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={revenueData}>
-              <defs>
-                <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#B8614A" stopOpacity={0.15} />
-                  <stop offset="95%" stopColor="#B8614A" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E8E0D8" />
-              <XAxis dataKey="name" tick={{ fontSize: 12, fill: "#7C6F65" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 12, fill: "#7C6F65" }} axisLine={false} tickLine={false} tickFormatter={v => `R$${(v/1000).toFixed(0)}k`} />
-              <Tooltip formatter={(v: any) => [`R$ ${v.toLocaleString("pt-BR")}`, "Faturamento"]} />
-              <Area type="monotone" dataKey="value" stroke="#B8614A" strokeWidth={2} fill="url(#revGrad)" />
-            </AreaChart>
-          </ResponsiveContainer>
+          {revenueData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={200}>
+              <AreaChart data={revenueData}>
+                <defs>
+                  <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#B8614A" stopOpacity={0.15} />
+                    <stop offset="95%" stopColor="#B8614A" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E8E0D8" />
+                <XAxis dataKey="name" tick={{ fontSize: 12, fill: "#7C6F65" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 12, fill: "#7C6F65" }} axisLine={false} tickLine={false} tickFormatter={v => `R$${(v/1000).toFixed(0)}k`} />
+                <Tooltip formatter={(v: any) => [`R$ ${v.toLocaleString("pt-BR")}`, "Faturamento"]} />
+                <Area type="monotone" dataKey="value" stroke="#B8614A" strokeWidth={2} fill="url(#revGrad)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-[200px] text-muted-foreground text-xs border border-dashed border-border rounded-xl">
+              Nenhum histórico de faturamento para exibir no período.
+            </div>
+          )}
         </div>
 
         <div className="bg-card border border-border rounded-2xl shadow-sm hover:shadow-md transition-shadow p-5">
           <h3 className="font-semibold mb-4">Serviços por categoria</h3>
-          <ResponsiveContainer width="100%" height={160}>
-            <PieChart>
-              <Pie data={servicesPie} cx="50%" cy="50%" outerRadius={70} dataKey="value">
-                {servicesPie.map((_, i) => <Cell key={i} fill={PIE_COLORS[i]} />)}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="space-y-2 mt-2">
-            {servicesPie.map((s, i) => (
-              <div key={s.name} className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ background: PIE_COLORS[i] }} />
-                  <span className="text-muted-foreground">{s.name}</span>
-                </div>
-                <span className="font-medium">{s.value}%</span>
+          {servicesPie.length > 0 ? (
+            <>
+              <ResponsiveContainer width="100%" height={160}>
+                <PieChart>
+                  <Pie data={servicesPie} cx="50%" cy="50%" outerRadius={70} dataKey="value">
+                    {servicesPie.map((_, i) => <Cell key={i} fill={PIE_COLORS[i]} />)}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="space-y-2 mt-2">
+                {servicesPie.map((s, i) => (
+                  <div key={s.name} className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ background: PIE_COLORS[i] }} />
+                      <span className="text-muted-foreground">{s.name}</span>
+                    </div>
+                    <span className="font-medium">{s.value}%</span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-[200px] text-muted-foreground text-xs border border-dashed border-border rounded-xl">
+              Nenhum dado de serviço disponível ainda.
+            </div>
+          )}
         </div>
       </div>
 
@@ -87,15 +106,21 @@ export function DashboardView({ onNewAppointment }: { onNewAppointment: () => vo
             <h3 className="font-semibold">Agendamentos por dia</h3>
             <Badge variant="outline">Esta semana</Badge>
           </div>
-          <ResponsiveContainer width="100%" height={160}>
-            <BarChart data={appointmentsData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E8E0D8" />
-              <XAxis dataKey="name" tick={{ fontSize: 12, fill: "#7C6F65" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 12, fill: "#7C6F65" }} axisLine={false} tickLine={false} />
-              <Tooltip />
-              <Bar dataKey="value" fill="#9B7EA8" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          {appointmentsData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={160}>
+              <BarChart data={appointmentsData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E8E0D8" />
+                <XAxis dataKey="name" tick={{ fontSize: 12, fill: "#7C6F65" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 12, fill: "#7C6F65" }} axisLine={false} tickLine={false} />
+                <Tooltip />
+                <Bar dataKey="value" fill="#9B7EA8" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-[160px] text-muted-foreground text-xs border border-dashed border-border rounded-xl">
+              Nenhum agendamento registrado nesta semana.
+            </div>
+          )}
         </div>
 
         <div className="bg-card border border-border rounded-2xl shadow-sm hover:shadow-md transition-shadow p-5">
@@ -104,21 +129,32 @@ export function DashboardView({ onNewAppointment }: { onNewAppointment: () => vo
             <button className="text-primary text-sm hover:underline">Ver todos</button>
           </div>
           <div className="space-y-3">
-            {appointments.slice(0, 4).map(a => (
-              <div key={a.id} className="flex items-center gap-3">
-                <div className="text-center bg-primary/10 rounded-xl p-2 shrink-0 min-w-[3rem]">
-                  <div className="text-primary font-semibold text-sm leading-none">{a.time}</div>
-                  <div className="text-primary/60 text-xs mt-0.5">{a.date}</div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-sm truncate">{a.client}</div>
-                  <div className="text-xs text-muted-foreground">{a.service} · {a.pro.split(" ")[0]}</div>
-                </div>
-                <Badge variant={a.status === "confirmed" ? "success" : a.status === "waiting" ? "warning" : "danger"} className="shrink-0">
-                  {statusLabel[a.status]}
-                </Badge>
+            {stats?.recentAppointments && stats.recentAppointments.length > 0 ? (
+              stats.recentAppointments.slice(0, 4).map((a: any) => {
+                const appDate = a.date ? new Date(a.date) : new Date();
+                const timeStr = appDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                const dateStr = appDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+                return (
+                  <div key={a.id || a.ID} className="flex items-center gap-3">
+                    <div className="text-center bg-primary/10 rounded-xl p-2 shrink-0 min-w-[3rem]">
+                      <div className="text-primary font-semibold text-sm leading-none">{timeStr}</div>
+                      <div className="text-primary/60 text-xs mt-0.5">{dateStr}</div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm truncate">{a.client?.name || a.Client?.Name || "Cliente"}</div>
+                      <div className="text-xs text-muted-foreground">{a.service?.name || a.Service?.Name || "Serviço"} · {(a.professional?.name || a.Professional?.Name || "Profissional").split(" ")[0]}</div>
+                    </div>
+                    <Badge variant={a.status === "done" ? "success" : a.status === "pending" ? "warning" : "default"} className="shrink-0">
+                      {a.status === "done" ? "Concluído" : a.status === "confirmed" ? "Confirmado" : a.status === "cancelled" ? "Cancelado" : "Pendente"}
+                    </Badge>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="py-8 text-center text-muted-foreground text-sm border border-dashed border-border rounded-xl">
+                Nenhum agendamento recente registrado.
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>

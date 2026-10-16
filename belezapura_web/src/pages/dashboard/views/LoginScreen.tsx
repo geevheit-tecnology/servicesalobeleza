@@ -54,7 +54,7 @@ export function LoginScreen({ onLogin }: { onLogin: (token: string, role: string
           <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center shadow-md mb-3">
             <Sparkles className="w-5 h-5 text-white" />
           </div>
-          <span className="font-bold text-lg tracking-tight">Beauty<span className="text-primary">OS</span></span>
+          <span className="font-bold text-lg tracking-tight">Beleza<span className="text-primary">Pura</span></span>
           <p className="text-xs text-muted-foreground mt-1">Acesso ao Painel de Gestão</p>
         </div>
 

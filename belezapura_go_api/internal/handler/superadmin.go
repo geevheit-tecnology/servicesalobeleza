@@ -10,7 +10,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
 )
 
 // ─── Super Admin ─────────────────────────────────────────────────────────────
@@ -105,9 +104,7 @@ func GetOverview(c *gin.Context) {
 
 func GetSalons(c *gin.Context) {
 	var salons []db.Salon
-	db.DB.Preload("Users").Preload("Subscriptions", func(tx *gorm.DB) *gorm.DB {
-		return tx.Order("created_at desc").Limit(1)
-	}).Find(&salons)
+	db.DB.Preload("Users").Preload("Subscriptions.Plan").Order("created_at desc").Find(&salons)
 
 	result := make([]gin.H, 0, len(salons))
 	for _, s := range salons {
@@ -118,11 +115,23 @@ func GetSalons(c *gin.Context) {
 		if len(s.Users) > 0 {
 			owner = s.Users[0].Name
 		}
-		plan := "Sem plano"
-		status := "INACTIVE"
+		plan := "Studio"
+		status := "TRIAL"
 		if len(s.Subscriptions) > 0 {
-			plan = s.Subscriptions[0].PlanID
-			status = s.Subscriptions[0].Status
+			lastSub := s.Subscriptions[len(s.Subscriptions)-1]
+			if lastSub.Plan != nil && lastSub.Plan.Name != "" {
+				plan = lastSub.Plan.Name
+			} else if lastSub.PlanID != "" {
+				var p db.Plan
+				if err := db.DB.First(&p, "id = ?", lastSub.PlanID).Error; err == nil && p.Name != "" {
+					plan = p.Name
+				} else {
+					plan = lastSub.PlanID
+				}
+			}
+			if lastSub.Status != "" {
+				status = lastSub.Status
+			}
 		}
 
 		result = append(result, gin.H{

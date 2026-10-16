@@ -4,7 +4,7 @@ import {
   DollarSign, BarChart3, Settings, Star, Globe, Menu, X, Bell, ChevronDown,
   TrendingUp, TrendingDown, Plus, Search, Filter, Eye, Edit3, Trash2, MoreHorizontal,
   MessageCircle, Percent, Building2, Zap, ArrowUpRight, ArrowDownRight, Check,
-  ArrowLeft, ChevronRight, LogOut, Lock, Crown
+  ArrowLeft, ChevronRight, LogOut, Lock, Crown, Bot
 } from "lucide-react";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell
@@ -177,7 +177,7 @@ export default function SalonDashboard() {
               <Scissors className="w-3.5 h-3.5 text-white" />
             </div>
             <div className="flex flex-col">
-              <span className="font-bold text-sm leading-tight">Beauty<span className="text-primary">OS</span></span>
+              <span className="font-bold text-sm leading-tight">Beleza<span className="text-primary">Pura</span></span>
               <span className="text-[10px] text-primary font-semibold">{planName}</span>
             </div>
           </div>
@@ -245,7 +245,7 @@ export default function SalonDashboard() {
                 <Scissors className="w-3.5 h-3.5 text-white" />
               </div>
               <div className="flex flex-col">
-                <span className="font-bold text-sm leading-tight">Beauty<span className="text-primary">OS</span></span>
+                <span className="font-bold text-sm leading-tight">Beleza<span className="text-primary">Pura</span></span>
                 <span className="text-[10px] text-primary font-semibold">{planName}</span>
               </div>
             </div>
@@ -367,9 +367,63 @@ export default function SalonDashboard() {
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden min-w-0 bg-background">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden min-w-0 bg-background pb-20 md:pb-6">
           {renderContent()}
         </main>
+
+        {/* Mobile App Bottom Navigation Bar (PWA Style) */}
+        <nav className="md:hidden fixed bottom-0 inset-x-0 bg-card/95 backdrop-blur-md border-t border-border z-30 flex items-center justify-around h-16 px-1 shadow-lg safe-area-bottom">
+          <button
+            onClick={() => setActiveSection("dashboard")}
+            className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors cursor-pointer ${
+              activeSection === "dashboard" ? "text-primary font-semibold" : "text-muted-foreground"
+            }`}
+          >
+            <LayoutDashboard className="w-5 h-5 mb-0.5" />
+            <span className="text-[10px]">Início</span>
+          </button>
+
+          <button
+            onClick={() => setActiveSection("agenda")}
+            className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors cursor-pointer ${
+              activeSection === "agenda" ? "text-primary font-semibold" : "text-muted-foreground"
+            }`}
+          >
+            <Calendar className="w-5 h-5 mb-0.5" />
+            <span className="text-[10px]">Agenda</span>
+          </button>
+
+          <button
+            onClick={() => setActiveSection("chatbot")}
+            className={`flex flex-col items-center justify-center flex-1 py-1 relative transition-colors cursor-pointer ${
+              activeSection === "chatbot" ? "text-primary font-semibold" : "text-muted-foreground"
+            }`}
+          >
+            <div className="relative">
+              <Bot className="w-5 h-5 mb-0.5" />
+              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            </div>
+            <span className="text-[10px]">IA Zap</span>
+          </button>
+
+          <button
+            onClick={() => setActiveSection("clientes")}
+            className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors cursor-pointer ${
+              activeSection === "clientes" ? "text-primary font-semibold" : "text-muted-foreground"
+            }`}
+          >
+            <Users className="w-5 h-5 mb-0.5" />
+            <span className="text-[10px]">Clientes</span>
+          </button>
+
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className="flex flex-col items-center justify-center flex-1 py-1 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          >
+            <Menu className="w-5 h-5 mb-0.5" />
+            <span className="text-[10px]">Mais</span>
+          </button>
+        </nav>
       </div>
 
       {/* Trial Expired Lock Screen / Upgrade Modal */}

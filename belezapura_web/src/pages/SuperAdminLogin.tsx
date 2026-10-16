@@ -51,14 +51,14 @@ export default function SuperAdminLogin() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-900 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-[#FAF8F5] p-4 text-stone-800">
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-lg mb-4 cursor-pointer hover:scale-105 transition-transform" onClick={() => navigate("/")}>
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#992E46] to-[#B83E58] flex items-center justify-center shadow-lg shadow-[#B83E58]/20 mb-4 cursor-pointer hover:scale-105 transition-transform" onClick={() => navigate("/")}>
             <Lock className="w-6 h-6 text-white" />
           </div>
-          <h1 className="font-serif text-3xl font-medium text-white">Portal do SuperAdmin</h1>
-          <p className="text-zinc-400 mt-2 text-center">Gestão da Plataforma BelezaPura</p>
+          <h1 className="font-serif text-3xl font-bold text-stone-900">Portal do SuperAdmin</h1>
+          <p className="text-stone-500 mt-2 text-center text-sm">Gestão Executiva da Plataforma BelezaPura</p>
         </div>
 
         <div className="bg-card border border-border rounded-3xl p-8 shadow-xl">

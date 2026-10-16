@@ -103,7 +103,7 @@ func main() {
 	if port == "" {
 		port = "3050"
 	}
-	log.Printf("🚀 GeevheitHair API (Go) running on :%s", port)
+	log.Printf("🚀 BelezaPura API (Go) running on :%s", port)
 	if err := r.Run(":" + port); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}

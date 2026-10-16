@@ -6,13 +6,29 @@ import { NAV, revenueData, appointmentsData, servicesPie, PIE_COLORS, appointmen
 
 export function AgendaView({ onNewAppointment }: { onNewAppointment: () => void }) {
   const [view, setView] = useState<"dia" | "semana" | "mes">("dia");
-  const [items, setItems] = useState(AGENDA_ITEMS.map((item, id) => ({ id, ...item })));
+  const [pros, setPros] = useState<any[]>([]);
+  const [items, setItems] = useState<any[]>([]);
   const [draggedItem, setDraggedItem] = useState<any>(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/salon/details`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(d => {
+        if (d.professionals && Array.isArray(d.professionals)) {
+          setPros(d.professionals);
+        }
+      })
+      .catch(console.error);
+    }
+  }, []);
 
   const handleDragStart = (e: React.DragEvent, item: any) => {
     setDraggedItem(item);
     e.dataTransfer.effectAllowed = "move";
-    // For visual ghost effect
     setTimeout(() => { (e.target as HTMLElement).style.opacity = "0.5"; }, 0);
   };
 
@@ -30,7 +46,6 @@ export function AgendaView({ onNewAppointment }: { onNewAppointment: () => void 
     e.preventDefault();
     if (!draggedItem) return;
     
-    // Check if slot is taken
     const slotTaken = items.find(i => i.id !== draggedItem.id && i.pro === targetProIndex && i.startH === targetHourIndex);
     if (slotTaken) return alert("Horário já está ocupado por outro cliente.");
 
@@ -38,6 +53,8 @@ export function AgendaView({ onNewAppointment }: { onNewAppointment: () => void 
       item.id === draggedItem.id ? { ...item, pro: targetProIndex, startH: targetHourIndex } : item
     ));
   };
+
+  const proNames = pros.map(p => p.name);
 
   return (
     <div className="p-6 space-y-4">
@@ -60,60 +77,70 @@ export function AgendaView({ onNewAppointment }: { onNewAppointment: () => void 
         </div>
       </div>
 
-      <div className="bg-card border border-border rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-        {/* Date header */}
-        <div className="grid border-b border-border bg-muted/20" style={{ gridTemplateColumns: "80px repeat(3, 1fr)" }}>
-          <div className="p-3 bg-muted/40" />
-          {AGENDA_PROS.map(p => (
-            <div key={p} className="p-3 border-l border-border text-center flex flex-col items-center justify-center">
-              <Avatar name={p} size="sm" className="mb-2" />
-              <div className="font-medium text-sm text-foreground">{p}</div>
-              <div className="text-xs text-primary font-medium">{professionals.find(prof => prof.name === p)?.specialty || 'Geral'}</div>
-            </div>
-          ))}
+      {pros.length === 0 ? (
+        <div className="bg-card border border-dashed border-border rounded-2xl p-16 text-center">
+          <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+          <h3 className="font-semibold text-base mb-1">Nenhum profissional para exibir na agenda</h3>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
+            Cadastre sua equipe na aba "Profissionais" para liberar as colunas individuais de agendamento.
+          </p>
         </div>
+      ) : (
+        <div className="bg-card border border-border rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+          {/* Date header */}
+          <div className="grid border-b border-border bg-muted/20" style={{ gridTemplateColumns: `80px repeat(${proNames.length}, 1fr)` }}>
+            <div className="p-3 bg-muted/40" />
+            {pros.map(p => (
+              <div key={p.id || p.name} className="p-3 border-l border-border text-center flex flex-col items-center justify-center">
+                <Avatar name={p.name} size="sm" className="mb-2" />
+                <div className="font-medium text-sm text-foreground">{p.name}</div>
+                <div className="text-xs text-primary font-medium">{p.specialty || 'Geral'}</div>
+              </div>
+            ))}
+          </div>
 
-        {/* Interactive Grid */}
-        <div className="relative overflow-y-auto bg-card" style={{ maxHeight: 'calc(100vh - 280px)' }}>
-          {AGENDA_HOURS.map((h, hi) => (
-            <div key={h} className="grid border-b border-border last:border-0 relative group" style={{ gridTemplateColumns: "80px repeat(3, 1fr)", minHeight: 70 }}>
-              <div className="p-2 text-xs font-medium text-muted-foreground text-right pr-4 pt-2 bg-muted/20 border-r border-border">{h}</div>
-              
-              {AGENDA_PROS.map((_, pi) => {
-                const item = items.find(a => a.pro === pi && a.startH === hi);
-                return (
-                  <div 
-                    key={pi} 
-                    className="border-l border-border/50 relative p-1 transition-colors hover:bg-muted/10 group-hover:border-border"
-                    onDragOver={handleDragOver}
-                    onDrop={(e) => handleDrop(e, pi, hi)}
-                  >
-                    {item && (
-                      <div 
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, item)}
-                        onDragEnd={handleDragEnd}
-                        className={`rounded-xl p-2.5 text-xs cursor-grab active:cursor-grabbing hover:brightness-95 transition-all border shadow-sm absolute left-1 right-1 z-10 ${statusColors[item.status]}`}
-                        style={{ height: `calc(${item.duration * 70}px - 8px)` }}
-                      >
-                        <div className="flex justify-between items-start mb-1">
-                          <div className="font-semibold text-sm truncate">{item.client}</div>
-                          {item.status === 'confirmed' && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1" />}
-                          {item.status === 'waiting' && <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1" />}
+          {/* Interactive Grid */}
+          <div className="relative overflow-y-auto bg-card" style={{ maxHeight: 'calc(100vh - 280px)' }}>
+            {AGENDA_HOURS.map((h, hi) => (
+              <div key={h} className="grid border-b border-border last:border-0 relative group" style={{ gridTemplateColumns: `80px repeat(${proNames.length}, 1fr)`, minHeight: 70 }}>
+                <div className="p-2 text-xs font-medium text-muted-foreground text-right pr-4 pt-2 bg-muted/20 border-r border-border">{h}</div>
+                
+                {pros.map((_, pi) => {
+                  const item = items.find(a => a.pro === pi && a.startH === hi);
+                  return (
+                    <div 
+                      key={pi} 
+                      className="border-l border-border/50 relative p-1 transition-colors hover:bg-muted/10 group-hover:border-border"
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, pi, hi)}
+                    >
+                      {item && (
+                        <div 
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, item)}
+                          onDragEnd={handleDragEnd}
+                          className={`rounded-xl p-2.5 text-xs cursor-grab active:cursor-grabbing hover:brightness-95 transition-all border shadow-sm absolute left-1 right-1 z-10 ${statusColors[item.status]}`}
+                          style={{ height: `calc(${item.duration * 70}px - 8px)` }}
+                        >
+                          <div className="flex justify-between items-start mb-1">
+                            <div className="font-semibold text-sm truncate">{item.client}</div>
+                            {item.status === 'confirmed' && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1" />}
+                            {item.status === 'waiting' && <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1" />}
+                          </div>
+                          <div className="opacity-80 font-medium truncate mb-1">{item.service}</div>
+                          <div className="text-[10px] opacity-60 flex items-center gap-1">
+                            <Clock className="w-3 h-3" /> {AGENDA_HOURS[item.startH]} • {item.duration}h
+                          </div>
                         </div>
-                        <div className="opacity-80 font-medium truncate mb-1">{item.service}</div>
-                        <div className="text-[10px] opacity-60 flex items-center gap-1">
-                          <Clock className="w-3 h-3" /> {AGENDA_HOURS[item.startH]} • {item.duration}h
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

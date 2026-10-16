@@ -28,12 +28,12 @@ func GetSalonBySlug(c *gin.Context) {
 	// Check trial expiration: block if expired and not paid
 	if len(salon.Subscriptions) > 0 {
 		sub := salon.Subscriptions[0]
-		isExpired := sub.Status == "EXPIRED" || 
-			(sub.Status == "TRIAL" && sub.TrialEnds != nil && time.Now().After(*sub.TrialEnds)) || 
+		isExpired := sub.Status == "EXPIRED" ||
+			(sub.Status == "TRIAL" && sub.TrialEnds != nil && time.Now().After(*sub.TrialEnds)) ||
 			(sub.Status == "TRIAL" && sub.TrialEnds == nil && time.Since(sub.CreatedAt) > 14*24*time.Hour)
 		if isExpired {
 			c.JSON(http.StatusPaymentRequired, gin.H{
-				"error": "O período de demonstração gratuita (14 dias) deste salão expirou. Os agendamentos online estão temporariamente suspensos até a ativação do plano.",
+				"error":     "O período de demonstração gratuita (14 dias) deste salão expirou. Os agendamentos online estão temporariamente suspensos até a ativação do plano.",
 				"suspended": true,
 			})
 			return
@@ -130,8 +130,8 @@ func CreatePublicAppointment(c *gin.Context) {
 
 	if len(salon.Subscriptions) > 0 {
 		sub := salon.Subscriptions[0]
-		isExpired := sub.Status == "EXPIRED" || 
-			(sub.Status == "TRIAL" && sub.TrialEnds != nil && time.Now().After(*sub.TrialEnds)) || 
+		isExpired := sub.Status == "EXPIRED" ||
+			(sub.Status == "TRIAL" && sub.TrialEnds != nil && time.Now().After(*sub.TrialEnds)) ||
 			(sub.Status == "TRIAL" && sub.TrialEnds == nil && time.Since(sub.CreatedAt) > 14*24*time.Hour)
 		if isExpired {
 			c.JSON(http.StatusPaymentRequired, gin.H{

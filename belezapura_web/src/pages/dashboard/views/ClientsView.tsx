@@ -29,7 +29,7 @@ export function ClientsView() {
             total: `R$ ${c.totalSpent || "0"}`,
             tags: c.tags || [],
             status: c.status || "active",
-            pontos: c.pontos || Math.floor((c.totalSpent || 0) / 10) + 150
+            pontos: c.pontos ?? Math.floor((c.totalSpent || 0) / 10)
           }));
           setData(formatted);
         }
@@ -278,7 +278,7 @@ export function ClientsView() {
                   <option>Aniversariantes do Mês</option>
                   <option>Todos os clientes</option>
                 </select>
-                <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1"><Users className="w-3 h-3" /> Atingirá aproximadamente 142 clientes</div>
+                <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1"><Users className="w-3 h-3" /> Atingirá {data.length} cliente{data.length === 1 ? '' : 's'} cadastrado{data.length === 1 ? '' : 's'}</div>
               </div>
               
               <div>

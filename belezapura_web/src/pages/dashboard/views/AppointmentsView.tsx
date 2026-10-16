@@ -18,21 +18,27 @@ export function AppointmentsView({ onNewAppointment }: { onNewAppointment: () =>
     })
       .then(res => res.json())
       .then(json => {
-        // Mapeia os dados do backend para o formato que a tabela espera
-        const formatted = json.map((a: any) => ({
-          id: a.id,
-          client: a.client.name,
-          service: a.service.name,
-          pro: a.professional.name,
-          date: new Date(a.date).toLocaleDateString('pt-BR'),
-          time: new Date(a.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-          value: `R$ ${a.value}`,
-          payment: a.paymentMethod || 'PIX',
-          status: a.status
-        }));
-        setData(formatted);
+        if (Array.isArray(json)) {
+          const formatted = json.map((a: any) => ({
+            id: a.id,
+            client: a.client?.name || a.clientName || "Cliente",
+            service: a.service?.name || a.serviceName || "Serviço",
+            pro: a.professional?.name || a.professionalName || "Profissional",
+            date: a.date ? new Date(a.date).toLocaleDateString('pt-BR') : "—",
+            time: a.date ? new Date(a.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : "—",
+            value: `R$ ${a.value || 0}`,
+            payment: a.paymentMethod || 'PIX',
+            status: a.status || 'confirmed'
+          }));
+          setData(formatted);
+        } else {
+          setData([]);
+        }
       })
-      .catch(err => console.error("Erro ao buscar agendamentos", err));
+      .catch(err => {
+        console.error("Erro ao buscar agendamentos", err);
+        setData([]);
+      });
   }, []);
 
   return (
@@ -64,15 +70,22 @@ export function AppointmentsView({ onNewAppointment }: { onNewAppointment: () =>
             </tr>
           </thead>
           <tbody>
-            {(data.length > 0 ? data : appointments).map(a => (
-              <tr key={a.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <Avatar name={a.client} size="sm" />
-                    <span className="text-sm font-medium">{a.client}</span>
-                  </div>
+            {data.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="px-4 py-12 text-center text-sm text-muted-foreground">
+                  Nenhum agendamento encontrado.
                 </td>
-                <td className="px-4 py-3 text-sm text-muted-foreground">{a.service}</td>
+              </tr>
+            ) : (
+              data.map(a => (
+                <tr key={a.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <Avatar name={a.client} size="sm" />
+                      <span className="text-sm font-medium">{a.client}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-muted-foreground">{a.service}</td>
                 <td className="px-4 py-3 text-sm">{a.pro.split(" ")[0]}</td>
                 <td className="px-4 py-3">
                   <div className="text-sm font-medium">{a.date}</div>
@@ -89,7 +102,8 @@ export function AppointmentsView({ onNewAppointment }: { onNewAppointment: () =>
                   <button className="p-1.5 rounded-lg hover:bg-muted"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
                 </td>
               </tr>
-            ))}
+              ))
+            )}
           </tbody>
         </table>
       </div>

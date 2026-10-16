@@ -13,6 +13,23 @@ export function NovoAgendamentoModal({ onClose }: { onClose: () => void }) {
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [servicesList, setServicesList] = useState<any[]>([]);
+  const [prosList, setProsList] = useState<any[]>([]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/salon/details`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.services) setServicesList(data.services.filter((s: any) => s.status !== "inactive"));
+        if (data.professionals) setProsList(data.professionals.filter((p: any) => p.status !== "inactive"));
+      })
+      .catch(console.error);
+    }
+  }, []);
 
   const done = step === 4;
 
@@ -51,19 +68,25 @@ export function NovoAgendamentoModal({ onClose }: { onClose: () => void }) {
               <div>
                 <label className="text-sm font-medium block mb-2">Serviço</label>
                 <div className="grid grid-cols-2 gap-2">
-                  {allServices.filter(s => s.status === "active").map(s => (
-                    <button key={s.name} onClick={() => setSelService(s.name)}
-                      className={`p-3 rounded-xl border text-left text-sm transition-all ${selService === s.name ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}>
-                      <div className="font-medium text-xs">{s.name}</div>
-                      <div className="text-muted-foreground text-xs mt-0.5">{s.duration} · {s.price}</div>
-                    </button>
-                  ))}
+                  {servicesList.length === 0 ? (
+                    <div className="col-span-2 text-center py-6 text-xs text-muted-foreground border border-dashed border-border rounded-xl">
+                      Nenhum serviço cadastrado ainda.<br />Cadastre serviços na aba "Serviços".
+                    </div>
+                  ) : (
+                    servicesList.map(s => (
+                      <button key={s.id || s.name} onClick={() => setSelService(s.name)}
+                        className={`p-3 rounded-xl border text-left text-sm transition-all ${selService === s.name ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}>
+                        <div className="font-medium text-xs">{s.name}</div>
+                        <div className="text-muted-foreground text-xs mt-0.5">{s.duration} min · R$ {s.price}</div>
+                      </button>
+                    ))
+                  )}
                 </div>
               </div>
               <div>
                 <label className="text-sm font-medium block mb-2">Profissional</label>
-                <div className="flex gap-2">
-                  {["Qualquer", ...professionals.map(p => p.name.split(" ")[0])].map(p => (
+                <div className="flex flex-wrap gap-2">
+                  {["Qualquer", ...prosList.map(p => p.name.split(" ")[0])].map(p => (
                     <button key={p} onClick={() => setSelPro(p)}
                       className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${selPro === p ? "bg-primary text-primary-foreground border-primary" : "border-border hover:border-primary/30"}`}>
                       {p}

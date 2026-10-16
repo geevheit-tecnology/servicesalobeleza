@@ -75,7 +75,7 @@ export const ONBOARDING_PLANS = [
   {
     id: "elite",
     name: "Elite",
-    price: "R$ 249,90",
+    price: "R$ 319,09",
     period: "/mês",
     desc: "Para grandes espaços, redes e clínicas (profissionais ilimitados)",
     features: [
@@ -189,7 +189,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
   const [logo, setLogo] = useState<string | null>(null);
   const [cover, setCover] = useState<string>("");
   const [gallery, setGallery] = useState<string[]>([]);
-  const [mainColor, setMainColor] = useState<string>("#FF3D6B");
+  const [mainColor, setMainColor] = useState<string>("#B83E58");
 
   const [tipoConta, setTipoConta] = useState("PJ");
   const [documento, setDocumento] = useState("");
@@ -584,12 +584,13 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
               <label className="text-sm font-medium block mb-2">Cor principal da sua página</label>
               <div className="flex gap-3 flex-wrap">
                 {[
+                  { color: "#B83E58", label: "Marsala Rose" },
+                  { color: "#C5A059", label: "Champagne Dourado" },
                   { color: "#B8614A", label: "Terracota" },
                   { color: "#9B7EA8", label: "Lavanda" },
-                  { color: "#5B8DB8", label: "Azul" },
-                  { color: "#7DC198", label: "Verde" },
-                  { color: "#E87B4A", label: "Laranja" },
-                  { color: "#3D3D3D", label: "Carvão" },
+                  { color: "#5B8DB8", label: "Azul Seda" },
+                  { color: "#7DC198", label: "Sálvia" },
+                  { color: "#292524", label: "Espresso" },
                 ].map(c => (
                   <button key={c.color} onClick={() => setMainColor(c.color)} title={c.label} className={`w-9 h-9 rounded-full border-3 hover:scale-110 transition-transform shadow-sm ${c.color === mainColor ? "ring-2 ring-offset-2 ring-primary" : ""}`}
                     style={{ background: c.color, borderColor: "white", borderWidth: 3 }} />

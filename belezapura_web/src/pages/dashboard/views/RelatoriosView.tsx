@@ -5,15 +5,35 @@ import { Button, Badge, Avatar, Card, Stars } from "@/components/ui";
 import { NAV, revenueData, appointmentsData, servicesPie, PIE_COLORS, appointments, clients, professionals, reviewsList, AGENDA_HOURS, AGENDA_PROS, AGENDA_ITEMS, statusColors, statusLabel, StatCard } from "./shared";
 
 export function RelatoriosView() {
-  const [period, setPeriod] = useState("outubro");
-  const topServices = [
-    { name: "Escova Progressiva", qty: 48, revenue: "R$ 8.640" },
-    { name: "Manicure Gel", qty: 92, revenue: "R$ 5.980" },
-    { name: "Massagem Relaxante", qty: 31, revenue: "R$ 4.030" },
-    { name: "Corte Feminino", qty: 44, revenue: "R$ 3.960" },
-    { name: "Design Sobrancelha", qty: 67, revenue: "R$ 2.680" },
-  ];
-  const maxQty = Math.max(...topServices.map(s => s.qty));
+  const [period, setPeriod] = useState("mes_atual");
+  const [stats, setStats] = useState<any>(null);
+  const [pros, setPros] = useState<any[]>([]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/salon/dashboard`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(setStats)
+      .catch(console.error);
+
+      fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/salon/details`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(d => {
+        if (d.professionals) setPros(d.professionals);
+      })
+      .catch(console.error);
+    }
+  }, []);
+
+  const totalRev = Number(stats?.monthlyRevenue ?? stats?.revenue ?? 0);
+  const totalAppts = Number(stats?.totalAppointments ?? 0);
+  const totalClients = Number(stats?.totalClients ?? stats?.clientsCount ?? 0);
+  const ticketMedio = totalAppts > 0 ? totalRev / totalAppts : 0;
 
   return (
     <div className="p-6 space-y-6">
@@ -21,70 +41,54 @@ export function RelatoriosView() {
         <h1 className="font-serif text-2xl font-medium">Relatórios</h1>
         <select value={period} onChange={e => setPeriod(e.target.value)}
           className="h-9 px-3 rounded-lg border border-border bg-card text-sm outline-none focus:border-primary appearance-none">
-          <option value="outubro">Outubro 2024</option>
-          <option value="setembro">Setembro 2024</option>
-          <option value="agosto">Agosto 2024</option>
+          <option value="mes_atual">Mês Atual</option>
+          <option value="mes_anterior">Mês Anterior</option>
         </select>
       </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Faturamento" value="R$ 13.280" trend={12} icon={DollarSign} color="emerald" />
-        <StatCard label="Agendamentos" value="282" trend={8} icon={Calendar} color="primary" />
-        <StatCard label="Novos clientes" value="18" trend={20} icon={Users} color="purple" />
-        <StatCard label="Cancelamentos" value="14" sub="taxa: 4,9%" trend={-3} icon={X} color="rose" />
+        <StatCard label="Faturamento" value={`R$ ${totalRev.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} icon={DollarSign} color="emerald" />
+        <StatCard label="Agendamentos" value={String(totalAppts)} icon={Calendar} color="primary" />
+        <StatCard label="Novos clientes" value={String(totalClients)} icon={Users} color="purple" />
+        <StatCard label="Cancelamentos" value="0" sub="taxa: 0%" icon={X} color="rose" />
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
         <div className="bg-card border border-border rounded-2xl shadow-sm hover:shadow-md transition-shadow p-5">
           <h3 className="font-semibold mb-4">Serviços mais vendidos</h3>
-          <div className="space-y-3">
-            {topServices.map((s, i) => (
-              <div key={s.name} className="space-y-1">
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground w-4">{i + 1}</span>
-                    <span className="font-medium">{s.name}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    <span>{s.qty}x</span>
-                    <span className="font-semibold text-primary">{s.revenue}</span>
-                  </div>
-                </div>
-                <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${(s.qty / maxQty) * 100}%` }} />
-                </div>
-              </div>
-            ))}
+          <div className="text-center py-12 text-sm text-muted-foreground border border-dashed border-border rounded-xl">
+            Nenhum serviço registrado no período selecionado.
           </div>
         </div>
 
         <div className="bg-card border border-border rounded-2xl shadow-sm hover:shadow-md transition-shadow p-5">
           <h3 className="font-semibold mb-4">Desempenho por profissional</h3>
-          <div className="space-y-3">
-            {professionals.map(p => {
-              const rev = parseInt(p.revenue.replace(/\D/g, ""));
-              const maxRev = 2840;
-              return (
-                <div key={p.name} className="space-y-1">
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <Avatar name={p.name} size="xs" />
-                      <span className="font-medium">{p.name.split(" ")[0]}</span>
-                      <span className="text-xs text-muted-foreground">{p.appointments} atend.</span>
-                    </div>
-                    <span className="font-semibold text-primary text-xs">{p.revenue}</span>
+          {pros.length === 0 ? (
+            <div className="text-center py-12 text-sm text-muted-foreground border border-dashed border-border rounded-xl">
+              Nenhum profissional cadastrado com atendimentos.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {pros.map((p, idx) => (
+                <div key={p.id || p.name} className="flex items-center justify-between text-sm py-1 border-b border-border last:border-0">
+                  <div className="flex items-center gap-2">
+                    <Avatar name={p.name} size="xs" />
+                    <span className="font-medium">{p.name}</span>
                   </div>
-                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full rounded-full transition-all" style={{ width: `${(rev / maxRev) * 100}%`, background: PIE_COLORS[professionals.indexOf(p)] }} />
-                  </div>
+                  <span className="text-xs text-muted-foreground">0 atendimentos</span>
                 </div>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          )}
 
           <div className="mt-5 pt-4 border-t border-border">
             <div className="grid grid-cols-2 gap-3 text-sm">
-              {[["Ticket médio", "R$ 107"], ["Maior ticket", "R$ 180"], ["Ocupação média", "78%"], ["Clientes novos", "18"]].map(([k, v]) => (
+              {[
+                ["Ticket médio", `R$ ${ticketMedio.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+                ["Maior ticket", "R$ 0,00"],
+                ["Taxa de conversão", "100%"],
+                ["Clientes novos", String(totalClients)]
+              ].map(([k, v]) => (
                 <div key={String(k)} className="bg-secondary rounded-xl p-3">
                   <div className="text-muted-foreground text-xs">{k}</div>
                   <div className="font-semibold mt-0.5">{v}</div>
@@ -93,25 +97,6 @@ export function RelatoriosView() {
             </div>
           </div>
         </div>
-      </div>
-
-      <div className="bg-card border border-border rounded-2xl shadow-sm hover:shadow-md transition-shadow p-5">
-        <h3 className="font-semibold mb-4">Faturamento — evolução diária</h3>
-        <ResponsiveContainer width="100%" height={180}>
-          <AreaChart data={revenueData}>
-            <defs>
-              <linearGradient id="repGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#B8614A" stopOpacity={0.12} />
-                <stop offset="95%" stopColor="#B8614A" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#E8E0D8" />
-            <XAxis dataKey="name" tick={{ fontSize: 12, fill: "#7C6F65" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 12, fill: "#7C6F65" }} axisLine={false} tickLine={false} tickFormatter={(v: any) => `R$${(v / 1000).toFixed(0)}k`} />
-            <Tooltip formatter={(v: any) => [`R$ ${Number(v).toLocaleString("pt-BR")}`, "Faturamento"]} />
-            <Area type="monotone" dataKey="value" stroke="#B8614A" strokeWidth={2} fill="url(#repGrad)" />
-          </AreaChart>
-        </ResponsiveContainer>
       </div>
     </div>
   );

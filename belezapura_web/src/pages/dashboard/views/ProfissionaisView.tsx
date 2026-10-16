@@ -258,17 +258,14 @@ export function ProfissionaisView() {
               {tab === "agenda" && (
                 <div className="space-y-2">
                   <div className="text-xs font-medium text-muted-foreground mb-2">Hoje</div>
-                  {[["09:00", "Fernanda L.", "Escova"], ["11:00", "Beatriz R.", "Corte"], ["14:00", "Camila F.", "Manicure"]].map(([t, c, s]) => (
-                    <div key={t} className="flex items-center gap-2 p-2 bg-secondary rounded-lg text-xs">
-                      <span className="font-mono text-primary font-medium">{t}</span>
-                      <div className="flex-1"><div className="font-medium">{c}</div><div className="text-muted-foreground">{s}</div></div>
-                    </div>
-                  ))}
+                  <div className="py-6 text-center text-muted-foreground text-xs bg-secondary/50 rounded-lg">
+                    Nenhum agendamento para hoje
+                  </div>
                 </div>
               )}
               {tab === "faturamento" && (
                 <div className="space-y-3 text-sm">
-                  {[["Este mês", selected.revenue], ["Mês anterior", "R$ 2.410"], ["Média/atend.", "R$ 158"]].map(([k, v]) => (
+                  {[["Este mês", selected.revenue || "R$ 0,00"], ["Mês anterior", "R$ 0,00"], ["Média/atend.", "R$ 0,00"]].map(([k, v]) => (
                     <div key={String(k)} className="flex justify-between">
                       <span className="text-muted-foreground">{k}</span>
                       <span className="font-semibold text-primary">{v}</span>
@@ -278,7 +275,7 @@ export function ProfissionaisView() {
               )}
               {tab === "comissoes" && (
                 <div className="space-y-3 text-sm">
-                  {[["Percentual", selected.commission], ["Base de cálculo", selected.revenue], ["Comissão a pagar", `R$ ${Math.round(parseInt(selected.revenue.replace(/\D/g, "")) * parseInt(selected.commission) / 100).toLocaleString("pt-BR")}`]].map(([k, v]) => (
+                  {[["Percentual", selected.commission || "0%"], ["Base de cálculo", selected.revenue || "R$ 0,00"], ["Comissão a pagar", "R$ 0,00"]].map(([k, v]) => (
                     <div key={String(k)} className="flex justify-between">
                       <span className="text-muted-foreground">{k}</span>
                       <span className="font-semibold">{v}</span>
@@ -287,13 +284,8 @@ export function ProfissionaisView() {
                 </div>
               )}
               {tab === "avaliacoes" && (
-                <div className="space-y-3">
-                  {[{ text: "Incrível, melhor do salão!", stars: 5 }, { text: "Muito cuidadosa e atenciosa.", stars: 5 }, { text: "Ótimo atendimento!", stars: 4 }].map((r, i) => (
-                    <div key={i} className="p-2 bg-secondary rounded-lg text-xs">
-                      <div className="text-amber-400 mb-1">{"★".repeat(r.stars)}</div>
-                      <p className="text-muted-foreground">{r.text}</p>
-                    </div>
-                  ))}
+                <div className="py-6 text-center text-muted-foreground text-xs bg-secondary/50 rounded-lg">
+                  Nenhuma avaliação registrada ainda
                 </div>
               )}
             </div>

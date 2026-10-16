@@ -205,10 +205,10 @@ func (s *Subscription) BeforeCreate(tx *gorm.DB) error {
 
 type SystemSettings struct {
 	ID            string    `gorm:"primaryKey;type:uuid" json:"id"`
-	PlatformName  string    `gorm:"default:GeevheitHair" json:"platformName"`
-	Domain        string    `gorm:"default:geevheithair.com" json:"domain"`
+	PlatformName  string    `gorm:"default:BelezaPura" json:"platformName"`
+	Domain        string    `gorm:"default:belezapura.com.br" json:"domain"`
 	SupportEmail  string    `gorm:"default:geevheittecnology@gmail.com" json:"supportEmail"`
-	TrialDays     int       `gorm:"default:10" json:"trialDays"`
+	TrialDays     int       `gorm:"default:14" json:"trialDays"`
 	DefaultPlanID *string   `json:"defaultPlanId"`
 	UpdatedAt     time.Time `json:"updatedAt"`
 }

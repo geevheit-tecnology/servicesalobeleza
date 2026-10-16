@@ -124,18 +124,33 @@ func Onboarding(c *gin.Context) {
 		}
 	}
 
-	// 4. Plan Subscriber Spots Limit Check
-	var selectedPlan db.Plan
-	if req.PlanID != nil && *req.PlanID != "" {
-		pId := strings.TrimSpace(*req.PlanID)
-		if err := db.DB.First(&selectedPlan, "id = ?", pId).Error; err != nil {
-			// Search by name if id is a slug/name
-			db.DB.Where("LOWER(name) = ?", strings.ToLower(pId)).First(&selectedPlan)
+	// 4. Safe Plan Lookup (handle slugs "studio", "essencial", "elite" or UUIDs)
+	planSlug := "studio"
+	if req.PlanID != nil && strings.TrimSpace(*req.PlanID) != "" {
+		p := strings.ToLower(strings.TrimSpace(*req.PlanID))
+		if strings.Contains(p, "essen") || p == "1" || strings.Contains(p, "basic") || strings.Contains(p, "básic") {
+			planSlug = "essencial"
+		} else if strings.Contains(p, "elite") || p == "3" || strings.Contains(p, "prem") || strings.Contains(p, "busin") {
+			planSlug = "elite"
+		} else {
+			planSlug = "studio"
 		}
 	}
 
+	var selectedPlan db.Plan
+	// First query by exact name case-insensitive
+	if err := db.DB.Where("LOWER(name) = ?", planSlug).First(&selectedPlan).Error; err != nil {
+		// Fallback query like
+		if err := db.DB.Where("LOWER(name) LIKE ?", "%"+planSlug+"%").First(&selectedPlan).Error; err != nil {
+			// If req.PlanID looks like a UUID (36 chars), try by ID
+			if req.PlanID != nil && len(strings.TrimSpace(*req.PlanID)) == 36 {
+				db.DB.First(&selectedPlan, "id = ?", strings.TrimSpace(*req.PlanID))
+			}
+		}
+	}
+
+	// Ultimate fallback to studio or any plan
 	if selectedPlan.ID == "" {
-		// Default to Studio if available, or first plan
 		db.DB.Where("LOWER(name) LIKE ?", "%studio%").First(&selectedPlan)
 		if selectedPlan.ID == "" {
 			db.DB.Order("price asc").First(&selectedPlan)
@@ -225,13 +240,19 @@ func Onboarding(c *gin.Context) {
 
 	// Create subscription with exact 14 days of trial
 	trialEnds := time.Now().Add(14 * 24 * time.Hour)
-	planIDToSave := ""
-	planPrice := 119.90
-	if selectedPlan.ID != "" {
-		planIDToSave = selectedPlan.ID
-		planPrice = selectedPlan.Price
-	} else if req.PlanID != nil {
-		planIDToSave = *req.PlanID
+	planIDToSave := selectedPlan.ID
+	planPrice := selectedPlan.Price
+	if planPrice <= 0 {
+		planPrice = 119.90
+	}
+
+	// Guarantee planIDToSave is never empty (if somehow still empty, grab any plan)
+	if planIDToSave == "" {
+		var anyPlan db.Plan
+		if err := db.DB.First(&anyPlan).Error; err == nil {
+			planIDToSave = anyPlan.ID
+			planPrice = anyPlan.Price
+		}
 	}
 
 	sub := db.Subscription{

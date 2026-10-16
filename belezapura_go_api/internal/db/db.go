@@ -75,7 +75,7 @@ func Migrate() error {
 		return err
 	}
 
-	// Seed / Update official BelezaPura plans: Essencial R$59,90, Studio R$119,90 [14 dias grátis], Elite R$249,90
+	// Seed / Update official BelezaPura plans: Essencial R$59,90, Studio R$119,90 [14 dias grátis], Elite R$319,09
 	seedPlans := []Plan{
 		{
 			Name:             "Essencial",
@@ -99,7 +99,7 @@ func Migrate() error {
 		},
 		{
 			Name:             "Elite",
-			Price:            249.90,
+			Price:            319.09,
 			Period:           "/mês",
 			Highlight:        false,
 			MaxProfessionals: 0,

@@ -112,21 +112,64 @@ export function ChatbotWhatsAppView() {
     if (!textToSend) setInputMessage("");
     setIsTyping(true);
 
-    // Resposta inteligente simulada da IA
+    // Resposta inteligente simulada da IA orientada pelo tom de voz configurado
     setTimeout(() => {
       let botResponse = "";
       const lower = text.toLowerCase();
+      const simpleBotName = botName.split(" -")[0];
 
-      if (lower.includes("14:30") || lower.includes("10:00") || lower.includes("17:00") || lower.includes("quero") || lower.includes("agendar")) {
-        botResponse = `Perfeito! Horário pré-reservado para amanhã às 14:30 com sucesso!\n\nPara confirmar a vaga na agenda e evitar no-shows, solicitamos o sinal de 20% (R$ 19,00) via PIX.\n\nChave Copia e Cola:\n00020126580014BR.GOV.BCB.PIX0136pix@salao.com.br52040000530398654019.00\n\nAssim que fizer o PIX me avisa aqui! ✨`;
-      } else if (lower.includes("preço") || lower.includes("quanto") || lower.includes("valor")) {
-        botResponse = `Aqui está nossa tabela dos procedimentos mais pedidos:\n\n✂️ Corte & Escova: R$ 95,00\n🎨 Mechas & Hidratação: R$ 320,00\n💅 Manicure & Pedicure: R$ 70,00\n👁️ Design de Sobrancelhas: R$ 45,00\n\nGostaria de agendar algum desses?`;
-      } else if (lower.includes("pago") || lower.includes("pix") || lower.includes("comprovante")) {
-        botResponse = `Recebido e confirmado com sucesso! 🎉\n\nSeu agendamento está 100% garantido. Vamos te enviar um lembrete automático 2 horas antes do atendimento. Até breve! ✨`;
-      } else if (lower.includes("onde") || lower.includes("endereço") || lower.includes("local")) {
-        botResponse = `Nosso salão fica na Rua das Flores, 120 - Centro. Atendemos com hora marcada e estacionamento com manobrista no local! Deseja que eu reserve seu horário?`;
-      } else {
-        botResponse = `Com certeza! Posso te ajudar com isso agora mesmo. Qual serviço você gostaria de realizar e qual o melhor dia para você?`;
+      // 1. Saudação
+      if (lower.match(/\b(oi|ol[aá]|bom dia|boa tarde|boa noite|oii|opa)\b/)) {
+        if (botTone === "elegante") {
+          botResponse = `Olá. Seja muito bem-vinda ao nosso espaço. Sou ${simpleBotName}, sua assistente virtual. Como posso lhe proporcionar uma experiência impecável hoje?`;
+        } else if (botTone === "direto") {
+          botResponse = `Olá! Sou a assistente virtual do salão. Em que posso te ajudar? Digite o serviço desejado para agendar ou ver valores.`;
+        } else {
+          botResponse = `Oii, tudo bem? ✨ Sou a ${simpleBotName}, sua assistente aqui no salão! Como posso te ajudar hoje? Posso agendar seu horário, passar a tabela de preços ou tirar qualquer dúvida! 💖`;
+        }
+      } 
+      // 2. Preços e Tabela
+      else if (lower.includes("preço") || lower.includes("quanto") || lower.includes("valor") || lower.includes("tabela") || lower.includes("serviço")) {
+        if (botTone === "elegante") {
+          botResponse = `Com todo prazer. Seguem os nossos principais atendimentos:\n\n✨ Escova & Tratamento Nutritivo: R$ 120,00\n✨ Coloração & Mechas Iluminadas: a partir de R$ 320,00\n✨ Manicure & Spa dos Pés: R$ 75,00\n✨ Design Personalizado de Sobrancelhas: R$ 50,00\n\nGostaria de reservar seu atendimento com nossa especialista?`;
+        } else if (botTone === "direto") {
+          botResponse = `Tabela de serviços:\n• Corte & Escova: R$ 95\n• Mechas: R$ 320\n• Manicure & Pedicure: R$ 70\n• Sobrancelhas: R$ 45\n\nQual serviço você quer agendar?`;
+        } else {
+          botResponse = `Aqui está nossa tabela com os serviços mais amados pelas clientes! ✨\n\n✂️ Corte & Escova: R$ 95,00\n🎨 Mechas Iluminadas & Reconstrução: R$ 320,00\n💅 Manicure & Pedicure: R$ 70,00\n👁️ Design de Sobrancelhas: R$ 45,00\n\nQual desses você gostaria de fazer? Posso consultar os horários livres agora! 💆‍♀️`;
+        }
+      }
+      // 3. Agendamento & Horários
+      else if (lower.includes("14:30") || lower.includes("10:00") || lower.includes("17:00") || lower.includes("agendar") || lower.includes("horário") || lower.includes("horario") || lower.includes("amanhã") || lower.includes("amanha") || lower.includes("vaga") || lower.includes("marcar")) {
+        const timeChosen = lower.includes("10:00") ? "10:00" : lower.includes("17:00") ? "17:00" : "14:30";
+        if (autoDeposit) {
+          if (botTone === "elegante") {
+            botResponse = `Perfeito. Pré-reservei seu atendimento para amanhã às ${timeChosen} com nossa especialista.\n\nPara garantir a exclusividade do seu horário e dos nossos profissionais, solicitamos o sinal de 20% (R$ 19,00) via PIX.\n\nChave PIX Copia e Cola:\n00020126580014BR.GOV.BCB.PIX0136belezapura@pix.com.br52040000530398654019.00\n\nAssim que o pagamento for realizado, sua vaga estará 100% garantida na agenda.`;
+          } else if (botTone === "direto") {
+            botResponse = `Horário pré-agendado: Amanhã às ${timeChosen}.\n\nSinal de 20% obrigatório: R$ 19,00.\nChave PIX: belezapura@pix.com.br\n\nEnvie o comprovante para confirmação imediata.`;
+          } else {
+            botResponse = `Oba! Já reservei seu horário com muito carinho para amanhã às ${timeChosen}! 🎉\n\nPara garantir a sua vaga na agenda da especialista e evitar faltas, solicitamos o sinalzinho de 20% (R$ 19,00) via PIX.\n\nChave Copia e Cola:\n00020126580014BR.GOV.BCB.PIX0136belezapura@pix.com.br52040000530398654019.00\n\nAssim que transferir me avisa aqui que confirmo na hora! ✨`;
+          }
+        } else {
+          botResponse = `Perfeito! Seu agendamento para amanhã às ${timeChosen} foi confirmado com sucesso na nossa agenda! Te esperamos com todo o carinho. ✨`;
+        }
+      }
+      // 4. Pagamento do sinal / PIX
+      else if (lower.includes("pago") || lower.includes("pix") || lower.includes("comprovante") || lower.includes("paguei") || lower.includes("transferi") || lower.includes("pronto")) {
+        botResponse = `Pagamento do sinal confirmado com sucesso! 🎉\n\n✅ Horário: Amanhã às 14:30\n✅ Profissional reservada com exclusividade\n✅ Lembrete automático agendado para ${reminderTime}\n\nVocê já pode relaxar, sua vaga está 100% garantida. Até amanhã! ✨`;
+      }
+      // 5. Localização / Endereço
+      else if (lower.includes("onde") || lower.includes("endereço") || lower.includes("endereco") || lower.includes("local") || lower.includes("chegar") || lower.includes("fica")) {
+        botResponse = `Nosso salão fica na Av. Principal da Beleza, nº 1500 - Jardins. Contamos com estacionamento privativo, Wi-Fi e um cappuccino delicioso esperando por você! ✨ Gostaria de agendar um horário?`;
+      }
+      // 6. Resposta padrão contextual
+      else {
+        if (botTone === "elegante") {
+          botResponse = `Compreendi. Gostaria de verificar os horários disponíveis para esta semana ou prefere consultar nossa lista de serviços?`;
+        } else if (botTone === "direto") {
+          botResponse = `Posso agendar seu atendimento ou passar a tabela de valores. Qual serviço deseja realizar?`;
+        } else {
+          botResponse = `Com certeza! Posso te ajudar com isso agora mesmo. Qual serviço você gostaria de realizar e qual o melhor dia para você? ✨`;
+        }
       }
 
       setMessages(prev => [...prev, {
@@ -136,7 +179,7 @@ export function ChatbotWhatsAppView() {
         time: timeStr
       }]);
       setIsTyping(false);
-    }, 1200);
+    }, 900);
   };
 
   const handleSaveSettings = () => {
@@ -461,22 +504,34 @@ export function ChatbotWhatsAppView() {
               {/* Botões de Teste Rápido */}
               <div className="p-2 bg-zinc-800/90 border-t border-zinc-700 flex gap-1.5 overflow-x-auto scrollbar-hide text-[10px]">
                 <button
-                  onClick={() => handleSendMessage("Quero agendar às 14:30")}
+                  onClick={() => handleSendMessage("Oi, tudo bem? Gostaria de agendar um horário!")}
                   className="px-2 py-1 bg-zinc-700 hover:bg-zinc-600 rounded-md text-white whitespace-nowrap cursor-pointer transition-colors"
                 >
-                  ⚡ "Quero às 14:30"
+                  👋 "Oi, quero agendar"
                 </button>
                 <button
-                  onClick={() => handleSendMessage("Qual o valor das mechas?")}
+                  onClick={() => handleSendMessage("Qual o valor do corte e das mechas?")}
                   className="px-2 py-1 bg-zinc-700 hover:bg-zinc-600 rounded-md text-white whitespace-nowrap cursor-pointer transition-colors"
                 >
-                  ⚡ "Qual o valor?"
+                  💰 "Valores"
                 </button>
                 <button
-                  onClick={() => handleSendMessage("Já fiz o PIX do sinal!")}
+                  onClick={() => handleSendMessage("Pode reservar amanhã às 14:30?")}
                   className="px-2 py-1 bg-zinc-700 hover:bg-zinc-600 rounded-md text-white whitespace-nowrap cursor-pointer transition-colors"
                 >
-                  ⚡ "Fiz o PIX"
+                  ⏰ "Amanhã às 14:30"
+                </button>
+                <button
+                  onClick={() => handleSendMessage("Pronto, acabei de pagar o PIX do sinal!")}
+                  className="px-2 py-1 bg-emerald-700 hover:bg-emerald-600 rounded-md text-white whitespace-nowrap cursor-pointer transition-colors"
+                >
+                  ✅ "Paguei o PIX"
+                </button>
+                <button
+                  onClick={() => handleSendMessage("Onde fica o salão de vocês?")}
+                  className="px-2 py-1 bg-zinc-700 hover:bg-zinc-600 rounded-md text-white whitespace-nowrap cursor-pointer transition-colors"
+                >
+                  📍 "Localização"
                 </button>
               </div>
 

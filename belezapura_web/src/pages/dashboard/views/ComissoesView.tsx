@@ -5,10 +5,34 @@ import { Button, Badge, Avatar, Card, Stars } from "@/components/ui";
 import { NAV, revenueData, appointmentsData, servicesPie, PIE_COLORS, appointments, clients, professionals, reviewsList, AGENDA_HOURS, AGENDA_PROS, AGENDA_ITEMS, statusColors, statusLabel, StatCard } from "./shared";
 
 export function ComissoesView() {
-  const [profs, setProfs] = useState(professionals.map(p => ({ ...p, isEditing: false, customCommission: parseInt(p.commission) })));
+  const [profs, setProfs] = useState<any[]>([]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/salon/details`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(d => {
+        if (d.professionals && Array.isArray(d.professionals)) {
+          setProfs(d.professionals.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            specialty: p.specialty || "Atendimento",
+            appointments: 0,
+            revenue: "R$ 0,00",
+            customCommission: Number(p.commission || 50),
+            isEditing: false
+          })));
+        }
+      })
+      .catch(console.error);
+    }
+  }, []);
 
   const handleToggleEdit = (index: number) => {
-    setProfs(prev => prev.map((p, i) => i === index ? { ...p, isEditing: !p.isEditing, commission: p.isEditing ? `${p.customCommission}%` : p.commission } : p));
+    setProfs(prev => prev.map((p, i) => i === index ? { ...p, isEditing: !p.isEditing } : p));
   };
 
   const handleUpdatePct = (index: number, val: number) => {
@@ -19,8 +43,16 @@ export function ComissoesView() {
     alert(`Enviando PIX via split de pagamento automático para ${name}...`);
   };
 
-  const totalPagar = profs.reduce((acc, p) => acc + Math.round(parseInt(p.revenue.replace(/\D/g, "")) * p.customCommission / 100), 0);
-  const totalFaturado = profs.reduce((acc, p) => acc + parseInt(p.revenue.replace(/\D/g, "")), 0);
+  const totalPagar = profs.reduce((acc, p) => {
+    const rev = parseInt((p.revenue || "0").replace(/\D/g, "")) || 0;
+    return acc + Math.round(rev * (p.customCommission || 0) / 100);
+  }, 0);
+
+  const totalFaturado = profs.reduce((acc, p) => {
+    const rev = parseInt((p.revenue || "0").replace(/\D/g, "")) || 0;
+    return acc + rev;
+  }, 0);
+
   const lucroSalao = totalFaturado - totalPagar;
 
   return (
@@ -29,25 +61,21 @@ export function ComissoesView() {
         <h1 className="font-serif text-2xl font-medium">Gestor de Comissões (Split)</h1>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm"><Download className="w-4 h-4 mr-2" /> Exportar</Button>
-          <select className="h-9 px-3 rounded-lg border border-border bg-card text-sm outline-none focus:border-primary font-medium">
-            <option>Outubro 2024</option>
-            <option>Setembro 2024</option>
-          </select>
         </div>
       </div>
 
       <div className="grid grid-cols-3 gap-4 mb-4">
         <div className="bg-card border border-border p-4 rounded-xl">
           <div className="text-sm text-muted-foreground mb-1">Faturamento Bruto (Serviços)</div>
-          <div className="text-xl font-medium text-foreground">R$ {totalFaturado.toLocaleString("pt-BR")}</div>
+          <div className="text-xl font-medium text-foreground">R$ {totalFaturado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</div>
         </div>
         <div className="bg-card border border-border p-4 rounded-xl border-l-4 border-l-amber-500">
           <div className="text-sm text-muted-foreground mb-1">Total de Repasse (Profissionais)</div>
-          <div className="text-xl font-medium text-amber-600">R$ {totalPagar.toLocaleString("pt-BR")}</div>
+          <div className="text-xl font-medium text-amber-600">R$ {totalPagar.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</div>
         </div>
         <div className="bg-card border border-border p-4 rounded-xl border-l-4 border-l-emerald-500 bg-emerald-50/30">
           <div className="text-sm text-muted-foreground mb-1">Lucro Retido (Salão)</div>
-          <div className="text-xl font-medium text-emerald-600">R$ {lucroSalao.toLocaleString("pt-BR")}</div>
+          <div className="text-xl font-medium text-emerald-600">R$ {lucroSalao.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</div>
         </div>
       </div>
 
@@ -61,49 +89,57 @@ export function ComissoesView() {
             </tr>
           </thead>
           <tbody>
-            {profs.map((p, i) => {
-              const revenue = parseInt(p.revenue.replace(/\D/g, ""));
-              const commission = Math.round(revenue * p.customCommission / 100);
-              return (
-                <tr key={p.name} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <Avatar name={p.name} size="sm" />
-                      <div>
-                        <div className="font-medium text-sm">{p.name}</div>
-                        <div className="text-xs text-muted-foreground">{p.specialty}</div>
+            {profs.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-4 py-12 text-center text-sm text-muted-foreground">
+                  Nenhum profissional cadastrado para cálculo de comissões.
+                </td>
+              </tr>
+            ) : (
+              profs.map((p, i) => {
+                const revenue = parseInt((p.revenue || "0").replace(/\D/g, "")) || 0;
+                const commission = Math.round(revenue * (p.customCommission || 0) / 100);
+                return (
+                  <tr key={p.id || p.name} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <Avatar name={p.name} size="sm" />
+                        <div>
+                          <div className="font-medium text-sm">{p.name}</div>
+                          <div className="text-xs text-muted-foreground">{p.specialty}</div>
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm">{p.appointments} atend.</td>
-                  <td className="px-4 py-3 text-sm font-medium">{p.revenue}</td>
-                  <td className="px-4 py-3">
-                    {p.isEditing ? (
-                      <div className="flex items-center gap-1">
-                        <input 
-                          type="number" 
-                          value={p.customCommission} 
-                          onChange={(e) => handleUpdatePct(i, Number(e.target.value))}
-                          className="w-16 h-8 text-sm px-2 border border-primary rounded-md bg-transparent"
-                        />
-                        <span className="text-sm">%</span>
+                    </td>
+                    <td className="px-4 py-3 text-sm">{p.appointments || 0} atend.</td>
+                    <td className="px-4 py-3 text-sm font-medium">{p.revenue || "R$ 0,00"}</td>
+                    <td className="px-4 py-3">
+                      {p.isEditing ? (
+                        <div className="flex items-center gap-1">
+                          <input 
+                            type="number" 
+                            value={p.customCommission} 
+                            onChange={(e) => handleUpdatePct(i, Number(e.target.value))}
+                            className="w-16 h-8 text-sm px-2 border border-primary rounded-md bg-transparent"
+                          />
+                          <span className="text-sm">%</span>
+                        </div>
+                      ) : (
+                        <Badge variant="info">{p.customCommission}%</Badge>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-sm font-semibold text-primary">R$ {commission.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => handleToggleEdit(i)} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground transition-colors" title="Editar regra">
+                          {p.isEditing ? <Check className="w-4 h-4 text-emerald-500" /> : <Edit3 className="w-4 h-4" />}
+                        </button>
+                        <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600 text-white h-8 text-xs px-3" onClick={() => handlePagar(p.name)}>Pagar</Button>
                       </div>
-                    ) : (
-                      <Badge variant="info">{p.customCommission}%</Badge>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-sm font-semibold text-primary">R$ {commission.toLocaleString("pt-BR")}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => handleToggleEdit(i)} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground transition-colors" title="Editar regra">
-                        {p.isEditing ? <Check className="w-4 h-4 text-emerald-500" /> : <Edit3 className="w-4 h-4" />}
-                      </button>
-                      <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600 text-white h-8 text-xs px-3" onClick={() => handlePagar(p.name)}>Pagar</Button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>

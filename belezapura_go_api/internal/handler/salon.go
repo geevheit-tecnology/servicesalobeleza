@@ -15,13 +15,18 @@ import (
 func GetSalonDashboard(c *gin.Context) {
 	salonID := c.GetString("salonId")
 
-	var totalAppointments, totalClients, totalProfessionals int64
+	var totalAppointments, totalClients, totalProfessionals, servicesCount, appointmentsToday int64
 	db.DB.Model(&db.Appointment{}).Where("salon_id = ?", salonID).Count(&totalAppointments)
 	db.DB.Model(&db.Client{}).Where("salon_id = ? AND status <> ?", salonID, "deleted").Count(&totalClients)
 	db.DB.Model(&db.Professional{}).Where("salon_id = ? AND status = ?", salonID, "active").Count(&totalProfessionals)
+	db.DB.Model(&db.Service{}).Where("salon_id = ? AND status <> ?", salonID, "deleted").Count(&servicesCount)
 
-	// Revenue this month
+	// Revenue this month & today's appointments
 	now := time.Now()
+	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	todayEnd := todayStart.Add(24 * time.Hour)
+	db.DB.Model(&db.Appointment{}).Where("salon_id = ? AND date >= ? AND date < ?", salonID, todayStart, todayEnd).Count(&appointmentsToday)
+
 	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
 	var monthlyRevenue float64
 	db.DB.Model(&db.Appointment{}).
@@ -41,10 +46,15 @@ func GetSalonDashboard(c *gin.Context) {
 		Find(&recentAppts)
 
 	c.JSON(http.StatusOK, gin.H{
-		"totalAppointments":   totalAppointments,
-		"totalClients":        totalClients,
-		"totalProfessionals":  totalProfessionals,
+		"appointmentsToday":   appointmentsToday,
+		"revenue":             monthlyRevenue,
 		"monthlyRevenue":      monthlyRevenue,
+		"totalAppointments":   totalAppointments,
+		"clientsCount":        totalClients,
+		"totalClients":        totalClients,
+		"prosCount":           totalProfessionals,
+		"totalProfessionals":  totalProfessionals,
+		"servicesCount":       servicesCount,
 		"recentAppointments":  recentAppts,
 	})
 }

@@ -59,7 +59,7 @@ export default function Login() {
           <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center shadow-lg mb-4 cursor-pointer hover:scale-105 transition-transform" onClick={() => navigate("/")}>
             <Sparkles className="w-6 h-6 text-white" />
           </div>
-          <h1 className="font-bold text-3xl tracking-tight text-foreground">Beauty<span className="text-primary">OS</span></h1>
+          <h1 className="font-bold text-3xl tracking-tight text-foreground">Beleza<span className="text-primary">Pura</span></h1>
           <p className="text-muted-foreground mt-1.5 text-center text-sm">Acesse o painel do seu salão ou clínica</p>
         </div>
 

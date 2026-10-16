@@ -86,16 +86,7 @@ function StatCard({ label, value, sub, icon: Icon, trend, color = "primary" }: {
   );
 }
 
-const allServices = [
-  { id: 1, name: "Escova Progressiva", cat: "Cabelo", duration: "120 min", price: "R$ 180", pros: ["Ana Carvalho"], status: "active" },
-  { id: 2, name: "Manicure Gel", cat: "Unhas", duration: "45 min", price: "R$ 65", pros: ["Mariana Souza"], status: "active" },
-  { id: 3, name: "Corte Feminino", cat: "Cabelo", duration: "60 min", price: "R$ 90", pros: ["Ana Carvalho"], status: "active" },
-  { id: 4, name: "Massagem Relaxante", cat: "Massagem", duration: "60 min", price: "R$ 130", pros: ["Juliana Costa"], status: "active" },
-  { id: 5, name: "Design de Sobrancelha", cat: "Sobrancelhas", duration: "30 min", price: "R$ 40", pros: ["Ana Carvalho"], status: "active" },
-  { id: 6, name: "Bronzeamento", cat: "Estética", duration: "20 min", price: "R$ 80", pros: ["Juliana Costa"], status: "active" },
-  { id: 7, name: "Pedicure", cat: "Unhas", duration: "50 min", price: "R$ 60", pros: ["Mariana Souza"], status: "inactive" },
-  { id: 8, name: "Maquiagem Completa", cat: "Maquiagem", duration: "90 min", price: "R$ 150", pros: ["Ana Carvalho"], status: "inactive" },
-];
+const allServices: any[] = [];
 
 const weekDaysShort = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 

@@ -77,53 +77,11 @@ export default function ClientView() {
             setSelectedPro(data.professionals[0]);
           }
         } else {
-          // Fallback resiliente caso o banco ainda não tenha o registro ou esteja em teste
-          const demoSalon = {
-            id: "demo-salon-id",
-            name: "GeevheitHair Studio",
-            slug: targetSlug,
-            mainColor: "#B8614A",
-            scheduleRaw: JSON.stringify([
-              { day: "Segunda", open: false, start: "09:00", end: "18:00" },
-              { day: "Terça", open: true, start: "09:00", end: "19:00" },
-              { day: "Quarta", open: true, start: "09:00", end: "19:00" },
-              { day: "Quinta", open: true, start: "09:00", end: "19:00" },
-              { day: "Sexta", open: true, start: "09:00", end: "20:00" },
-              { day: "Sábado", open: true, start: "08:30", end: "19:00" },
-              { day: "Domingo", open: false, start: "09:00", end: "14:00" },
-            ]),
-            professionals: [
-              { id: "pro-1", name: "Amanda Rodrigues", specialty: "Especialista em Mechas & Cortes", avatar: "" },
-              { id: "pro-2", name: "Carlos Eduardo", specialty: "Colorimetria & Penteados", avatar: "" },
-            ],
-            services: [
-              { id: "srv-1", name: "Corte Feminino & Escova", cat: "Cabelo", duration: 60, price: 95.00 },
-              { id: "srv-2", name: "Mechas Criativas & Hidratação", cat: "Cabelo", duration: 150, price: 320.00 },
-              { id: "srv-3", name: "Design de Sobrancelhas", cat: "Estética", duration: 30, price: 45.00 },
-              { id: "srv-4", name: "Manicure & Pedicure Completo", cat: "Unhas", duration: 50, price: 70.00 },
-            ],
-            gallery: "[]"
-          };
-          setSalonData(demoSalon);
-          setSelectedPro(demoSalon.professionals[0]);
+          setSalonData(null);
         }
       })
       .catch(() => {
-        // Fallback offline seguro
-        const fallback = {
-          id: "demo-fallback",
-          name: "Espaço de Beleza",
-          slug: targetSlug,
-          mainColor: "#B8614A",
-          services: [
-            { id: "srv-1", name: "Corte & Finalização", cat: "Cabelo", duration: 45, price: 80.00 }
-          ],
-          professionals: [
-            { id: "pro-1", name: "Especialista Principal", specialty: "Beleza & Estilo", avatar: "" }
-          ]
-        };
-        setSalonData(fallback);
-        setSelectedPro(fallback.professionals[0]);
+        setSalonData(null);
       })
       .finally(() => setLoading(false));
   }, [slug]);

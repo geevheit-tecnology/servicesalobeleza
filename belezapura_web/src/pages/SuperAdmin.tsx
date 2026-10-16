@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Store, Building2, CreditCard, Package, Users, HeadphonesIcon,
   Settings, TrendingUp, ArrowUpRight, ArrowDownRight, Bell, ChevronDown, MoreHorizontal,
   CheckCircle, AlertCircle, XCircle, Clock, Sparkles, Plus, Search, Filter, LogOut,
-  X, Moon, Sun, Megaphone, Shield, Download
+  X, Moon, Sun, Megaphone, Shield, Download, Menu
 } from "lucide-react";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line
@@ -33,23 +33,18 @@ const subscriptions: any[] = [];
 
 const plans = [
   {
-    name: "Básico", price: "R$ 49,99", period: "/mês", color: "#B8614A",
-    features: ["1 profissional", "Página do salão (Link na Bio)", "Agendamento Automático 24h", "Cobrança de Sinal (PIX)", "Apenas 10 vagas disponíveis"],
+    name: "Essencial", price: "R$ 59,90", period: "/mês", color: "#B8614A",
+    features: ["1 profissional", "Página exclusiva na Bio", "Agendamento online 24h", "Sinal antecipado via PIX", "Lembretes automáticos"],
     users: 0, revenue: "R$ 0",
   },
   {
-    name: "Profissional", price: "R$ 99,99", period: "/mês", color: "#9B7EA8",
-    features: ["Até 5 profissionais", "Agendamentos Ilimitados", "Cálculo de Comissões", "Controle Financeiro", "Suporte VIP", "Apenas 10 vagas disponíveis"],
+    name: "Studio", price: "R$ 119,90", period: "/mês", color: "#111827",
+    features: ["Até 5 profissionais", "Rateio e comissões automáticas", "Painel financeiro completo", "Lembretes no WhatsApp", "🎁 14 dias de teste grátis"],
     users: 0, revenue: "R$ 0",
   },
   {
-    name: "Premium", price: "R$ 219,99", period: "/mês", color: "#5558e3",
-    features: ["Chatbot WhatsApp 24h (IA)", "Cobrança de Sinal no Zap", "Lembrete Anti-Furo 2h Antes", "Profissionais Ilimitados", "Múltiplas unidades (até 3)", "Apenas 5 vagas exclusivas"],
-    users: 0, revenue: "R$ 0",
-  },
-  {
-    name: "Empresarial", price: "Sob consulta", period: "", color: "#1C1714",
-    features: ["Ilimitado", "Unidades ilimitadas", "API + integrações", "Gerente de Conta", "SLA"],
+    name: "Elite", price: "R$ 319,09", period: "/mês", color: "#E5A991",
+    features: ["Profissionais ilimitados", "Automação total WhatsApp", "Mensagens de retorno para inativos", "Controle de estoque", "Suporte prioritário VIP"],
     users: 0, revenue: "R$ 0",
   },
 ];
@@ -111,8 +106,8 @@ function OverviewView({ overviewData }: { overviewData: any }) {
   const { totalSalons, totalAppointments, totalClients, mrrData, mrrValue } = overviewData;
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-3 sm:p-6 space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-serif text-2xl font-medium">Visão geral da plataforma</h1>
           <p className="text-muted-foreground text-sm">Atualizado agora</p>
@@ -120,13 +115,20 @@ function OverviewView({ overviewData }: { overviewData: any }) {
         <Badge variant="success" className="text-sm px-3 py-1">✓ Plataforma operacional</Badge>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Salões ativos" value={totalSalons.toString()} icon={Store} trend={21} color="primary" />
-        <StatCard label="MRR" value={`R$ ${mrrValue}`} sub="Receita recorrente" icon={TrendingUp} trend={9} color="emerald" />
-        <StatCard label="Assinaturas ativas" value={totalSalons.toString()} icon={CreditCard} trend={8} color="purple" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <StatCard label="Salões ativos" value={String(totalSalons ?? 0)} icon={Store} trend={21} color="primary" />
+        <StatCard 
+          label="MRR" 
+          value={`R$ ${(Number(mrrValue ?? 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
+          sub="Receita recorrente" 
+          icon={TrendingUp} 
+          trend={9} 
+          color="emerald" 
+        />
+        <StatCard label="Assinaturas ativas" value={String(totalSalons ?? 0)} icon={CreditCard} trend={8} color="purple" />
         <StatCard label="Inadimplentes" value="0" icon={AlertCircle} trend={0} color="rose" />
-        <StatCard label="Agendamentos" value={totalAppointments.toString()} icon={Sparkles} trend={14} color="sky" />
-        <StatCard label="Clientes" value={totalClients.toString()} icon={Users} trend={18} color="amber" />
+        <StatCard label="Agendamentos" value={String(totalAppointments ?? 0)} icon={Sparkles} trend={14} color="sky" />
+        <StatCard label="Clientes" value={String(totalClients ?? 0)} icon={Users} trend={18} color="amber" />
         <StatCard label="Novos salões" value="0" icon={Plus} trend={15} color="primary" />
         <StatCard label="Tickets abertos" value="0" icon={HeadphonesIcon} trend={-5} color="rose" />
       </div>
@@ -284,8 +286,8 @@ function SaloesView({ salonsData }: { salonsData: any }) {
       });
 
   return (
-    <div className="p-6 space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="p-3 sm:p-6 space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-serif text-2xl font-medium">Salões</h1>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 bg-card border border-border rounded-lg px-3 h-9 text-sm text-muted-foreground">
@@ -297,7 +299,7 @@ function SaloesView({ salonsData }: { salonsData: any }) {
         </div>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 overflow-x-auto pb-1">
         {["Todos", "Ativos", "Trial", "Inadimplentes", "Bloqueados"].map(f => (
           <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${filter === f ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"}`}>
             {f}
@@ -305,8 +307,8 @@ function SaloesView({ salonsData }: { salonsData: any }) {
         ))}
       </div>
 
-      <div className="bg-card border border-border rounded-2xl overflow-hidden">
-        <table className="w-full">
+      <div className="bg-card border border-border rounded-2xl overflow-x-auto">
+        <table className="w-full min-w-[680px]">
           <thead>
             <tr className="border-b border-border bg-muted/40">
               {["Salão", "Responsável", "Unidades", "Plano", "Status", "Desde", "Agendamentos", "Último acesso", ""].map(h => (
@@ -350,7 +352,7 @@ function SaloesView({ salonsData }: { salonsData: any }) {
 
       {drawerInfo && (
         <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-sm animate-in fade-in" onClick={() => setDrawerInfo(null)}>
-          <div className="w-[400px] sm:w-[450px] bg-background h-full shadow-2xl flex flex-col animate-in slide-in-from-right" onClick={e => e.stopPropagation()}>
+          <div className="w-full sm:w-[450px] bg-background h-full shadow-2xl flex flex-col animate-in slide-in-from-right" onClick={e => e.stopPropagation()}>
             <div className="h-14 border-b border-border flex items-center justify-between px-6 shrink-0">
               <h3 className="font-medium font-serif">{drawerInfo.type === 'history' ? 'Histórico do Salão' : 'Editar Dados'}</h3>
               <button onClick={() => setDrawerInfo(null)} className="p-2 hover:bg-muted rounded-lg text-muted-foreground transition-colors"><X className="w-4 h-4" /></button>
@@ -472,20 +474,20 @@ function AssinaturasView() {
       });
 
   return (
-    <div className="p-6 space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="p-3 sm:p-6 space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-serif text-2xl font-medium">Assinaturas e KYC</h1>
         <Button variant="outline" size="sm"><Download className="w-4 h-4 mr-2" /> Exportar Dados (PDF)</Button>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard label="Em Análise" value={localSubs.filter(s => ["pending", "trial"].includes(normalizeStatus(s.status))).length.toString()} icon={Clock} color="amber" />
         <StatCard label="Ativas" value={localSubs.filter(s => normalizeStatus(s.status) === 'active').length.toString()} icon={CheckCircle} color="emerald" />
         <StatCard label="Inadimplentes" value={localSubs.filter(s => normalizeStatus(s.status) === 'late').length.toString()} icon={AlertCircle} color="rose" />
         <StatCard label="Canceladas" value={localSubs.filter(s => normalizeStatus(s.status) === 'canceled' || normalizeStatus(s.status) === 'cancelled').length.toString()} icon={XCircle} color="slate" />
       </div>
 
-      <div className="flex gap-2 my-4">
+      <div className="flex gap-2 my-4 overflow-x-auto pb-1">
         {["Todos", "Em Análise", "Ativas", "Inadimplentes"].map(f => (
           <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${filter === f ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"}`}>
             {f}
@@ -493,8 +495,8 @@ function AssinaturasView() {
         ))}
       </div>
 
-      <div className="bg-card border border-border rounded-2xl overflow-hidden">
-        <table className="w-full">
+      <div className="bg-card border border-border rounded-2xl overflow-x-auto">
+        <table className="w-full min-w-[680px]">
           <thead>
             <tr className="border-b border-border bg-muted/40">
               {["Salão", "Plano", "Valor mensal", "Status", "Próxima cobrança", ""].map(h => (
@@ -538,7 +540,7 @@ function AssinaturasView() {
 
       {kycDrawer && (
         <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-sm animate-in fade-in" onClick={() => setKycDrawer(null)}>
-          <div className="w-[450px] sm:w-[500px] bg-background h-full shadow-2xl flex flex-col animate-in slide-in-from-right" onClick={e => e.stopPropagation()}>
+          <div className="w-full sm:w-[500px] bg-background h-full shadow-2xl flex flex-col animate-in slide-in-from-right" onClick={e => e.stopPropagation()}>
             <div className="h-14 border-b border-border flex items-center justify-between px-6 shrink-0">
               <h3 className="font-medium font-serif">Validação de Compliance (KYC)</h3>
               <button onClick={() => setKycDrawer(null)} className="p-2 hover:bg-muted rounded-lg text-muted-foreground transition-colors"><X className="w-4 h-4" /></button>
@@ -587,7 +589,7 @@ function AssinaturasView() {
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Titular</span>
-                    <span className="text-sm font-medium">GEEVHEIT HAIR & ESTETICA LTDA</span>
+                    <span className="text-sm font-medium">Titular informado no cadastro</span>
                   </div>
                 </div>
                 
@@ -656,7 +658,7 @@ function PlanosView() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="font-serif text-2xl font-medium">Planos</h1>
       </div>
@@ -695,12 +697,12 @@ function PlanosView() {
       </div>
 
       {/* Comparison table */}
-      <div className="bg-card border border-border rounded-2xl overflow-hidden">
+      <div className="bg-card border border-border rounded-2xl overflow-x-auto">
         <div className="p-5 border-b border-border">
           <h3 className="font-semibold">Tabela comparativa</h3>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[680px]">
             <thead>
               <tr className="border-b border-border bg-muted/40">
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Recurso</th>
@@ -709,14 +711,16 @@ function PlanosView() {
             </thead>
             <tbody>
               {[
-                ["Profissionais", "1", "5", "15", "Ilimitado"],
-                ["Agendamentos/mês", "50", "Ilimitado", "Ilimitado", "Ilimitado"],
-                ["Unidades", "1", "1", "3", "Ilimitado"],
-                ["Financeiro", "—", "✓", "✓", "✓"],
-                ["Comissões", "—", "✓", "✓", "✓"],
-                ["Relatórios", "—", "✓", "✓", "✓"],
-                ["API", "—", "—", "—", "✓"],
-                ["Suporte dedicado", "—", "—", "—", "✓"],
+                ["Profissionais", "1", "Até 5", "Ilimitado"],
+                ["Agendamentos/mês", "Ilimitado", "Ilimitado", "Ilimitado"],
+                ["Link na Bio do Instagram", "✓", "✓", "✓"],
+                ["Sinal obrigatório PIX", "✓", "✓", "✓"],
+                ["Lembretes automáticos", "✓", "✓", "✓"],
+                ["Gestão financeira & comandas", "—", "✓", "✓"],
+                ["Rateio de comissões", "—", "✓", "✓"],
+                ["Automação WhatsApp anti-furo", "—", "✓", "✓"],
+                ["Controle de estoque", "—", "—", "✓"],
+                ["Suporte prioritário VIP", "—", "—", "✓"],
               ].map(([feat, ...vals]) => (
                 <tr key={feat} className="border-b border-border last:border-0 hover:bg-muted/20">
                   <td className="px-4 py-3 text-sm text-muted-foreground">{feat}</td>
@@ -751,17 +755,17 @@ function SuporteView() {
   };
 
   return (
-    <div className="p-6 space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="p-3 sm:p-6 space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-serif text-2xl font-medium">Suporte</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 overflow-x-auto pb-1">
           <Badge variant="danger">{localTickets.filter(t => t.priority === 'alta' && t.status === 'open').length} urgentes</Badge>
           <Badge variant="warning">{localTickets.filter(t => t.status === 'open').length} abertos</Badge>
         </div>
       </div>
 
-      <div className="bg-card border border-border rounded-2xl overflow-hidden">
-        <table className="w-full">
+      <div className="bg-card border border-border rounded-2xl overflow-x-auto">
+        <table className="w-full min-w-[680px]">
           <thead>
             <tr className="border-b border-border bg-muted/40">
               {["Ticket", "Salão", "Assunto", "Prioridade", "Status", "Tempo", ""].map(h => (
@@ -835,16 +839,16 @@ function UnidadesView() {
   };
 
   return (
-    <div className="p-6 space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="p-3 sm:p-6 space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-serif text-2xl font-medium">Unidades</h1>
         <div className="flex items-center gap-2 text-sm text-muted-foreground bg-secondary px-3 py-1.5 rounded-lg">
           <Building2 className="w-4 h-4" /> {localUnidades.length} unidades cadastradas
         </div>
       </div>
 
-      <div className="bg-card border border-border rounded-2xl overflow-hidden">
-        <table className="w-full">
+      <div className="bg-card border border-border rounded-2xl overflow-x-auto">
+        <table className="w-full min-w-[680px]">
           <thead>
             <tr className="border-b border-border bg-muted/40">
               {["Unidade", "Salão", "Endereço", "Profissionais", "Agendamentos", "Status", ""].map(h => (
@@ -912,20 +916,20 @@ function PagamentosView() {
   };
 
   return (
-    <div className="p-6 space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="p-3 sm:p-6 space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-serif text-2xl font-medium">Pagamentos</h1>
         <Button variant="outline" size="sm"><Download className="w-4 h-4 mr-2" /> Exportar Faturamento (CSV)</Button>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <StatCard label="Recebido este mês" value="R$ 12.840" icon={CheckCircle} color="emerald" trend={9} />
         <StatCard label="Inadimplente" value="R$ 1.490" icon={AlertCircle} color="amber" trend={-2} />
         <StatCard label="Em trial" value="134 salões" icon={Clock} color="sky" />
       </div>
 
-      <div className="bg-card border border-border rounded-2xl overflow-hidden">
-        <table className="w-full">
+      <div className="bg-card border border-border rounded-2xl overflow-x-auto">
+        <table className="w-full min-w-[680px]">
           <thead>
             <tr className="border-b border-border bg-muted/40">
               {["Salão", "Plano", "Valor", "Data", "Método", "Status", ""].map(h => (
@@ -972,7 +976,7 @@ function PagamentosView() {
 }
 
 const adminUsers = [
-  { id: 1, name: "Admin GeevheitHair", role: "Super Admin", email: "admin@geevheithair.com", last: "Agora", status: "active", permissions: ["all"] },
+  { id: 1, name: "Administrador", role: "Super Admin", email: "admin@geevheithair.com", last: "Agora", status: "active", permissions: ["all"] },
   { id: 2, name: "Carlos Mendes", role: "Suporte N1", email: "carlos@geevheithair.com", last: "2h atrás", status: "active", permissions: ["tickets:read", "tickets:write"] },
   { id: 3, name: "Fernanda Ramos", role: "Suporte N2", email: "fernanda@geevheithair.com", last: "Hoje", status: "active", permissions: ["tickets:read", "tickets:write", "salons:read"] },
   { id: 4, name: "Rodrigo Lima", role: "Financeiro", email: "rodrigo@geevheithair.com", last: "Ontem", status: "inactive", permissions: ["finance:read", "finance:write"] },
@@ -1059,14 +1063,14 @@ function UsuariosView() {
   };
 
   return (
-    <div className="p-6 space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="p-3 sm:p-6 space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-serif text-2xl font-medium">Usuários da plataforma</h1>
         <Button size="sm" onClick={handleNewUser}><Plus className="w-4 h-4" /> Novo usuário</Button>
       </div>
 
-      <div className="bg-card border border-border rounded-2xl overflow-hidden">
-        <table className="w-full">
+      <div className="bg-card border border-border rounded-2xl overflow-x-auto">
+        <table className="w-full min-w-[680px]">
           <thead>
             <tr className="border-b border-border bg-muted/40">
               {["Nome", "Função", "E-mail", "Último acesso", "Status", ""].map(h => (
@@ -1109,7 +1113,7 @@ function UsuariosView() {
 
       {drawerUser && (
         <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-sm animate-in fade-in" onClick={() => setDrawerUser(null)}>
-          <div className="w-[400px] sm:w-[450px] bg-background h-full shadow-2xl flex flex-col animate-in slide-in-from-right" onClick={e => e.stopPropagation()}>
+          <div className="w-full sm:w-[450px] bg-background h-full shadow-2xl flex flex-col animate-in slide-in-from-right" onClick={e => e.stopPropagation()}>
             <div className="h-14 border-b border-border flex items-center justify-between px-6 shrink-0">
               <h3 className="font-medium font-serif">{!drawerUser.id ? 'Novo Usuário' : 'Editar Usuário e Permissões'}</h3>
               <button onClick={() => setDrawerUser(null)} className="p-2 hover:bg-muted rounded-lg text-muted-foreground transition-colors"><X className="w-4 h-4" /></button>
@@ -1238,7 +1242,7 @@ function ConfiguracoesAdminView() {
   };
 
   return (
-    <div className="p-6 space-y-5 relative">
+    <div className="p-3 sm:p-6 space-y-5 relative">
       <h1 className="font-serif text-2xl font-medium">Configurações da plataforma</h1>
       <div className="grid lg:grid-cols-2 gap-5 max-w-3xl">
         <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
@@ -1307,14 +1311,14 @@ function ComunicacaoView() {
   };
 
   return (
-    <div className="p-6 space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="p-3 sm:p-6 space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-serif text-2xl font-medium">Comunicação e Avisos</h1>
         <Button size="sm" onClick={() => setDrawerOpen(true)}><Megaphone className="w-4 h-4 mr-2" /> Novo Aviso Global</Button>
       </div>
 
       <div className="bg-card border border-border rounded-2xl overflow-hidden mt-4">
-        <table className="w-full">
+        <table className="w-full min-w-[680px]">
           <thead>
             <tr className="border-b border-border bg-muted/40">
               {["Título do Aviso", "Público-alvo", "Data de envio", "Status"].map(h => (
@@ -1341,7 +1345,7 @@ function ComunicacaoView() {
 
       {drawerOpen && (
         <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-sm animate-in fade-in" onClick={() => setDrawerOpen(false)}>
-          <div className="w-[400px] sm:w-[450px] bg-background h-full shadow-2xl flex flex-col animate-in slide-in-from-right" onClick={e => e.stopPropagation()}>
+          <div className="w-full sm:w-[450px] bg-background h-full shadow-2xl flex flex-col animate-in slide-in-from-right" onClick={e => e.stopPropagation()}>
             <div className="h-14 border-b border-border flex items-center justify-between px-6 shrink-0">
               <h3 className="font-medium font-serif">Criar Aviso Global</h3>
               <button onClick={() => setDrawerOpen(false)} className="p-2 hover:bg-muted rounded-lg text-muted-foreground transition-colors"><X className="w-4 h-4" /></button>
@@ -1434,8 +1438,8 @@ function AuditoriaView() {
   });
 
   return (
-    <div className="p-6 space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="p-3 sm:p-6 space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-serif text-2xl font-medium">Logs de Auditoria</h1>
           <p className="text-muted-foreground text-sm mt-0.5">Registro de todas as ações administrativas na plataforma</p>
@@ -1443,7 +1447,7 @@ function AuditoriaView() {
         <Button variant="outline" size="sm"><Download className="w-4 h-4 mr-2" /> Exportar Logs (CSV)</Button>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard label="Total de eventos" value={logs.length.toString()} icon={Shield} color="primary" />
         <StatCard label="Alertas de segurança" value={logs.filter(l => l.level === "danger").length.toString()} icon={AlertCircle} color="rose" />
         <StatCard label="Ações concluídas" value={logs.filter(l => l.level === "success").length.toString()} icon={CheckCircle} color="emerald" />
@@ -1461,7 +1465,7 @@ function AuditoriaView() {
           <Search className="w-4 h-4 shrink-0" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar evento, recurso..." className="bg-transparent outline-none placeholder:text-muted-foreground w-full" />
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 overflow-x-auto pb-1">
           {["Todos", "Info", "Success", "Warning", "Danger"].map(f => (
             <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${filter === f ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"}`}>
               {f === "Success" ? "Sucesso" : f === "Warning" ? "Aviso" : f === "Danger" ? "Alerta" : f}
@@ -1470,8 +1474,8 @@ function AuditoriaView() {
         </div>
       </div>
 
-      <div className="bg-card border border-border rounded-2xl overflow-hidden">
-        <table className="w-full">
+      <div className="bg-card border border-border rounded-2xl overflow-x-auto">
+        <table className="w-full min-w-[680px]">
           <thead>
             <tr className="border-b border-border bg-muted/40">
               {["ID", "Ação", "Usuário", "Recurso", "Detalhe", "Nível", "Tempo"].map(h => (
@@ -1523,7 +1527,8 @@ export default function SuperAdmin() {
   const [overviewData, setOverviewData] = useState<any>(null);
   const [salonsData, setSalonsData] = useState<any[]>([]);
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains("dark"));
-  const [adminName, setAdminName] = useState("Admin GeevheitHair");
+  const [adminName, setAdminName] = useState("Administrador");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const toggleDarkMode = () => {
     if (isDark) {
@@ -1585,9 +1590,67 @@ export default function SuperAdmin() {
   };
 
   return (
-    <div className="flex h-full bg-background">
-      {/* Sidebar */}
-      <aside className="w-60 shrink-0 bg-zinc-950 flex flex-col">
+    <div className="flex h-full bg-background overflow-hidden">
+      {/* Mobile Backdrop */}
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden transition-opacity"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Mobile Drawer */}
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#1C1917] flex flex-col md:hidden transition-transform duration-300 ${
+        mobileMenuOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
+      }`}>
+        <div className="h-14 flex items-center justify-between px-5 border-b border-white/10">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
+              <Sparkles className="w-3.5 h-3.5 text-white" />
+            </div>
+            <div>
+              <div className="text-white font-serif text-sm font-medium">BelezaPura</div>
+              <div className="text-white/40 text-xs">Super Admin</div>
+            </div>
+          </div>
+          <button onClick={() => setMobileMenuOpen(false)} className="p-1.5 rounded-lg text-white/60 hover:text-white">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <nav className="flex-1 py-3 overflow-y-auto">
+          {NAV.map(item => (
+            <button
+              key={item.id}
+              onClick={() => {
+                setActiveSection(item.id);
+                setMobileMenuOpen(false);
+              }}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-all ${
+                activeSection === item.id
+                  ? "bg-white/15 text-white border-r-2 border-primary"
+                  : "text-white/50 hover:bg-white/8 hover:text-white/80"
+              }`}
+            >
+              <item.icon className="w-4 h-4 shrink-0" />
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </nav>
+
+        <div className="p-4 border-t border-white/10">
+          <div className="flex items-center gap-2">
+            <Avatar name={adminName} size="sm" className="shrink-0" />
+            <div className="min-w-0 flex-1">
+              <div className="text-white text-xs font-medium truncate">{adminName}</div>
+              <div className="text-white/40 text-xs">Super Administrador</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex w-60 shrink-0 bg-[#1C1917] flex-col">
         <div className="h-14 flex items-center gap-2 px-5 border-b border-white/10">
           <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
             <Sparkles className="w-3.5 h-3.5 text-white" />
@@ -1605,7 +1668,7 @@ export default function SuperAdmin() {
               onClick={() => setActiveSection(item.id)}
               className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-all ${
                 activeSection === item.id
-                  ? "bg-white/15 text-white"
+                  ? "bg-white/15 text-white border-r-2 border-primary"
                   : "text-white/50 hover:bg-white/8 hover:text-white/80"
               }`}
             >
@@ -1618,21 +1681,30 @@ export default function SuperAdmin() {
         <div className="p-4 border-t border-white/10">
           <div className="flex items-center gap-2">
             <Avatar name={adminName} size="sm" className="shrink-0" />
-            <div>
-              <div className="text-white text-xs font-medium">{adminName}</div>
+            <div className="min-w-0 flex-1">
+              <div className="text-white text-xs font-medium truncate">{adminName}</div>
               <div className="text-white/40 text-xs">Super Administrador</div>
             </div>
           </div>
         </div>
       </aside>
 
-      {/* Main */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-14 bg-card border-b border-border flex items-center justify-between px-6">
-          <div className="text-sm font-medium text-muted-foreground">
-            {NAV.find(n => n.id === activeSection)?.label}
+      {/* Main Container */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <header className="h-14 bg-card border-b border-border flex items-center justify-between px-3 sm:px-6">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <button 
+              onClick={() => setMobileMenuOpen(true)}
+              className="md:hidden p-2 rounded-lg hover:bg-muted text-foreground cursor-pointer"
+              aria-label="Menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <div className="text-sm font-medium text-foreground sm:text-muted-foreground truncate">
+              {NAV.find(n => n.id === activeSection)?.label}
+            </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button onClick={toggleDarkMode} className="p-2 rounded-lg hover:bg-muted text-muted-foreground transition-colors" title={isDark ? "Modo Claro" : "Modo Escuro"}>
               {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
@@ -1648,7 +1720,7 @@ export default function SuperAdmin() {
                 localStorage.removeItem('salonSlug');
                 navigate('/login', { replace: true });
               }}
-              className="p-2 rounded-lg hover:bg-red-50 text-red-500 flex items-center transition-colors ml-2"
+              className="p-2 rounded-lg hover:bg-red-50 text-red-500 flex items-center transition-colors ml-1"
               title="Sair da conta"
             >
               <LogOut className="w-4 h-4" />
