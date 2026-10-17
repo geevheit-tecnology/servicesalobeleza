@@ -26,7 +26,7 @@ func Login(c *gin.Context) {
 	cleanEmail := strings.ToLower(strings.TrimSpace(req.Email))
 
 	var user db.User
-	if err := db.DB.Preload("Salon").Where("LOWER(TRIM(email)) = ?", cleanEmail).First(&user).Error; err != nil {
+	if err := db.DB.Preload("Salon").Where("email = ? OR LOWER(email) = ?", cleanEmail, cleanEmail).First(&user).Error; err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Credenciais inválidas."})
 		return
 	}

@@ -1019,6 +1019,69 @@ export default function Marketing() {
 
           </div>
 
+          {/* Plano Especial / Sob Medida - Redes & Franquias */}
+          <div className="mt-10 max-w-6xl mx-auto bg-gradient-to-br from-[#111827] via-stone-900 to-[#111827] border-2 border-[#E5A991]/30 rounded-[32px] p-6 sm:p-10 shadow-2xl relative overflow-hidden text-white">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-[#E5A991]/10 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8">
+              <div className="max-w-2xl text-center lg:text-left">
+                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#E5A991]/20 border border-[#E5A991]/40 text-[#E5A991] text-xs font-bold mb-3 shadow-xs">
+                  <Sparkles className="w-3.5 h-3.5 text-[#E5A991]" /> Plano Especial & Sob Medida
+                </div>
+                <h3 className="text-2xl sm:text-3xl font-bold tracking-tight mb-3">
+                  Gerencia uma rede de salões, barbearias ou franquia?
+                </h3>
+                <p className="text-stone-300 text-sm sm:text-base leading-relaxed mb-6">
+                  Se você precisa de condições comerciais diferenciadas, migração assistida do seu sistema anterior ou integração de múltiplas filiais, <strong>montamos um plano sob consulta</strong>, com acompanhamento direto da nossa diretoria.
+                </p>
+
+                <div className="grid sm:grid-cols-2 gap-3 text-xs sm:text-sm text-stone-200">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-[#E5A991] shrink-0" />
+                    <span>Múltiplas unidades integradas</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-[#E5A991] shrink-0" />
+                    <span>Migração assistida do sistema antigo</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-[#E5A991] shrink-0" />
+                    <span>Gerente de contas e WhatsApp VIP</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-[#E5A991] shrink-0" />
+                    <span>Treinamento ao vivo para sua equipe</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="shrink-0 flex flex-col items-center gap-3 w-full lg:w-auto">
+                <div className="text-center lg:text-right mb-1">
+                  <span className="text-xs font-semibold text-[#E5A991] uppercase tracking-wider block">Valores e Condições</span>
+                  <span className="text-2xl sm:text-3xl font-black text-white">Sob Consulta</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const msg = encodeURIComponent("Olá! Gostaria de uma proposta de plano especial sob medida para meu salão / rede no BelezaPura.");
+                    window.open(`https://wa.me/5511999999999?text=${msg}`, "_blank");
+                  }}
+                  className="w-full sm:w-auto px-8 h-13 bg-[#E5A991] hover:bg-[#D89981] text-[#111827] font-extrabold text-sm rounded-xl shadow-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>Consulte Nossa Equipe &rarr;</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate("/contato")}
+                  className="text-xs text-stone-400 hover:text-white transition-colors underline underline-offset-4 cursor-pointer"
+                >
+                  Ou fale pelo formulário de contato
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* Garantia e Segurança embaixo dos cards */}
           <div className="mt-12 text-center flex flex-wrap items-center justify-center gap-6 text-xs text-[#6B7280]">
             <div className="flex items-center gap-2">

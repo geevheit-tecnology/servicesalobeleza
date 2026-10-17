@@ -261,3 +261,104 @@ func UpgradePlan(c *gin.Context) {
 		"plan":     plan,
 	})
 }
+
+// POST /api/salon/clients
+func CreateSalonClient(c *gin.Context) {
+	salonID := c.GetString("salonId")
+	var body struct {
+		Name  string   `json:"name" binding:"required"`
+		Phone *string  `json:"phone"`
+		Tags  []string `json:"tags"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Nome do cliente é obrigatório."})
+		return
+	}
+
+	tagsStr := strings.Join(body.Tags, ",")
+	client := db.Client{
+		SalonID: salonID,
+		Name:    body.Name,
+		Phone:   body.Phone,
+		Tags:    tagsStr,
+		Status:  "active",
+	}
+
+	if err := db.DB.Create(&client).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao cadastrar cliente."})
+		return
+	}
+
+	c.JSON(http.StatusCreated, client)
+}
+
+// PUT /api/salon/clients/:id
+func UpdateSalonClient(c *gin.Context) {
+	salonID := c.GetString("salonId")
+	clientID := c.Param("id")
+
+	var client db.Client
+	if err := db.DB.Where("id = ? AND salon_id = ?", clientID, salonID).First(&client).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Cliente não encontrado."})
+		return
+	}
+
+	var body struct {
+		Name   *string  `json:"name"`
+		Phone  *string  `json:"phone"`
+		Status *string  `json:"status"`
+		Tags   []string `json:"tags"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados inválidos."})
+		return
+	}
+
+	if body.Name != nil && *body.Name != "" {
+		client.Name = *body.Name
+	}
+	if body.Phone != nil {
+		client.Phone = body.Phone
+	}
+	if body.Status != nil && *body.Status != "" {
+		client.Status = *body.Status
+	}
+	if body.Tags != nil {
+		client.Tags = strings.Join(body.Tags, ",")
+	}
+
+	if err := db.DB.Save(&client).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao atualizar cliente."})
+		return
+	}
+
+	c.JSON(http.StatusOK, client)
+}
+
+// DELETE /api/salon/clients/:id
+func DeleteSalonClient(c *gin.Context) {
+	salonID := c.GetString("salonId")
+	clientID := c.Param("id")
+	mode := c.Query("mode")
+
+	var client db.Client
+	if err := db.DB.Where("id = ? AND salon_id = ?", clientID, salonID).First(&client).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Cliente não encontrado."})
+		return
+	}
+
+	if mode == "inactive" {
+		newStatus := "inactive"
+		if client.Status == "inactive" {
+			newStatus = "active"
+		}
+		client.Status = newStatus
+		db.DB.Save(&client)
+		c.JSON(http.StatusOK, gin.H{"message": "Status do cliente atualizado.", "status": newStatus})
+		return
+	}
+
+	client.Status = "deleted"
+	db.DB.Save(&client)
+	c.JSON(http.StatusOK, gin.H{"message": "Cliente excluído com sucesso."})
+}

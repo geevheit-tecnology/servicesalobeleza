@@ -63,6 +63,8 @@ func main() {
 			// Appointments
 			auth.POST("/appointments", handler.CreateAppointment)
 			auth.GET("/appointments", handler.ListAppointments)
+			auth.PUT("/appointments/:id", handler.UpdateAppointment)
+			auth.DELETE("/appointments/:id", handler.DeleteAppointment)
 
 			// Salon (owner dashboard)
 			auth.GET("/salon/dashboard", handler.GetSalonDashboard)
@@ -70,10 +72,18 @@ func main() {
 			auth.PUT("/salon/details", handler.UpdateSalonDetails)
 			auth.POST("/salon/upgrade-plan", handler.UpgradePlan)
 			auth.GET("/salon/clients", handler.GetSalonClients)
+			auth.POST("/salon/clients", handler.CreateSalonClient)
+			auth.PUT("/salon/clients/:id", handler.UpdateSalonClient)
+			auth.DELETE("/salon/clients/:id", handler.DeleteSalonClient)
 
 			// Services & professionals
 			auth.POST("/services", handler.CreateService)
+			auth.PUT("/services/:id", handler.UpdateService)
+			auth.DELETE("/services/:id", handler.DeleteService)
+
 			auth.POST("/professionals", handler.CreateProfessional)
+			auth.PUT("/professionals/:id", handler.UpdateProfessional)
+			auth.DELETE("/professionals/:id", handler.DeleteProfessional)
 
 			// Super Admin
 			sa := auth.Group("/superadmin")
@@ -81,6 +91,8 @@ func main() {
 			{
 				sa.GET("/overview", handler.GetOverview)
 				sa.GET("/salons", handler.GetSalons)
+				sa.PUT("/salons/:id", handler.UpdateSalon)
+				sa.DELETE("/salons/:id", handler.DeleteSalon)
 				sa.PUT("/salons/:id/block", handler.BlockSalon)
 				sa.GET("/settings", handler.GetSettings)
 				sa.PUT("/settings", handler.UpdateSettings)

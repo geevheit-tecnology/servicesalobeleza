@@ -181,6 +181,84 @@ func BlockSalon(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
+func UpdateSalon(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Salon ID is required"})
+		return
+	}
+
+	var salon db.Salon
+	if err := db.DB.Preload("Subscriptions").First(&salon, "id = ?", id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Salão não encontrado."})
+		return
+	}
+
+	var body struct {
+		Name  *string `json:"name"`
+		Owner *string `json:"owner"`
+		Plan  *string `json:"plan"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados inválidos."})
+		return
+	}
+
+	if body.Name != nil && *body.Name != "" {
+		salon.Name = *body.Name
+		db.DB.Model(&salon).Update("name", *body.Name)
+	}
+
+	if body.Owner != nil && *body.Owner != "" {
+		var ownerUser db.User
+		if err := db.DB.Where("salon_id = ? AND role = ?", salon.ID, "owner").First(&ownerUser).Error; err == nil {
+			db.DB.Model(&ownerUser).Update("name", *body.Owner)
+		}
+	}
+
+	if body.Plan != nil && *body.Plan != "" {
+		var plan db.Plan
+		if err := db.DB.Where("LOWER(name) = ?", strings.ToLower(*body.Plan)).First(&plan).Error; err == nil {
+			if len(salon.Subscriptions) > 0 {
+				sub := salon.Subscriptions[len(salon.Subscriptions)-1]
+				db.DB.Model(&sub).Updates(map[string]interface{}{
+					"plan_id": plan.ID,
+					"status":  "ACTIVE",
+				})
+			} else {
+				db.DB.Create(&db.Subscription{
+					SalonID: salon.ID,
+					PlanID:  plan.ID,
+					Status:  "ACTIVE",
+				})
+			}
+		}
+	}
+
+	writeAuditLog(c, "UPDATE_SALON", salon.Name, "Dados do salão atualizados pelo superadmin.", "info")
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Salão atualizado com sucesso."})
+}
+
+func DeleteSalon(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Salon ID is required"})
+		return
+	}
+
+	var salon db.Salon
+	if err := db.DB.First(&salon, "id = ?", id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Salão não encontrado."})
+		return
+	}
+
+	db.DB.Model(&db.Subscription{}).Where("salon_id = ?", salon.ID).Update("status", "CANCELED")
+	db.DB.Delete(&salon)
+
+	writeAuditLog(c, "DELETE_SALON", salon.Name, "Salão removido pelo superadmin.", "warning")
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Salão removido com sucesso."})
+}
+
 func GetSettings(c *gin.Context) {
 	var settings db.SystemSettings
 	if err := db.DB.First(&settings).Error; err != nil {

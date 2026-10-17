@@ -258,6 +258,9 @@ function SaloesView({ salonsData }: { salonsData: any }) {
     return <div className="p-6 text-red-500 font-medium">Erro ao carregar salões: {salonsData.error}. Verifique o banco de dados.</div>;
   }
   
+  const [editSalonForm, setEditSalonForm] = useState({ id: '', name: '', owner: '', plan: 'Básico' });
+  const [savingSalon, setSavingSalon] = useState(false);
+
   const handleAction = async (salon: any, action: string) => {
     setOpenMenu(null);
     if (action === 'block') {
@@ -269,8 +272,59 @@ function SaloesView({ salonsData }: { salonsData: any }) {
         });
         setLocalSalons(prev => prev.map(s => s.id === salon.id ? { ...s, status: 'BLOCKED' } : s));
       }
-    } else if (action === 'history' || action === 'edit') {
-      setDrawerInfo({ salonName: salon.name, type: action as 'history' | 'edit' });
+    } else if (action === 'delete') {
+      if (window.confirm(`Tem certeza que deseja excluir permanentemente o salão ${salon.name}?`)) {
+        await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/superadmin/salons/${salon.id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        setLocalSalons(prev => prev.filter(s => s.id !== salon.id));
+      }
+    } else if (action === 'edit') {
+      setEditSalonForm({
+        id: salon.id,
+        name: salon.name,
+        owner: salon.owner || '',
+        plan: salon.plan || 'Básico'
+      });
+      setDrawerInfo({ salonName: salon.name, type: 'edit' });
+    } else if (action === 'history') {
+      setDrawerInfo({ salonName: salon.name, type: 'history' });
+    }
+  };
+
+  const handleSaveSalonEdit = async () => {
+    if (!editSalonForm.id) {
+      setDrawerInfo(null);
+      return;
+    }
+    setSavingSalon(true);
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/superadmin/salons/${editSalonForm.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          name: editSalonForm.name,
+          owner: editSalonForm.owner,
+          plan: editSalonForm.plan
+        })
+      });
+      if (!res.ok) throw new Error("Erro ao salvar alterações");
+
+      setLocalSalons(prev => prev.map(s => s.id === editSalonForm.id ? {
+        ...s,
+        name: editSalonForm.name,
+        owner: editSalonForm.owner,
+        plan: editSalonForm.plan
+      } : s));
+      setDrawerInfo(null);
+    } catch (e: any) {
+      alert(e.message || "Erro ao salvar dados do salão");
+    } finally {
+      setSavingSalon(false);
     }
   };
 
@@ -318,7 +372,7 @@ function SaloesView({ salonsData }: { salonsData: any }) {
           </thead>
           <tbody>
             {dataToUse.map(s => (
-              <tr key={s.name} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
+              <tr key={s.id || s.name} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     <Avatar name={s.name} size="sm" />
@@ -337,10 +391,12 @@ function SaloesView({ salonsData }: { salonsData: any }) {
                 <td className="px-4 py-3 relative">
                   <button onClick={() => setOpenMenu(openMenu === s.name ? null : s.name)} className="p-1.5 rounded-lg hover:bg-muted"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
                   {openMenu === s.name && (
-                    <div className="absolute right-8 top-10 w-40 bg-white border border-gray-200 rounded-xl shadow-lg py-1 z-50">
-                      <button onClick={() => handleAction(s, 'history')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700">Ver histórico</button>
-                      <button onClick={() => handleAction(s, 'edit')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700">Editar dados</button>
-                      <button onClick={() => handleAction(s, 'block')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-red-600">Bloquear</button>
+                    <div className="absolute right-8 top-10 w-44 bg-card border border-border rounded-xl shadow-lg py-1 z-50 text-left">
+                      <button onClick={() => handleAction(s, 'history')} className="w-full text-left px-4 py-2 text-xs hover:bg-muted text-foreground">Ver histórico</button>
+                      <button onClick={() => handleAction(s, 'edit')} className="w-full text-left px-4 py-2 text-xs hover:bg-muted text-foreground">Editar dados</button>
+                      <button onClick={() => handleAction(s, 'block')} className="w-full text-left px-4 py-2 text-xs hover:bg-muted text-amber-600">Bloquear</button>
+                      <div className="border-t border-border my-1" />
+                      <button onClick={() => handleAction(s, 'delete')} className="w-full text-left px-4 py-2 text-xs hover:bg-muted text-red-600">Excluir salão</button>
                     </div>
                   )}
                 </td>
@@ -362,7 +418,7 @@ function SaloesView({ salonsData }: { salonsData: any }) {
                 <Avatar name={drawerInfo.salonName} size="md" />
                 <div>
                   <div className="font-semibold text-lg">{drawerInfo.salonName}</div>
-                  <Badge variant="outline" className="mt-1">Desde 10/01/2023</Badge>
+                  <Badge variant="outline" className="mt-1">Salão Cadastrado</Badge>
                 </div>
               </div>
               
@@ -391,22 +447,36 @@ function SaloesView({ salonsData }: { salonsData: any }) {
                 <div className="space-y-5">
                   <div>
                     <label className="text-xs font-medium text-muted-foreground block mb-1">Nome do Salão</label>
-                    <input defaultValue={drawerInfo.salonName} className="w-full h-10 rounded-lg border border-border px-3 text-sm bg-background outline-none focus:border-primary transition-colors" />
+                    <input
+                      value={editSalonForm.name}
+                      onChange={e => setEditSalonForm({ ...editSalonForm, name: e.target.value })}
+                      className="w-full h-10 rounded-lg border border-border px-3 text-sm bg-background outline-none focus:border-primary transition-colors"
+                    />
                   </div>
                   <div>
                     <label className="text-xs font-medium text-muted-foreground block mb-1">Responsável</label>
-                    <input defaultValue={localSalons.find(s => s.name === drawerInfo.salonName)?.owner} className="w-full h-10 rounded-lg border border-border px-3 text-sm bg-background outline-none focus:border-primary transition-colors" />
+                    <input
+                      value={editSalonForm.owner}
+                      onChange={e => setEditSalonForm({ ...editSalonForm, owner: e.target.value })}
+                      className="w-full h-10 rounded-lg border border-border px-3 text-sm bg-background outline-none focus:border-primary transition-colors"
+                    />
                   </div>
                   <div>
                     <label className="text-xs font-medium text-muted-foreground block mb-1">Plano Atual</label>
-                    <select defaultValue={localSalons.find(s => s.name === drawerInfo.salonName)?.plan} className="w-full h-10 rounded-lg border border-border px-3 text-sm bg-background outline-none focus:border-primary transition-colors">
-                      <option>Básico</option>
-                      <option>Profissional</option>
-                      <option>Premium</option>
-                      <option>Empresarial</option>
+                    <select
+                      value={editSalonForm.plan}
+                      onChange={e => setEditSalonForm({ ...editSalonForm, plan: e.target.value })}
+                      className="w-full h-10 rounded-lg border border-border px-3 text-sm bg-background outline-none focus:border-primary transition-colors"
+                    >
+                      <option value="Básico">Básico</option>
+                      <option value="Profissional">Profissional</option>
+                      <option value="Premium">Premium</option>
+                      <option value="Empresarial">Empresarial</option>
                     </select>
                   </div>
-                  <Button className="w-full mt-4" onClick={() => setDrawerInfo(null)}>Salvar Alterações</Button>
+                  <Button className="w-full mt-4" onClick={handleSaveSalonEdit} disabled={savingSalon}>
+                    {savingSalon ? "Salvando..." : "Salvar Alterações"}
+                  </Button>
                 </div>
               )}
             </div>
@@ -824,18 +894,27 @@ const unidades = [
 function UnidadesView() {
   const [localUnidades, setLocalUnidades] = useState(unidades);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [editUnidade, setEditUnidade] = useState<any | null>(null);
 
   const handleAction = (name: string, action: string) => {
     setOpenMenu(null);
     if (action === 'toggle') {
       setLocalUnidades(prev => prev.map(u => u.name === name ? { ...u, status: u.status === 'active' ? 'inactive' : 'active' } : u));
     } else if (action === 'edit') {
-      alert(`Abrindo formulário de edição para ${name}...`);
+      const target = localUnidades.find(u => u.name === name);
+      if (target) setEditUnidade({ ...target });
     } else if (action === 'delete') {
       if(window.confirm(`Tem certeza que deseja excluir ${name}?`)) {
         setLocalUnidades(prev => prev.filter(u => u.name !== name));
       }
     }
+  };
+
+  const handleSaveUnidade = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editUnidade) return;
+    setLocalUnidades(prev => prev.map(u => u.name === editUnidade.name ? { ...u, ...editUnidade } : u));
+    setEditUnidade(null);
   };
 
   return (
@@ -877,10 +956,10 @@ function UnidadesView() {
                 <td className="px-4 py-3 relative">
                   <button onClick={() => setOpenMenu(openMenu === u.name ? null : u.name)} className="p-1.5 rounded-lg hover:bg-muted"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
                   {openMenu === u.name && (
-                    <div className="absolute right-8 top-10 w-40 bg-white border border-gray-200 rounded-xl shadow-lg py-1 z-50">
-                      <button onClick={() => handleAction(u.name, 'edit')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700">Editar</button>
-                      <button onClick={() => handleAction(u.name, 'toggle')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700">{u.status === 'active' ? 'Desativar' : 'Ativar'}</button>
-                      <button onClick={() => handleAction(u.name, 'delete')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-red-600">Excluir</button>
+                    <div className="absolute right-8 top-10 w-40 bg-card border border-border rounded-xl shadow-lg py-1 z-50 text-left">
+                      <button onClick={() => handleAction(u.name, 'edit')} className="w-full text-left px-4 py-2 text-xs hover:bg-muted text-foreground">Editar</button>
+                      <button onClick={() => handleAction(u.name, 'toggle')} className="w-full text-left px-4 py-2 text-xs hover:bg-muted text-foreground">{u.status === 'active' ? 'Desativar' : 'Ativar'}</button>
+                      <button onClick={() => handleAction(u.name, 'delete')} className="w-full text-left px-4 py-2 text-xs hover:bg-muted text-red-600">Excluir</button>
                     </div>
                   )}
                 </td>
@@ -889,6 +968,52 @@ function UnidadesView() {
           </tbody>
         </table>
       </div>
+
+      {editUnidade && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in" onClick={() => setEditUnidade(null)}>
+          <div className="w-full max-w-md bg-card border border-border rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
+            <div className="p-5 border-b border-border flex items-center justify-between bg-muted/20">
+              <div className="flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-primary" />
+                <h3 className="font-semibold text-base">Editar Unidade</h3>
+              </div>
+              <button onClick={() => setEditUnidade(null)} className="p-1 rounded-lg hover:bg-muted text-muted-foreground"><X className="w-4 h-4" /></button>
+            </div>
+            <form onSubmit={handleSaveUnidade} className="p-5 space-y-4">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground block mb-1">Nome da Unidade</label>
+                <input
+                  required
+                  value={editUnidade.name}
+                  onChange={e => setEditUnidade({ ...editUnidade, name: e.target.value })}
+                  className="w-full h-10 rounded-xl border border-border px-3 text-sm bg-background outline-none focus:border-primary"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground block mb-1">Endereço</label>
+                <input
+                  value={editUnidade.address}
+                  onChange={e => setEditUnidade({ ...editUnidade, address: e.target.value })}
+                  className="w-full h-10 rounded-xl border border-border px-3 text-sm bg-background outline-none focus:border-primary"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground block mb-1">Quantidade de Profissionais</label>
+                <input
+                  type="number"
+                  value={editUnidade.pros}
+                  onChange={e => setEditUnidade({ ...editUnidade, pros: parseInt(e.target.value, 10) || 0 })}
+                  className="w-full h-10 rounded-xl border border-border px-3 text-sm bg-background outline-none focus:border-primary"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2 border-t border-border">
+                <Button type="button" variant="outline" size="sm" onClick={() => setEditUnidade(null)}>Cancelar</Button>
+                <Button type="submit" size="sm">Salvar Alterações</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

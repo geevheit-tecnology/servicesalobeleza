@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useNavigate, Navigate } from "react-router-dom";
 import {
   LayoutDashboard, Calendar, ListOrdered, Users, Scissors, UserCheck, Clock,
   DollarSign, BarChart3, Settings, Star, Globe, Menu, X, Bell, ChevronDown,
@@ -11,9 +12,10 @@ import {
 } from "recharts";
 import { Button, Badge, Avatar, Card, Stars } from "@/components/ui";
 
-import { NAV, DashboardView, AgendaView, AppointmentsView, ClientsView, FinanceiroView, ComissoesView, AvaliacoesView, PaginaSalaoView, ServicosView, ProfissionaisView, HorariosView, RelatoriosView, ConfiguracoesView, NovoAgendamentoModal, LoginScreen, EstoqueView, ChatbotWhatsAppView } from './dashboard/views';
+import { NAV, DashboardView, AgendaView, AppointmentsView, ClientsView, FinanceiroView, ComissoesView, AvaliacoesView, PaginaSalaoView, ServicosView, ProfissionaisView, HorariosView, RelatoriosView, ConfiguracoesView, NovoAgendamentoModal, EstoqueView, ChatbotWhatsAppView } from './dashboard/views';
 
 export default function SalonDashboard() {
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -24,14 +26,7 @@ export default function SalonDashboard() {
   const [userName, setUserName] = useState<string>(localStorage.getItem('userName') || 'Geevheit Gestão');
 
   if (!token) {
-    return <LoginScreen onLogin={(t, r, n) => {
-      localStorage.setItem('token', t);
-      localStorage.setItem('role', r);
-      localStorage.setItem('userName', n);
-      setToken(t);
-      setRole(r);
-      setUserName(n);
-    }} />;
+    return <Navigate to="/login" replace />;
   }
 
   const allowedNav = useMemo(() => {
@@ -342,6 +337,16 @@ export default function SalonDashboard() {
                   Assinar Plano
                 </button>
               </div>
+            )}
+            {role === 'superadmin' && (
+              <button
+                onClick={() => navigate('/superadmin')}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-full text-xs font-semibold cursor-pointer transition-colors"
+                title="Ir para o painel de administração global"
+              >
+                <Crown className="w-3.5 h-3.5 text-purple-600" />
+                <span>Painel SuperAdmin</span>
+              </button>
             )}
           </div>
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
