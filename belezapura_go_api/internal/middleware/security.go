@@ -27,18 +27,24 @@ type clientRate struct {
 	resetTime time.Time
 }
 
-var (
-	rateLimitMap = make(map[string]*clientRate)
-	rateMutex    sync.Mutex
-)
-
 // RateLimiter limits requests by Client IP to prevent brute-force attacks and abuse
 func RateLimiter(maxRequests int, window time.Duration) gin.HandlerFunc {
+	rateLimitMap := make(map[string]*clientRate)
+	var rateMutex sync.Mutex
+	lastCleanup := time.Now()
 	return func(c *gin.Context) {
 		ip := c.ClientIP()
 		now := time.Now()
 
 		rateMutex.Lock()
+		if now.Sub(lastCleanup) >= window {
+			for key, value := range rateLimitMap {
+				if now.After(value.resetTime) {
+					delete(rateLimitMap, key)
+				}
+			}
+			lastCleanup = now
+		}
 		client, exists := rateLimitMap[ip]
 		if !exists || now.After(client.resetTime) {
 			rateLimitMap[ip] = &clientRate{
@@ -82,22 +88,15 @@ func TrialEnforcer() gin.HandlerFunc {
 			return
 		}
 
-		var sub db.Subscription
-		if err := db.DB.Where("salon_id = ?", salonID).Order("created_at desc").First(&sub).Error; err == nil {
-			isExpired := sub.Status == "EXPIRED" ||
-				(sub.Status == "TRIAL" && sub.TrialEnds != nil && time.Now().After(*sub.TrialEnds)) ||
-				(sub.Status == "TRIAL" && sub.TrialEnds == nil && time.Since(sub.CreatedAt) > 14*24*time.Hour)
-
-			if isExpired {
-				c.AbortWithStatusJSON(http.StatusPaymentRequired, gin.H{
-					"error":        "TRIAL_EXPIRED",
-					"message":      "O seu período de demonstração gratuita de 14 dias expirou. Para continuar utilizando o sistema, selecione um plano ativo.",
-					"trialExpired": true,
-				})
-				return
-			}
+		sub, err := db.CurrentSubscription(salonID)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusServiceUnavailable, gin.H{"error": "Não foi possível validar a assinatura."})
+			return
 		}
-
+		if !sub.AllowsAccess(time.Now()) {
+			c.AbortWithStatusJSON(http.StatusPaymentRequired, gin.H{"error": "SUBSCRIPTION_SUSPENDED", "message": "Assinatura suspensa ou vencida. Solicite a regularização do plano.", "trialExpired": true})
+			return
+		}
 		c.Next()
 	}
 }

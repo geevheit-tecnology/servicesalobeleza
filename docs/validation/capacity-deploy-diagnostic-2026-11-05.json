@@ -1,0 +1,196 @@
+{
+  "clients": 1500,
+  "environment": "local Docker PostgreSQL; HTTP httptest on development machine",
+  "historicalAppointments": 15000,
+  "operationMix": "80% reads, 20% product creates; appointments list, dashboard, clients, details, stock, availability",
+  "professionals": 250,
+  "quick": true,
+  "salons": 50,
+  "services": 500,
+  "stages": [
+    {
+      "users": 10,
+      "durationSeconds": 10.176150377,
+      "requests": 68,
+      "errors": 0,
+      "p50Ms": 248.75,
+      "p95Ms": 1836.638,
+      "p99Ms": 2397.223,
+      "maxConnections": 10,
+      "startHeapBytes": 1883144,
+      "endHeapBytes": 2636896,
+      "readP95Ms": 1836.638,
+      "writeP95Ms": 0,
+      "errorKinds": {},
+      "routes": {
+        "GET /api/appointments": {
+          "requests": 30,
+          "errors": 0,
+          "p95Ms": 284.871
+        },
+        "GET /api/public/availability": {
+          "requests": 8,
+          "errors": 0,
+          "p95Ms": 1402.441
+        },
+        "GET /api/salon/clients": {
+          "requests": 10,
+          "errors": 0,
+          "p95Ms": 342.434
+        },
+        "GET /api/salon/details": {
+          "requests": 10,
+          "errors": 0,
+          "p95Ms": 2397.223
+        },
+        "GET /api/salon/products": {
+          "requests": 10,
+          "errors": 0,
+          "p95Ms": 1115.593
+        }
+      }
+    },
+    {
+      "users": 25,
+      "durationSeconds": 10.582258769,
+      "requests": 151,
+      "errors": 0,
+      "p50Ms": 478.172,
+      "p95Ms": 2223.912,
+      "p99Ms": 2762.607,
+      "maxConnections": 20,
+      "startHeapBytes": 2520152,
+      "endHeapBytes": 3055432,
+      "readP95Ms": 2223.912,
+      "writeP95Ms": 0,
+      "errorKinds": {},
+      "routes": {
+        "GET /api/appointments": {
+          "requests": 75,
+          "errors": 0,
+          "p95Ms": 2136.306
+        },
+        "GET /api/public/availability": {
+          "requests": 7,
+          "errors": 0,
+          "p95Ms": 1614.566
+        },
+        "GET /api/salon/clients": {
+          "requests": 25,
+          "errors": 0,
+          "p95Ms": 79.605
+        },
+        "GET /api/salon/details": {
+          "requests": 25,
+          "errors": 0,
+          "p95Ms": 2762.607
+        },
+        "GET /api/salon/products": {
+          "requests": 19,
+          "errors": 0,
+          "p95Ms": 2214.155
+        }
+      }
+    },
+    {
+      "users": 50,
+      "durationSeconds": 30.000930451,
+      "requests": 1125,
+      "errors": 0,
+      "p50Ms": 128.612,
+      "p95Ms": 1526.891,
+      "p99Ms": 3539.421,
+      "maxConnections": 20,
+      "startHeapBytes": 2786720,
+      "endHeapBytes": 3965592,
+      "readP95Ms": 1975.697,
+      "writeP95Ms": 360.271,
+      "errorKinds": {},
+      "routes": {
+        "GET /api/appointments": {
+          "requests": 424,
+          "errors": 0,
+          "p95Ms": 3294.167
+        },
+        "GET /api/public/availability": {
+          "requests": 100,
+          "errors": 0,
+          "p95Ms": 164.901
+        },
+        "GET /api/salon/clients": {
+          "requests": 101,
+          "errors": 0,
+          "p95Ms": 477.433
+        },
+        "GET /api/salon/dashboard": {
+          "requests": 100,
+          "errors": 0,
+          "p95Ms": 876.424
+        },
+        "GET /api/salon/details": {
+          "requests": 100,
+          "errors": 0,
+          "p95Ms": 453.265
+        },
+        "GET /api/salon/products": {
+          "requests": 100,
+          "errors": 0,
+          "p95Ms": 225.27
+        },
+        "POST /api/salon/products": {
+          "requests": 200,
+          "errors": 0,
+          "p95Ms": 360.271
+        }
+      }
+    },
+    {
+      "users": 100,
+      "durationSeconds": 13.123867161,
+      "requests": 698,
+      "errors": 0,
+      "p50Ms": 369.696,
+      "p95Ms": 4275.169,
+      "p99Ms": 4993.148,
+      "maxConnections": 20,
+      "startHeapBytes": 3391880,
+      "endHeapBytes": 4631408,
+      "readP95Ms": 4275.169,
+      "writeP95Ms": 2150.656,
+      "errorKinds": {},
+      "routes": {
+        "GET /api/appointments": {
+          "requests": 300,
+          "errors": 0,
+          "p95Ms": 940.72
+        },
+        "GET /api/public/availability": {
+          "requests": 96,
+          "errors": 0,
+          "p95Ms": 5002.195
+        },
+        "GET /api/salon/clients": {
+          "requests": 100,
+          "errors": 0,
+          "p95Ms": 463.216
+        },
+        "GET /api/salon/details": {
+          "requests": 100,
+          "errors": 0,
+          "p95Ms": 75.745
+        },
+        "GET /api/salon/products": {
+          "requests": 100,
+          "errors": 0,
+          "p95Ms": 1625.384
+        },
+        "POST /api/salon/products": {
+          "requests": 2,
+          "errors": 0,
+          "p95Ms": 2150.656
+        }
+      }
+    }
+  ],
+  "thinkTimeSeconds": 1
+}

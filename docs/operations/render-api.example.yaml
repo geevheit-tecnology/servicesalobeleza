@@ -1,0 +1,23 @@
+# Review against the actual service before importing; this file is not active.
+# Use a separate disposable database for the API preview.
+services:
+  - type: web
+    name: belezapura-api-preview
+    runtime: go
+    plan: free
+    repo: https://github.com/geevheit-tecnology/servicesalobeleza
+    branch: main
+    rootDir: belezapura_go_api
+    autoDeployTrigger: "off"
+    buildCommand: go build -trimpath -o server .
+    startCommand: sh scripts/start-render.sh
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GIN_MODE
+        value: release
+      - key: CORS_ORIGINS
+        value: https://servicesalobeleza-8dkoptd5t-geevheits-projects.vercel.app,https://servicesalobeleza.vercel.app

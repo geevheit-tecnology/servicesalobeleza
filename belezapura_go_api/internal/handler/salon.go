@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -9,6 +10,8 @@ import (
 	"belezapura_go_api/internal/db"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // GET /api/salon/dashboard
@@ -46,16 +49,16 @@ func GetSalonDashboard(c *gin.Context) {
 		Find(&recentAppts)
 
 	c.JSON(http.StatusOK, gin.H{
-		"appointmentsToday":   appointmentsToday,
-		"revenue":             monthlyRevenue,
-		"monthlyRevenue":      monthlyRevenue,
-		"totalAppointments":   totalAppointments,
-		"clientsCount":        totalClients,
-		"totalClients":        totalClients,
-		"prosCount":           totalProfessionals,
-		"totalProfessionals":  totalProfessionals,
-		"servicesCount":       servicesCount,
-		"recentAppointments":  recentAppts,
+		"appointmentsToday":  appointmentsToday,
+		"revenue":            monthlyRevenue,
+		"monthlyRevenue":     monthlyRevenue,
+		"totalAppointments":  totalAppointments,
+		"clientsCount":       totalClients,
+		"totalClients":       totalClients,
+		"prosCount":          totalProfessionals,
+		"totalProfessionals": totalProfessionals,
+		"servicesCount":      servicesCount,
+		"recentAppointments": recentAppts,
 	})
 }
 
@@ -73,32 +76,15 @@ func GetSalonDetails(c *gin.Context) {
 		return
 	}
 
-	// Calculate 10-day trial status
-	trialExpired := false
-	daysRemaining := 10
-	if len(salon.Subscriptions) > 0 {
-		sub := &salon.Subscriptions[0]
-		if sub.Status == "TRIAL" {
-			limit := sub.CreatedAt.Add(10 * 24 * time.Hour)
-			if sub.TrialEnds != nil {
-				limit = *sub.TrialEnds
-			}
-			if time.Now().After(limit) {
-				trialExpired = true
-				daysRemaining = 0
-				sub.Status = "EXPIRED"
-				db.DB.Model(sub).Update("status", "EXPIRED")
-			} else {
-				remaining := time.Until(limit)
-				daysRemaining = int(remaining.Hours() / 24)
-				if daysRemaining < 1 && remaining > 0 {
-					daysRemaining = 1
-				}
-			}
-		} else if sub.Status == "EXPIRED" {
-			trialExpired = true
-			daysRemaining = 0
-		}
+	sub, subErr := db.CurrentSubscription(salonID)
+	if subErr != nil {
+		c.JSON(503, gin.H{"error": "Assinatura indisponível."})
+		return
+	}
+	trialExpired := !sub.AllowsAccess(time.Now())
+	daysRemaining := 0
+	if sub.Status == "TRIAL" && sub.TrialEnds != nil && !trialExpired {
+		daysRemaining = int(time.Until(*sub.TrialEnds).Hours()/24) + 1
 	}
 
 	resMap := gin.H{
@@ -115,10 +101,11 @@ func GetSalonDetails(c *gin.Context) {
 		"scheduleRaw":    salon.ScheduleRaw,
 		"professionals":  salon.Professionals,
 		"services":       salon.Services,
-		"subscriptions":  salon.Subscriptions,
+		"subscriptions":  []db.Subscription{sub},
 		"trialExpired":   trialExpired,
 		"daysRemaining":  daysRemaining,
-		"trialTotalDays": 10,
+		"trialTotalDays": 14,
+		"timezone":       salon.Timezone, "blockedDates": salon.BlockedDates,
 	}
 	c.JSON(http.StatusOK, resMap)
 }
@@ -134,13 +121,15 @@ func UpdateSalonDetails(c *gin.Context) {
 	}
 
 	var body struct {
-		Name        *string `json:"name"`
-		PixKey      *string `json:"pixKey"`
-		Logo        *string `json:"logo"`
-		Cover       *string `json:"cover"`
-		Gallery     *string `json:"gallery"`
-		MainColor   *string `json:"mainColor"`
-		ScheduleRaw *string `json:"scheduleRaw"`
+		Name         *string `json:"name"`
+		PixKey       *string `json:"pixKey"`
+		Logo         *string `json:"logo"`
+		Cover        *string `json:"cover"`
+		Gallery      *string `json:"gallery"`
+		MainColor    *string `json:"mainColor"`
+		ScheduleRaw  *string `json:"scheduleRaw"`
+		Timezone     *string `json:"timezone"`
+		BlockedDates *string `json:"blockedDates"`
 	}
 
 	if err := c.ShouldBindJSON(&body); err != nil {
@@ -167,9 +156,34 @@ func UpdateSalonDetails(c *gin.Context) {
 		salon.MainColor = body.MainColor
 	}
 	if body.ScheduleRaw != nil {
+		if err := validateSchedule(*body.ScheduleRaw); err != nil {
+			c.JSON(400, gin.H{"error": err.Error()})
+			return
+		}
 		salon.ScheduleRaw = *body.ScheduleRaw
 	}
 
+	if body.Timezone != nil {
+		if _, err := time.LoadLocation(*body.Timezone); err != nil {
+			c.JSON(400, gin.H{"error": "Fuso inválido."})
+			return
+		}
+		salon.Timezone = *body.Timezone
+	}
+	if body.BlockedDates != nil {
+		var dates []string
+		if json.Unmarshal([]byte(*body.BlockedDates), &dates) != nil {
+			c.JSON(400, gin.H{"error": "Datas inválidas."})
+			return
+		}
+		for _, d := range dates {
+			if _, err := time.Parse("2006-01-02", d); err != nil {
+				c.JSON(400, gin.H{"error": "Data inválida."})
+				return
+			}
+		}
+		salon.BlockedDates = *body.BlockedDates
+	}
 	if err := db.DB.Save(&salon).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao atualizar dados do salão."})
 		return
@@ -231,35 +245,23 @@ func UpgradePlan(c *gin.Context) {
 		}
 	}
 
-	// Update existing subscription or create a new active one
-	var sub db.Subscription
-	if err := db.DB.Where("salon_id = ?", salonID).Order("created_at desc").First(&sub).Error; err == nil {
-		sub.PlanID = plan.ID
-		sub.Status = "ACTIVE"
-		sub.TrialEnds = nil
-		if err := db.DB.Save(&sub).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao atualizar plano."})
-			return
+	err := db.DB.Transaction(func(tx *gorm.DB) error {
+		var salon db.Salon
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&salon, "id = ?", salonID).Error; err != nil {
+			return err
 		}
-	} else {
-		newSub := db.Subscription{
-			SalonID: salonID,
-			PlanID:  plan.ID,
-			Status:  "ACTIVE",
+		var sub db.Subscription
+		if err := tx.Where("salon_id = ?", salonID).Order("created_at desc, id desc").First(&sub).Error; err != nil {
+			return err
 		}
-		if err := db.DB.Create(&newSub).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao criar assinatura."})
-			return
-		}
-	}
-
-	writeAuditLog(c, "SALON_UPGRADED_PLAN", salonID, fmt.Sprintf("Salão realizou adesão ao plano %s (R$ %.2f)", plan.Name, plan.Price), "info")
-
-	c.JSON(http.StatusOK, gin.H{
-		"message":  "Plano atualizado com sucesso!",
-		"planName": plan.Name,
-		"plan":     plan,
+		return tx.Model(&sub).Updates(map[string]interface{}{"pending_plan_id": plan.ID, "requested_price": plan.Price}).Error
 	})
+	if err != nil {
+		c.JSON(503, gin.H{"error": "Não foi possível registrar a solicitação."})
+		return
+	}
+	writeAuditLog(c, "SUBSCRIPTION_REQUESTED", salonID, "Adesão/renovação solicitada para "+plan.Name, "info")
+	c.JSON(http.StatusAccepted, gin.H{"message": "Solicitação registrada. Aguarde a conferência do pagamento pelo administrador.", "pending": true, "planName": plan.Name})
 }
 
 // POST /api/salon/clients

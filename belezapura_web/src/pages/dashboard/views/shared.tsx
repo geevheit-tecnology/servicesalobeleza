@@ -26,8 +26,6 @@ const NAV = [
   { id: "comissoes", label: "Comissões", icon: Percent },
   { id: "estoque", label: "Estoque", icon: Package },
   { id: "pagina", label: "Página do Salão", icon: Globe },
-  { id: "avaliacoes", label: "Avaliações", icon: Star },
-  { id: "chatbot", label: "Chatbot WhatsApp IA", icon: Bot, badge: "PREMIUM" },
   { id: "relatorios", label: "Relatórios", icon: BarChart3 },
   { id: "configuracoes", label: "Configurações", icon: Settings },
 ];

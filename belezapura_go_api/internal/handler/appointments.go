@@ -2,12 +2,14 @@ package handler
 
 import (
 	"fmt"
+	"gorm.io/gorm/clause"
 	"net/http"
 	"time"
 
 	"belezapura_go_api/internal/db"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 // POST /api/appointments
@@ -31,31 +33,12 @@ func CreateAppointment(c *gin.Context) {
 		return
 	}
 
-	// Anti-duplicity: prevent scheduling the same professional at the same time
-	var existing db.Appointment
-	if err := db.DB.Where("salon_id = ? AND professional_id = ? AND date = ? AND status != ?", salonID, body.ProfessionalID, date, "cancelled").First(&existing).Error; err == nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "Este profissional já possui um agendamento confirmado neste mesmo horário."})
+	appt := db.Appointment{SalonID: salonID, ClientID: body.ClientID, ProfessionalID: body.ProfessionalID, ServiceID: body.ServiceID, Date: date, PaymentMethod: body.PaymentMethod}
+	if err := db.DB.Transaction(func(tx *gorm.DB) error { return reserve(tx, &appt, "", "") }); err != nil {
+		bookingFailure(c, err)
 		return
 	}
 
-	var service db.Service
-	db.DB.First(&service, "id = ?", body.ServiceID)
-
-	appt := db.Appointment{
-		SalonID:        salonID,
-		ClientID:       body.ClientID,
-		ProfessionalID: body.ProfessionalID,
-		ServiceID:      body.ServiceID,
-		Date:           date,
-		Value:          service.Price,
-		PaymentMethod:  body.PaymentMethod,
-		Status:         "waiting",
-	}
-
-	if err := db.DB.Create(&appt).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
 	c.JSON(http.StatusCreated, appt)
 }
 
@@ -80,8 +63,8 @@ func CreateService(c *gin.Context) {
 	salonID := c.GetString("salonId")
 	var body struct {
 		Name     string  `json:"name" binding:"required"`
-		Price    float64 `json:"price" binding:"required"`
-		Duration int     `json:"duration" binding:"required"`
+		Price    float64 `json:"price" binding:"gte=0,lte=99999999"`
+		Duration int     `json:"duration" binding:"gte=1,lte=1440"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -108,26 +91,11 @@ func CreateProfessional(c *gin.Context) {
 		Name       string   `json:"name" binding:"required"`
 		Specialty  *string  `json:"specialty"`
 		Avatar     *string  `json:"avatar"`
-		Commission *float64 `json:"commission"`
+		Commission *float64 `json:"commission" binding:"omitempty,gte=0,lte=100"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
-	}
-
-	// Validação de limite de profissionais por plano contratado
-	var sub db.Subscription
-	if err := db.DB.Preload("Plan").Where("salon_id = ? AND status IN ?", salonID, []string{"ACTIVE", "TRIAL"}).First(&sub).Error; err == nil && sub.Plan != nil {
-		if sub.Plan.MaxProfessionals > 0 {
-			var currentCount int64
-			db.DB.Model(&db.Professional{}).Where("salon_id = ? AND status <> ?", salonID, "deleted").Count(&currentCount)
-			if int(currentCount) >= sub.Plan.MaxProfessionals {
-				c.JSON(http.StatusForbidden, gin.H{
-					"error": fmt.Sprintf("Limite do seu plano (%s) atingido: máximo de %d profissional(is). Faça upgrade para cadastrar mais membros na equipe.", sub.Plan.Name, sub.Plan.MaxProfessionals),
-				})
-				return
-			}
-		}
 	}
 
 	commission := 0.0
@@ -143,10 +111,16 @@ func CreateProfessional(c *gin.Context) {
 		Commission: commission,
 		Status:     "active",
 	}
-	if err := db.DB.Create(&pro).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if err := db.DB.Transaction(func(tx *gorm.DB) error {
+		if err := ensureProfessionalCapacity(tx, salonID, ""); err != nil {
+			return err
+		}
+		return tx.Create(&pro).Error
+	}); err != nil {
+		bookingFailure(c, err)
 		return
 	}
+
 	c.JSON(http.StatusCreated, pro)
 }
 
@@ -163,9 +137,9 @@ func UpdateService(c *gin.Context) {
 
 	var body struct {
 		Name     *string  `json:"name"`
-		Price    *float64 `json:"price"`
-		Duration *int     `json:"duration"`
-		Status   *string  `json:"status"`
+		Price    *float64 `json:"price" binding:"omitempty,gte=0,lte=99999999"`
+		Duration *int     `json:"duration" binding:"omitempty,gte=1,lte=1440"`
+		Status   *string  `json:"status" binding:"omitempty,oneof=active inactive"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados inválidos."})
@@ -236,8 +210,8 @@ func UpdateProfessional(c *gin.Context) {
 		Name       *string  `json:"name"`
 		Specialty  *string  `json:"specialty"`
 		Avatar     *string  `json:"avatar"`
-		Commission *float64 `json:"commission"`
-		Status     *string  `json:"status"`
+		Commission *float64 `json:"commission" binding:"omitempty,gte=0,lte=100"`
+		Status     *string  `json:"status" binding:"omitempty,oneof=active inactive"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados inválidos."})
@@ -260,8 +234,15 @@ func UpdateProfessional(c *gin.Context) {
 		pro.Status = *body.Status
 	}
 
-	if err := db.DB.Save(&pro).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao atualizar profissional."})
+	if err := db.DB.Transaction(func(tx *gorm.DB) error {
+		if pro.Status == "active" {
+			if err := ensureProfessionalCapacity(tx, salonID, pro.ID); err != nil {
+				return err
+			}
+		}
+		return tx.Save(&pro).Error
+	}); err != nil {
+		bookingFailure(c, err)
 		return
 	}
 
@@ -286,7 +267,17 @@ func DeleteProfessional(c *gin.Context) {
 			newStatus = "active"
 		}
 		pro.Status = newStatus
-		db.DB.Save(&pro)
+		if err := db.DB.Transaction(func(tx *gorm.DB) error {
+			if pro.Status == "active" {
+				if err := ensureProfessionalCapacity(tx, salonID, pro.ID); err != nil {
+					return err
+				}
+			}
+			return tx.Save(&pro).Error
+		}); err != nil {
+			bookingFailure(c, err)
+			return
+		}
 		c.JSON(http.StatusOK, gin.H{"message": "Status atualizado.", "status": newStatus})
 		return
 	}
@@ -318,17 +309,25 @@ func UpdateAppointment(c *gin.Context) {
 	}
 
 	if body.Status != nil && *body.Status != "" {
+		if *body.Status != "waiting" && *body.Status != "confirmed" && *body.Status != "cancelled" && *body.Status != "done" {
+			c.JSON(400, gin.H{"error": "Status inválido."})
+			return
+		}
 		appt.Status = *body.Status
 	}
 	if body.PaymentMethod != nil {
 		appt.PaymentMethod = body.PaymentMethod
 	}
 	if body.Value != nil {
+		if *body.Value < 0 {
+			c.JSON(400, gin.H{"error": "Valor inválido."})
+			return
+		}
 		appt.Value = *body.Value
 	}
 
 	if err := db.DB.Save(&appt).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao atualizar agendamento."})
+		bookingFailure(c, err)
 		return
 	}
 
@@ -352,4 +351,31 @@ func DeleteAppointment(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Agendamento excluído com sucesso."})
+}
+
+func ensureProfessionalCapacity(tx *gorm.DB, salonID, exclude string) error {
+	var salon db.Salon
+	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&salon, "id = ?", salonID).Error; err != nil {
+		return err
+	}
+	var sub db.Subscription
+	if err := tx.Preload("Plan").Where("salon_id = ?", salonID).Order("created_at desc,id desc").First(&sub).Error; err != nil {
+		return err
+	}
+	if !sub.AllowsAccess(time.Now()) {
+		return bookingError{402, "Assinatura suspensa ou vencida."}
+	}
+	if sub.Plan == nil {
+		return bookingError{503, "Plano indisponível."}
+	}
+	if sub.Plan.MaxProfessionals > 0 {
+		var n int64
+		if err := tx.Model(&db.Professional{}).Where("salon_id = ? AND status = ? AND id::text <> ?", salonID, "active", exclude).Count(&n).Error; err != nil {
+			return err
+		}
+		if n >= int64(sub.Plan.MaxProfessionals) {
+			return bookingError{403, fmt.Sprintf("O plano permite até %d profissionais ativos.", sub.Plan.MaxProfessionals)}
+		}
+	}
+	return nil
 }

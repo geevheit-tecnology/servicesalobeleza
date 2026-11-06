@@ -1,6 +1,6 @@
 module belezapura_go_api
 
-go 1.26.5
+go 1.26.10
 
 require (
 	github.com/bytedance/gopkg v0.1.4 // indirect
@@ -39,7 +39,7 @@ require (
 	go.mongodb.org/mongo-driver/v2 v2.8.0 // indirect
 	golang.org/x/arch v0.29.0 // indirect
 	golang.org/x/crypto v0.57.0 // indirect
-	golang.org/x/net v0.58.0 // indirect
+	golang.org/x/net v0.60.0 // indirect
 	golang.org/x/sync v0.23.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/text v0.42.0 // indirect

@@ -26,6 +26,7 @@ export default function ClientView() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
+  const [slotDates, setSlotDates] = useState<Record<string, string>>({});
   const [loadingTimes, setLoadingTimes] = useState(false);
 
   // Modal / Bottom-sheet de Resumo Pré-Confirmação
@@ -152,29 +153,15 @@ export default function ClientView() {
         return;
       }
 
-      setLoadingTimes(true);
-      const dateStr = selectedDate.toISOString().split('T')[0];
-      fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/public/availability?salonId=${salonData.id}&date=${dateStr}&professionalId=${selectedPro.id}&serviceId=${selectedService.id}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.available && Array.isArray(data.available) && data.available.length > 0) {
-            setAvailableTimes(data.available);
-          } else {
-            // Horários padrão de conveniência caso a API retorne vazia
-            setAvailableTimes([
-              "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-              "13:30", "14:00", "14:30", "15:00", "15:30", "16:00",
-              "16:30", "17:00", "17:30", "18:00", "18:30"
-            ]);
-          }
-        })
-        .catch(() => {
-          // Fallback de horários
-          setAvailableTimes([
-            "09:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00", "18:00"
-          ]);
-        })
-        .finally(() => setLoadingTimes(false));
+      setLoadingTimes(true); setSelectedTime(null); setAvailableTimes([]); setSlotDates({});
+      const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`;
+      const controller = new AbortController();
+      fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/public/availability?salonId=${salonData.id}&date=${dateStr}&professionalId=${selectedPro.id}&serviceId=${selectedService.id}`, { signal: controller.signal })
+        .then(async res => { const data = await res.json(); if (!res.ok) throw new Error(data.error); return data; })
+        .then(data => { setAvailableTimes(Array.isArray(data.available) ? data.available : []); setSlotDates(data.slots || {}); })
+        .catch(() => { if (!controller.signal.aborted) { setAvailableTimes([]); setSlotDates({}); } })
+        .finally(() => { if (!controller.signal.aborted) setLoadingTimes(false); });
+      return () => controller.abort();
     }
   }, [selectedDate, selectedPro, selectedService, salonData]);
 
@@ -258,9 +245,8 @@ export default function ClientView() {
     if (!salonData || !selectedDate || !selectedTime || !selectedService || !selectedPro || isSubmitting) return;
     setIsSubmitting(true);
     try {
-      const finalDate = new Date(selectedDate);
-      const [hours, minutes] = selectedTime.split(':');
-      finalDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      const timestamp = slotDates[selectedTime];
+      if (!timestamp) throw new Error("Atualize os horários disponíveis.");
 
       const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/public/appointments`, {
         method: 'POST',
@@ -271,7 +257,7 @@ export default function ClientView() {
           clientPhone,
           serviceId: selectedService.id,
           professionalId: selectedPro.id,
-          date: finalDate.toISOString(),
+          date: timestamp,
           value: parseFloat(selectedService.price || "0")
         })
       });
@@ -292,10 +278,8 @@ export default function ClientView() {
         setPixCode(data.pixCode);
         setStep("pix");
       } else {
-        const depositFloat = (parseFloat(selectedService.price || "0") * 0.20).toFixed(2);
-        const fallbackPix = `00020126580014BR.GOV.BCB.PIX0136${salonData.pixKey || 'pix@geevheithair.com'}520400005303986540${depositFloat}5802BR5913${salonData.name?.slice(0, 13) || 'SALAO'}6008SAOPAULO62070503***6304`;
-        setPixCode(fallbackPix);
-        setStep("pix");
+        setPixCode(null);
+        setStep("confirm");
       }
     } catch (err: any) {
       alert("Ocorreu um erro de conexão ao tentar realizar o agendamento. Tente novamente.");
@@ -305,7 +289,7 @@ export default function ClientView() {
   };
 
   // Categorias de Serviços
-  const serviceCategories = ["Todos", ...Array.from(new Set(services.map((s: any) => s.cat || "Serviços")))];
+  const serviceCategories = ["Todos", ...Array.from(new Set<string>(services.map((s: any) => String(s.cat || "Serviços"))))];
   const filteredServices = services
     .filter((s: any) => serviceFilter === "Todos" || (s.cat || "Serviços") === serviceFilter)
     .filter((s: any) => searchQuery.trim() === "" || s.name.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -740,6 +724,7 @@ export default function ClientView() {
                     return (
                       <button
                         key={idx}
+                        aria-label={`Escolher data ${d.dateObj.getFullYear()}-${String(d.dateObj.getMonth() + 1).padStart(2, "0")}-${String(d.day).padStart(2, "0")}`}
                         type="button"
                         disabled={d.disabled}
                         onClick={() => {
@@ -1021,7 +1006,7 @@ export default function ClientView() {
                     className="w-full h-11 rounded-xl border border-border px-3.5 text-sm bg-background outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-foreground"
                   />
                   <span className="text-[11px] text-muted-foreground mt-1.5 block">
-                    Você receberá o comprovante e os lembretes do horário por este WhatsApp.
+                    O salão poderá entrar em contato por este WhatsApp para confirmar o atendimento.
                   </span>
                 </div>
               </div>
@@ -1064,14 +1049,7 @@ export default function ClientView() {
                   R$ {depositValue}
                 </div>
 
-                {/* QR Code */}
-                <div className="w-48 h-48 bg-white mx-auto rounded-2xl p-3 border border-border shadow-inner flex items-center justify-center">
-                  <img 
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(pixCode || '')}`} 
-                    alt="QR Code PIX" 
-                    className="w-full h-full object-contain"
-                  />
-                </div>
+                <p className="text-sm">Use o Pix Copia e Cola no aplicativo do seu banco.</p>
 
                 <div className="space-y-2 pt-1">
                   <Button
@@ -1101,7 +1079,7 @@ export default function ClientView() {
                 onClick={() => setStep("confirm")}
                 className="w-full h-12 rounded-xl font-extrabold text-xs shadow-md cursor-pointer"
               >
-                Já realizei o pagamento via PIX
+                Concluir e aguardar conferência do salão
               </Button>
             </footer>
           </div>
@@ -1118,10 +1096,10 @@ export default function ClientView() {
 
             <div>
               <h2 className="font-serif text-2xl font-bold text-foreground">
-                Agendamento Confirmado!
+                Reserva registrada!
               </h2>
               <p className="text-xs text-muted-foreground mt-1.5 max-w-xs mx-auto">
-                Sua reserva no <strong>{salonData.name}</strong> foi registrada com sucesso.
+                Sua reserva no <strong>{salonData.name}</strong> foi registrada. O salão confirmará o atendimento e o recebimento do sinal.
               </p>
             </div>
 
@@ -1143,7 +1121,7 @@ export default function ClientView() {
               </div>
               <div className="flex justify-between border-t border-border pt-2 text-emerald-600 dark:text-emerald-400 font-bold">
                 <span>Sinal PIX:</span>
-                <span>R$ {depositValue} (Pago)</span>
+                <span>R$ {depositValue} (aguardando conferência)</span>
               </div>
             </div>
 

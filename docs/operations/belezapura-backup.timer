@@ -1,0 +1,11 @@
+[Unit]
+Description=BelezaPura daily backup
+
+[Timer]
+OnCalendar=*-*-* 03:00:00 UTC
+RandomizedDelaySec=5min
+Persistent=true
+Unit=belezapura-backup.service
+
+[Install]
+WantedBy=timers.target

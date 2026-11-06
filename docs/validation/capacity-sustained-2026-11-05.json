@@ -1,0 +1,55 @@
+{
+  "clients": 1500,
+  "environment": "local Docker PostgreSQL; HTTP httptest on development machine",
+  "historicalAppointments": 15000,
+  "operationMix": "80% reads, 20% product creates; appointments list, dashboard, clients, details, stock, availability",
+  "professionals": 250,
+  "quick": false,
+  "salons": 50,
+  "services": 500,
+  "stages": [
+    {
+      "users": 10,
+      "durationSeconds": 60.002493135,
+      "requests": 590,
+      "errors": 0,
+      "p50Ms": 19.365,
+      "p95Ms": 54.841,
+      "p99Ms": 99.025,
+      "maxConnections": 10,
+      "startHeapBytes": 1897504,
+      "endHeapBytes": 2802592,
+      "readP95Ms": 50.47,
+      "writeP95Ms": 63.233
+    },
+    {
+      "users": 25,
+      "durationSeconds": 60.002902056,
+      "requests": 1475,
+      "errors": 0,
+      "p50Ms": 17.341,
+      "p95Ms": 85.805,
+      "p99Ms": 157.896,
+      "maxConnections": 20,
+      "startHeapBytes": 2559784,
+      "endHeapBytes": 3168992,
+      "readP95Ms": 98.609,
+      "writeP95Ms": 45.45
+    },
+    {
+      "users": 50,
+      "durationSeconds": 1800.000904452,
+      "requests": 72242,
+      "errors": 10,
+      "p50Ms": 32.715,
+      "p95Ms": 1311.111,
+      "p99Ms": 2961.735,
+      "maxConnections": 20,
+      "startHeapBytes": 2916592,
+      "endHeapBytes": 5668744,
+      "readP95Ms": 1398.142,
+      "writeP95Ms": 1049.46
+    }
+  ],
+  "thinkTimeSeconds": 1
+}

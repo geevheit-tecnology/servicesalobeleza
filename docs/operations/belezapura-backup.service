@@ -1,0 +1,18 @@
+[Unit]
+Description=BelezaPura PostgreSQL backup
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=belezapura
+Group=belezapura
+EnvironmentFile=/etc/belezapura/backup.env
+ExecStart=/usr/bin/python3 /opt/belezapura/scripts/backup-postgres.py --directory /var/backups/belezapura --keep 7 --allow-remote
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/backups/belezapura
+TimeoutStartSec=65min

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"github.com/google/uuid"
 	"net/http"
 	"strconv"
 	"strings"
@@ -70,14 +71,16 @@ func slugify(s string) string {
 	}
 	slug := strings.Trim(b.String(), "-")
 	// Ensure uniqueness with timestamp suffix
-	return slug + "-" + time.Now().Format("0601021504")
+	return slug + "-" + uuid.NewString()[:8]
 }
 
 func parsePrice(p string) float64 {
 	p = strings.ReplaceAll(p, "R$", "")
 	p = strings.ReplaceAll(p, " ", "")
-	p = strings.ReplaceAll(p, ".", "")
-	p = strings.ReplaceAll(p, ",", ".")
+	if strings.Contains(p, ",") {
+		p = strings.ReplaceAll(p, ".", "")
+		p = strings.ReplaceAll(p, ",", ".")
+	}
 	val, _ := strconv.ParseFloat(p, 64)
 	return val
 }
@@ -90,6 +93,10 @@ func parseDuration(d string) int {
 }
 
 func Onboarding(c *gin.Context) {
+	if err := middleware.ValidateSecret(); err != nil {
+		c.JSON(503, gin.H{"error": "Cadastro temporariamente indisponível."})
+		return
+	}
 	var req onboardingRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -124,37 +131,43 @@ func Onboarding(c *gin.Context) {
 		}
 	}
 
-	// 4. Safe Plan Lookup (handle slugs "studio", "essencial", "elite" or UUIDs)
 	planSlug := "studio"
 	if req.PlanID != nil && strings.TrimSpace(*req.PlanID) != "" {
-		p := strings.ToLower(strings.TrimSpace(*req.PlanID))
-		if strings.Contains(p, "essen") || p == "1" || strings.Contains(p, "basic") || strings.Contains(p, "básic") {
-			planSlug = "essencial"
-		} else if strings.Contains(p, "elite") || p == "3" || strings.Contains(p, "prem") || strings.Contains(p, "busin") {
-			planSlug = "elite"
-		} else {
-			planSlug = "studio"
-		}
+		planSlug = strings.ToLower(strings.TrimSpace(*req.PlanID))
 	}
-
+	aliases := map[string]string{"1": "essencial", "2": "studio", "3": "elite", "basico": "essencial", "premium": "elite"}
+	if alias, ok := aliases[planSlug]; ok {
+		planSlug = alias
+	}
 	var selectedPlan db.Plan
-	// First query by exact name case-insensitive
-	if err := db.DB.Where("LOWER(name) = ?", planSlug).First(&selectedPlan).Error; err != nil {
-		// Fallback query like
-		if err := db.DB.Where("LOWER(name) LIKE ?", "%"+planSlug+"%").First(&selectedPlan).Error; err != nil {
-			// If req.PlanID looks like a UUID (36 chars), try by ID
-			if req.PlanID != nil && len(strings.TrimSpace(*req.PlanID)) == 36 {
-				db.DB.First(&selectedPlan, "id = ?", strings.TrimSpace(*req.PlanID))
-			}
+	if err := db.DB.Where("id::text = ? OR LOWER(name) = ?", planSlug, planSlug).First(&selectedPlan).Error; err != nil {
+		c.JSON(400, gin.H{"error": "Plano inválido ou indisponível."})
+		return
+	}
+	if len(req.Services) == 0 || len(req.Professionals) == 0 {
+		c.JSON(400, gin.H{"error": "Cadastre ao menos um serviço e um profissional."})
+		return
+	}
+	if selectedPlan.MaxProfessionals > 0 && len(req.Professionals) > selectedPlan.MaxProfessionals {
+		c.JSON(400, gin.H{"error": "Equipe excede o limite do plano."})
+		return
+	}
+	for _, service := range req.Services {
+		if strings.TrimSpace(service.Name) == "" || parseDuration(service.Duration) <= 0 || parsePrice(service.Price) < 0 {
+			c.JSON(400, gin.H{"error": "Serviço inválido."})
+			return
 		}
 	}
-
-	// Ultimate fallback to studio or any plan
-	if selectedPlan.ID == "" {
-		db.DB.Where("LOWER(name) LIKE ?", "%studio%").First(&selectedPlan)
-		if selectedPlan.ID == "" {
-			db.DB.Order("price asc").First(&selectedPlan)
+	for _, pro := range req.Professionals {
+		if strings.TrimSpace(pro.Name) == "" {
+			c.JSON(400, gin.H{"error": "Profissional inválido."})
+			return
 		}
+	}
+	scheduleBytes, _ := json.Marshal(req.Schedule)
+	if err := validateSchedule(string(scheduleBytes)); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
 	}
 
 	slug := slugify(req.SalonName)
@@ -185,6 +198,11 @@ func Onboarding(c *gin.Context) {
 	}
 
 	tx := db.DB.Begin()
+	if tx.Error != nil {
+		c.JSON(503, gin.H{"error": "Banco indisponível."})
+		return
+	}
+	defer tx.Rollback()
 
 	if err := tx.Create(&salon).Error; err != nil {
 		tx.Rollback()
@@ -220,7 +238,11 @@ func Onboarding(c *gin.Context) {
 			Duration: parseDuration(s.Duration),
 			Price:    parsePrice(s.Price),
 		}
-		tx.Create(&srv)
+		if err := tx.Create(&srv).Error; err != nil {
+			tx.Rollback()
+			c.JSON(500, gin.H{"error": "Falha ao cadastrar serviços."})
+			return
+		}
 	}
 
 	// Insert professionals (respect plan limit if basic)
@@ -235,25 +257,17 @@ func Onboarding(c *gin.Context) {
 			Specialty: &specialty,
 			Status:    "active",
 		}
-		tx.Create(&pro)
+		if err := tx.Create(&pro).Error; err != nil {
+			tx.Rollback()
+			c.JSON(500, gin.H{"error": "Falha ao cadastrar equipe."})
+			return
+		}
 	}
 
 	// Create subscription with exact 14 days of trial
 	trialEnds := time.Now().Add(14 * 24 * time.Hour)
 	planIDToSave := selectedPlan.ID
 	planPrice := selectedPlan.Price
-	if planPrice <= 0 {
-		planPrice = 119.90
-	}
-
-	// Guarantee planIDToSave is never empty (if somehow still empty, grab any plan)
-	if planIDToSave == "" {
-		var anyPlan db.Plan
-		if err := db.DB.First(&anyPlan).Error; err == nil {
-			planIDToSave = anyPlan.ID
-			planPrice = anyPlan.Price
-		}
-	}
 
 	sub := db.Subscription{
 		SalonID:   salon.ID,
@@ -262,9 +276,15 @@ func Onboarding(c *gin.Context) {
 		Price:     planPrice,
 		TrialEnds: &trialEnds,
 	}
-	tx.Create(&sub)
-
-	tx.Commit()
+	if err := tx.Create(&sub).Error; err != nil {
+		tx.Rollback()
+		c.JSON(500, gin.H{"error": "Falha ao cadastrar assinatura."})
+		return
+	}
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(500, gin.H{"error": "Não foi possível concluir o cadastro."})
+		return
+	}
 
 	// Generate JWT Token
 	token, err := middleware.GenerateToken(user.ID, salon.ID, user.Role, user.Name)
@@ -274,9 +294,9 @@ func Onboarding(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"message":  "Cadastro realizado com sucesso!",
-		"token":    token,
-		"salonId":  salon.ID,
+		"message": "Cadastro realizado com sucesso!",
+		"token":   token,
+		"salonId": salon.ID,
 		"user": gin.H{
 			"id":        user.ID,
 			"name":      user.Name,

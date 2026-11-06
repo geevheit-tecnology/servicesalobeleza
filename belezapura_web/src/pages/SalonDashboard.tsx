@@ -19,15 +19,12 @@ export default function SalonDashboard() {
   const [activeSection, setActiveSection] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [unit, setUnit] = useState("Unidade Moema");
+  const [unit, setUnit] = useState("Meu salão");
   const [showModal, setShowModal] = useState(false);
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [role, setRole] = useState<string>(localStorage.getItem('role') || 'owner');
   const [userName, setUserName] = useState<string>(localStorage.getItem('userName') || 'Geevheit Gestão');
 
-  if (!token) {
-    return <Navigate to="/login" replace />;
-  }
 
   const allowedNav = useMemo(() => {
     if (role === 'professional') {
@@ -39,9 +36,9 @@ export default function SalonDashboard() {
     return NAV;
   }, [role]);
 
-  const [planName, setPlanName] = useState<string>("Trial 10 Dias");
+  const [planName, setPlanName] = useState<string>("Trial 14 Dias");
   const [trialExpired, setTrialExpired] = useState<boolean>(false);
-  const [daysRemaining, setDaysRemaining] = useState<number>(10);
+  const [daysRemaining, setDaysRemaining] = useState<number>(14);
   const [isTrial, setIsTrial] = useState<boolean>(true);
   const [showUpgradeModal, setShowUpgradeModal] = useState<boolean>(false);
   const [upgradingPlan, setUpgradingPlan] = useState<string | null>(null);
@@ -75,7 +72,7 @@ export default function SalonDashboard() {
             if (sub?.plan?.name) {
               setPlanName(`Plano ${sub.plan.name}`);
             }
-            if (sub?.status === "ACTIVE") {
+            if (sub?.status === "ACTIVE" && !data.trialExpired) {
               setIsTrial(false);
               setTrialExpired(false);
             }
@@ -106,11 +103,8 @@ export default function SalonDashboard() {
         throw new Error(data.message || data.error || 'Erro ao processar assinatura.');
       }
 
-      setPlanName(`Plano ${data.planName || selectedPlan}`);
-      setTrialExpired(false);
-      setIsTrial(false);
       setShowUpgradeModal(false);
-      alert(`🎉 Parabéns! Sua assinatura do Plano ${data.planName || selectedPlan} foi ativada com sucesso!`);
+      alert(data.message || "Solicitação registrada. Aguarde a conferência do pagamento.");
     } catch (err: any) {
       setUpgradeError(err.message || 'Falha na comunicação com o servidor.');
     } finally {
@@ -123,6 +117,10 @@ export default function SalonDashboard() {
       setActiveSection(allowedNav[0]?.id || 'dashboard');
     }
   }, [allowedNav, activeSection]);
+
+  const [availablePlans, setAvailablePlans] = useState<any[]>([]);
+  useEffect(() => { fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3050"}/api/public/plans`).then(res => { if (!res.ok) throw new Error("Falha ao carregar planos."); return res.json(); }).then(setAvailablePlans).catch(error => setUpgradeError(error.message)); }, []);
+  if (!token) return <Navigate to="/login" replace />;
 
   const renderContent = () => {
     switch (activeSection) {
@@ -357,10 +355,7 @@ export default function SalonDashboard() {
                 onChange={e => setUnit(e.target.value)}
                 className="bg-transparent border-0 outline-none text-xs sm:text-sm text-muted-foreground cursor-pointer"
               >
-                <option>Todas as unidades</option>
-                <option>Unidade Moema</option>
-                <option>Unidade Centro</option>
-                <option>Unidade Tatuapé</option>
+                <option>Meu salão</option>
               </select>
             </div>
             <button className="p-2 rounded-lg hover:bg-muted relative">
@@ -431,153 +426,13 @@ export default function SalonDashboard() {
         </nav>
       </div>
 
-      {/* Trial Expired Lock Screen / Upgrade Modal */}
-      {(trialExpired || showUpgradeModal) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/85 backdrop-blur-md">
-          <div className="bg-card border border-border shadow-2xl rounded-2xl max-w-4xl w-full p-6 sm:p-8 relative overflow-hidden animate-in fade-in zoom-in duration-200">
-            {/* Top accent bar */}
-            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-500 via-primary to-purple-600" />
-
-            {!trialExpired && (
-              <button
-                onClick={() => setShowUpgradeModal(false)}
-                className="absolute top-4 right-4 p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            )}
-
-            <div className="text-center max-w-2xl mx-auto mb-8">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs font-semibold mb-3">
-                <Lock className="w-3.5 h-3.5" />
-                {trialExpired ? "Período de Demonstração (10 Dias) Expirado" : "Evolua seu Salão"}
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-serif font-bold text-foreground mb-2">
-                {trialExpired ? "Acesso bloqueado: Ative seu plano para continuar" : "Escolha o plano ideal para seu crescimento"}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                {trialExpired
-                  ? "Os 10 dias de teste gratuito terminaram. Para desbloquear sua agenda, serviços e liberar a página pública do salão para novos clientes, escolha um plano oficial abaixo:"
-                  : "Automatize sua rotina, aumente a retenção e impulsione o faturamento do seu espaço."}
-              </p>
-            </div>
-
-            {upgradeError && (
-              <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-sm text-center font-medium">
-                {upgradeError}
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Básico */}
-              <div className="rounded-xl border border-border bg-card p-5 flex flex-col justify-between hover:border-primary/50 transition-all">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-bold text-base">Básico</h3>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 border border-amber-500/30">10 vagas</span>
-                  </div>
-                  <div className="mb-4">
-                    <span className="text-2xl font-extrabold text-foreground">R$ 49,99</span>
-                    <span className="text-xs text-muted-foreground">/mês</span>
-                  </div>
-                  <ul className="space-y-2 text-xs text-muted-foreground mb-6">
-                    <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> 1 profissional</li>
-                    <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> Página do Salão (Link Bio)</li>
-                    <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> Agendamento Automático 24h</li>
-                    <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> Cobrança de Sinal PIX</li>
-                  </ul>
-                </div>
-                <Button
-                  onClick={() => handleUpgrade("Básico")}
-                  disabled={upgradingPlan !== null}
-                  variant="outline"
-                  className="w-full text-xs font-semibold py-2 cursor-pointer"
-                >
-                  {upgradingPlan === "Básico" ? "Ativando..." : "Assinar Básico"}
-                </Button>
-              </div>
-
-              {/* Profissional */}
-              <div className="rounded-xl border-2 border-primary bg-primary/5 p-5 flex flex-col justify-between relative shadow-lg">
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-primary text-white text-[10px] font-bold rounded-full uppercase tracking-wider">
-                  Mais Popular
-                </div>
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-bold text-base text-primary">Profissional</h3>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-primary/20 text-primary border border-primary/30">10 vagas</span>
-                  </div>
-                  <div className="mb-4">
-                    <span className="text-2xl font-extrabold text-foreground">R$ 99,99</span>
-                    <span className="text-xs text-muted-foreground">/mês</span>
-                  </div>
-                  <ul className="space-y-2 text-xs text-muted-foreground mb-6">
-                    <li className="flex items-center gap-2 text-foreground font-medium"><Check className="w-3.5 h-3.5 text-primary shrink-0" /> Até 5 profissionais</li>
-                    <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-primary shrink-0" /> Agendamentos Ilimitados</li>
-                    <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-primary shrink-0" /> Cálculo de Comissões</li>
-                    <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-primary shrink-0" /> Controle Financeiro Completo</li>
-                    <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-primary shrink-0" /> Suporte VIP Prioritário</li>
-                  </ul>
-                </div>
-                <Button
-                  onClick={() => handleUpgrade("Profissional")}
-                  disabled={upgradingPlan !== null}
-                  className="w-full text-xs font-semibold py-2 bg-primary hover:bg-primary/90 text-white cursor-pointer"
-                >
-                  {upgradingPlan === "Profissional" ? "Ativando..." : "Assinar Profissional"}
-                </Button>
-              </div>
-
-              {/* Premium */}
-              <div className="rounded-xl border border-purple-500/40 bg-purple-500/5 p-5 flex flex-col justify-between hover:border-purple-500 transition-all">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-1.5">
-                      <Crown className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                      <h3 className="font-bold text-base text-purple-600 dark:text-purple-400">Premium</h3>
-                    </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-500/20 text-purple-600 border border-purple-500/30">5 vagas</span>
-                  </div>
-                  <div className="mb-4">
-                    <span className="text-2xl font-extrabold text-foreground">R$ 219,99</span>
-                    <span className="text-xs text-muted-foreground">/mês</span>
-                  </div>
-                  <ul className="space-y-2 text-xs text-muted-foreground mb-6">
-                    <li className="flex items-center gap-2 text-foreground font-semibold"><Check className="w-3.5 h-3.5 text-purple-500 shrink-0" /> 🤖 Chatbot WhatsApp IA 24h</li>
-                    <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-purple-500 shrink-0" /> Agendamento e Sinal no Zap</li>
-                    <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-purple-500 shrink-0" /> Lembrete Anti-Furo 2h Antes</li>
-                    <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-purple-500 shrink-0" /> Profissionais Ilimitados</li>
-                    <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-purple-500 shrink-0" /> Gestão de Estoque Completa</li>
-                  </ul>
-                </div>
-                <Button
-                  onClick={() => handleUpgrade("Premium")}
-                  disabled={upgradingPlan !== null}
-                  className="w-full text-xs font-semibold py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:opacity-90 text-white cursor-pointer"
-                >
-                  {upgradingPlan === "Premium" ? "Ativando..." : "Assinar Premium"}
-                </Button>
-              </div>
-            </div>
-
-            {trialExpired && (
-              <div className="mt-6 text-center">
-                <button
-                  onClick={() => {
-                    localStorage.removeItem("token");
-                    localStorage.removeItem("role");
-                    localStorage.removeItem("userName");
-                    window.location.reload();
-                  }}
-                  className="text-xs text-muted-foreground hover:text-red-500 transition-colors inline-flex items-center gap-1.5 cursor-pointer"
-                >
-                  <LogOut className="w-3.5 h-3.5" /> Encerrar sessão
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {(trialExpired || showUpgradeModal) && <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"><div className="bg-card border rounded-2xl p-5 w-full max-w-3xl max-h-[90vh] overflow-y-auto space-y-4">
+        <div className="flex justify-between gap-3"><h2 className="font-serif text-xl">{trialExpired ? "Regularizar assinatura" : "Adesão ou renovação"}</h2><Button variant="ghost" onClick={() => setShowUpgradeModal(false)} disabled={trialExpired}>Fechar</Button></div>
+        <p className="text-sm text-muted-foreground">A cobrança é manual. Escolha o plano e combine o pagamento com o administrador. O acesso será liberado após a conferência do recebimento, por um mês.</p>
+        {upgradeError && <p role="alert" className="text-red-600">{upgradeError}</p>}
+        <div className="grid sm:grid-cols-3 gap-3">{availablePlans.map(p => <div key={p.id} className="p-4 border rounded-xl space-y-3"><h3 className="font-semibold">{p.name}</h3><p>R$ {Number(p.price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}/mês</p><p className="text-sm">{p.maxProfessionals > 0 ? `Até ${p.maxProfessionals} profissionais` : "Profissionais ilimitados"}</p><Button disabled={upgradingPlan !== null} onClick={() => handleUpgrade(p.name)}>Solicitar {p.name}</Button></div>)}</div>
+        {trialExpired && <Button variant="outline" onClick={() => { localStorage.removeItem("token"); window.location.assign("/login"); }}>Encerrar sessão</Button>}
+      </div></div>}
     </div>
   );
 }

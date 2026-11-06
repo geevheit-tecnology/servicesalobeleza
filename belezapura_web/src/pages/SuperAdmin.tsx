@@ -1,3 +1,4 @@
+import { api } from "@/lib/api";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -14,14 +15,11 @@ import { Button, Badge, Avatar } from "@/components/ui";
 const NAV = [
   { id: "overview", label: "Visão geral", icon: LayoutDashboard },
   { id: "saloes", label: "Salões", icon: Store },
-  { id: "unidades", label: "Unidades", icon: Building2 },
   { id: "assinaturas", label: "Assinaturas", icon: CreditCard },
   { id: "planos", label: "Planos", icon: Package },
   { id: "pagamentos", label: "Pagamentos", icon: CreditCard },
   { id: "usuarios", label: "Usuários & Permissões", icon: Users },
   { id: "auditoria", label: "Auditoria", icon: Shield },
-  { id: "suporte", label: "Suporte", icon: HeadphonesIcon },
-  { id: "comunicacao", label: "Comunicação", icon: Megaphone },
   { id: "configuracoes", label: "Configurações", icon: Settings },
 ];
 
@@ -308,8 +306,7 @@ function SaloesView({ salonsData }: { salonsData: any }) {
         },
         body: JSON.stringify({
           name: editSalonForm.name,
-          owner: editSalonForm.owner,
-          plan: editSalonForm.plan
+          owner: editSalonForm.owner
         })
       });
       if (!res.ok) throw new Error("Erro ao salvar alterações");
@@ -463,16 +460,7 @@ function SaloesView({ salonsData }: { salonsData: any }) {
                   </div>
                   <div>
                     <label className="text-xs font-medium text-muted-foreground block mb-1">Plano Atual</label>
-                    <select
-                      value={editSalonForm.plan}
-                      onChange={e => setEditSalonForm({ ...editSalonForm, plan: e.target.value })}
-                      className="w-full h-10 rounded-lg border border-border px-3 text-sm bg-background outline-none focus:border-primary transition-colors"
-                    >
-                      <option value="Básico">Básico</option>
-                      <option value="Profissional">Profissional</option>
-                      <option value="Premium">Premium</option>
-                      <option value="Empresarial">Empresarial</option>
-                    </select>
+                    <p className="text-sm">{editSalonForm.plan}</p><p className="text-xs text-muted-foreground mt-2">Adesões e alterações de plano são conferidas na aba Assinaturas.</p>
                   </div>
                   <Button className="w-full mt-4" onClick={handleSaveSalonEdit} disabled={savingSalon}>
                     {savingSalon ? "Salvando..." : "Salvar Alterações"}
@@ -488,325 +476,54 @@ function SaloesView({ salonsData }: { salonsData: any }) {
 }
 
 function AssinaturasView() {
-  const [localSubs, setLocalSubs] = useState<any[]>([]);
-  const [filter, setFilter] = useState("Todos");
-  const [openMenu, setOpenMenu] = useState<string | null>(null);
-  const [kycDrawer, setKycDrawer] = useState<any | null>(null);
-
-  const fetchSubs = () => {
-    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/superadmin/subscriptions`, {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    }).then(res => res.json()).then(setLocalSubs).catch(console.error);
+  const [subs, setSubs] = useState<any[]>([]); const [error, setError] = useState(""); const [busy, setBusy] = useState(false);
+  const [selected, setSelected] = useState<any>(null); const [reference, setReference] = useState(""); const [amount, setAmount] = useState("");
+  const load = () => api<any[]>("/superadmin/subscriptions").then(setSubs);
+  useEffect(() => { load().catch(error => setError(error.message)); }, []);
+  const update = async (sub: any, status: string) => {
+    if (busy) return; setBusy(true); setError("");
+    try { await api(`/superadmin/subscriptions/${sub.id}/status`, { method: "PUT", body: JSON.stringify({ status, paymentReference: reference, amount: Number(amount.replace(",", ".")) }) }); await load(); setSelected(null); setReference(""); }
+    catch (error) { setError((error as Error).message); } finally { setBusy(false); }
   };
-
-  useEffect(() => { fetchSubs(); }, []);
-
-  const updateStatus = async (id: string, status: string) => {
-    await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/superadmin/subscriptions/${id}/status`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-      body: JSON.stringify({ status })
-    });
-    fetchSubs();
-  };
-
-  const handleAction = (sub: any, action: string) => {
-    setOpenMenu(null);
-    if (action === 'analyze') {
-      setKycDrawer(sub);
-    } else if (action === 'cancel') {
-      if (window.confirm(`Deseja cancelar a assinatura de ${sub.salon}?`)) {
-        updateStatus(sub.id, 'CANCELED');
-      }
-    }
-  };
-
-  const handleApproveKYC = () => {
-    updateStatus(kycDrawer.id, 'ACTIVE');
-    setKycDrawer(null);
-  };
-
-  const handleRejectKYC = () => {
-    if(window.confirm("Rejeitar este salão permanentemente?")) {
-      updateStatus(kycDrawer.id, 'CANCELED');
-      setKycDrawer(null);
-    }
-  };
-
-  const dataToUse = filter === "Todos" 
-    ? localSubs 
-    : localSubs.filter((s: any) => {
-        const status = normalizeStatus(s.status);
-        if (filter === "Em Análise") return status === "pending" || status === "trial";
-        if (filter === "Ativas") return status === "active";
-        if (filter === "Inadimplentes") return status === "late";
-        return true;
-      });
-
-  return (
-    <div className="p-3 sm:p-6 space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-serif text-2xl font-medium">Assinaturas e KYC</h1>
-        <Button variant="outline" size="sm"><Download className="w-4 h-4 mr-2" /> Exportar Dados (PDF)</Button>
-      </div>
-
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <StatCard label="Em Análise" value={localSubs.filter(s => ["pending", "trial"].includes(normalizeStatus(s.status))).length.toString()} icon={Clock} color="amber" />
-        <StatCard label="Ativas" value={localSubs.filter(s => normalizeStatus(s.status) === 'active').length.toString()} icon={CheckCircle} color="emerald" />
-        <StatCard label="Inadimplentes" value={localSubs.filter(s => normalizeStatus(s.status) === 'late').length.toString()} icon={AlertCircle} color="rose" />
-        <StatCard label="Canceladas" value={localSubs.filter(s => normalizeStatus(s.status) === 'canceled' || normalizeStatus(s.status) === 'cancelled').length.toString()} icon={XCircle} color="slate" />
-      </div>
-
-      <div className="flex gap-2 my-4 overflow-x-auto pb-1">
-        {["Todos", "Em Análise", "Ativas", "Inadimplentes"].map(f => (
-          <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${filter === f ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"}`}>
-            {f}
-          </button>
-        ))}
-      </div>
-
-      <div className="bg-card border border-border rounded-2xl overflow-x-auto">
-        <table className="w-full min-w-[680px]">
-          <thead>
-            <tr className="border-b border-border bg-muted/40">
-              {["Salão", "Plano", "Valor mensal", "Status", "Próxima cobrança", ""].map(h => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {dataToUse.map(s => (
-              <tr key={s.salon} className="border-b border-border last:border-0 hover:bg-muted/20">
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <Avatar name={s.salon} size="sm" />
-                    <span className="font-medium text-sm">{s.salon}</span>
-                  </div>
-                </td>
-                <td className="px-4 py-3"><Badge variant="outline">{s.plan}</Badge></td>
-                <td className="px-4 py-3 text-sm font-semibold text-primary">{s.value}</td>
-                <td className="px-4 py-3">
-                  <Badge variant={statusBadge(s.status).variant}>
-                    {statusBadge(s.status).label}
-                  </Badge>
-                </td>
-                <td className="px-4 py-3 text-sm text-muted-foreground">{s.next}</td>
-                <td className="px-4 py-3 relative">
-                  <button onClick={() => setOpenMenu(openMenu === s.salon ? null : s.salon)} className="p-1.5 rounded-lg hover:bg-muted"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
-                  {openMenu === s.salon && (
-                    <div className="absolute right-8 top-10 w-48 bg-card border border-border rounded-xl shadow-lg py-1 z-50">
-                      {normalizeStatus(s.status) === 'trial' && (
-                        <button onClick={() => handleAction(s, 'analyze')} className="w-full text-left px-4 py-2 text-sm hover:bg-muted text-emerald-500 font-medium">Validar Compliance (KYC)</button>
-                      )}
-                      <button onClick={() => handleAction(s, 'cancel')} className="w-full text-left px-4 py-2 text-sm hover:bg-muted text-red-500">Cancelar assinatura</button>
-                    </div>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {kycDrawer && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-sm animate-in fade-in" onClick={() => setKycDrawer(null)}>
-          <div className="w-full sm:w-[500px] bg-background h-full shadow-2xl flex flex-col animate-in slide-in-from-right" onClick={e => e.stopPropagation()}>
-            <div className="h-14 border-b border-border flex items-center justify-between px-6 shrink-0">
-              <h3 className="font-medium font-serif">Validação de Compliance (KYC)</h3>
-              <button onClick={() => setKycDrawer(null)} className="p-2 hover:bg-muted rounded-lg text-muted-foreground transition-colors"><X className="w-4 h-4" /></button>
-            </div>
-            
-            <div className="p-6 flex-1 overflow-y-auto space-y-6">
-              <div className="flex items-center gap-4 border-b border-border pb-6">
-                <Avatar name={kycDrawer.salon} size="lg" />
-                <div>
-                  <h4 className="text-xl font-medium">{kycDrawer.salon}</h4>
-                  <Badge variant="warning" className="mt-1">Aguardando Aprovação</Badge>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h5 className="font-medium text-sm text-foreground uppercase tracking-wider">Dados Cadastrais (Receita Federal)</h5>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-muted/30 p-3 rounded-lg border border-border">
-                    <span className="block text-xs text-muted-foreground mb-1">CNPJ / CPF</span>
-                    <span className="font-mono text-sm">{kycDrawer.document || "Não informado"}</span>
-                  </div>
-                  <div className="bg-muted/30 p-3 rounded-lg border border-border">
-                    <span className="block text-xs text-muted-foreground mb-1">Status Receita</span>
-                    <span className="text-sm font-medium text-emerald-500 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> ATIVA</span>
-                  </div>
-                </div>
-
-                <div className="bg-muted/30 p-3 rounded-lg border border-border">
-                  <span className="block text-xs text-muted-foreground mb-1">Razão Social</span>
-                  <span className="text-sm font-medium">{kycDrawer.salon} LTDA</span>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h5 className="font-medium text-sm text-foreground uppercase tracking-wider">Split de Pagamentos (Recebimento)</h5>
-                
-                <div className="bg-muted/30 p-4 rounded-lg border border-border space-y-3">
-                  <div className="flex justify-between items-center border-b border-border pb-2">
-                    <span className="text-sm text-muted-foreground">Banco</span>
-                    <span className="text-sm font-medium">Itaú Unibanco (341)</span>
-                  </div>
-                  <div className="flex justify-between items-center border-b border-border pb-2">
-                    <span className="text-sm text-muted-foreground">Agência / Conta</span>
-                    <span className="text-sm font-medium">1234 / 56789-0</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Titular</span>
-                    <span className="text-sm font-medium">Titular informado no cadastro</span>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-2 p-3 bg-emerald-500/10 text-emerald-600 rounded-lg text-sm border border-emerald-500/20">
-                  <CheckCircle className="w-4 h-4 shrink-0" />
-                  Titularidade da conta coincide com o CNPJ informado.
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h5 className="font-medium text-sm text-foreground uppercase tracking-wider">Documentos Anexados</h5>
-                <div className="flex items-center justify-between p-3 border border-border rounded-lg bg-card">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-lg"><CheckCircle className="w-4 h-4 text-primary" /></div>
-                    <div>
-                      <div className="text-sm font-medium">Contrato Social.pdf</div>
-                      <div className="text-xs text-muted-foreground">Enviado hoje, 2MB</div>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm">Visualizar</Button>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-6 border-t border-border flex gap-3 bg-card shrink-0">
-              <Button variant="outline" className="flex-1 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={handleRejectKYC}>Rejeitar</Button>
-              <Button className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white" onClick={handleApproveKYC}>Aprovar e Ativar</Button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+  return <div className="p-4 sm:p-6 space-y-4"><h1 className="font-serif text-2xl">Assinaturas e conferência de recebimentos</h1>
+    <p className="text-sm text-muted-foreground">Confira o crédito no banco antes de aprovar. Cada referência de recebimento pode ser usada uma única vez. A aprovação libera um mês; a renovação de uma assinatura vigente adiciona um mês ao vencimento atual.</p>
+    {error && <p role="alert" className="text-red-600">{error}</p>}
+    <div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr>{["Salão", "Plano atual", "Estado", "Vencimento", "Solicitação", "Ações"].map(h => <th key={h} className="p-3 text-left">{h}</th>)}</tr></thead><tbody>{subs.map(sub => <tr key={sub.id} data-subscription-id={sub.id} className="border-t"><td className="p-3">{sub.salon}</td><td className="p-3">{sub.plan}</td><td className="p-3"><Badge variant={statusBadge(sub.status).variant}>{sub.status}</Badge></td><td className="p-3">{sub.next}</td><td className="p-3">{sub.pendingPlanId ? `${sub.pendingPlanName || "Plano solicitado"} — R$ ${Number(sub.requestedPrice).toFixed(2)}` : "Sem solicitação"}</td><td className="p-3"><div className="flex flex-wrap gap-2">
+      <Button size="sm" disabled={busy || !sub.pendingPlanId} onClick={() => { setSelected(sub); setAmount(Number(sub.requestedPrice).toFixed(2)); setReference(""); }}>Conferir pagamento</Button>
+      <Button size="sm" variant="outline" disabled={busy} onClick={() => { if (confirm(`Bloquear ${sub.salon}?`)) update(sub, "BLOCKED"); }}>Bloquear</Button>
+      <Button size="sm" variant="outline" disabled={busy} onClick={() => { if (confirm(`Cancelar ${sub.salon}?`)) update(sub, "CANCELED"); }}>Cancelar</Button>
+    </div></td></tr>)}</tbody></table></div>
+    {selected && <form onSubmit={event => { event.preventDefault(); update(selected, "ACTIVE"); }} className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"><div className="bg-card border rounded-2xl p-5 max-w-lg w-full space-y-4">
+      <h2 className="font-semibold text-lg">Conferir recebimento — {selected.salon}</h2><p className="text-sm">Plano: {selected.pendingPlanName}. Confirme o crédito na conta da plataforma.</p>
+      <label className="block text-sm">Referência bancária do pagamento<input required minLength={6} maxLength={160} value={reference} onChange={e => setReference(e.target.value)} className="block border rounded-lg p-2 w-full bg-background mt-1" /></label>
+      <label className="block text-sm">Valor recebido (R$)<input required type="number" step="0.01" min="0.01" value={amount} onChange={e => setAmount(e.target.value)} className="block border rounded-lg p-2 w-full bg-background mt-1" /></label>
+      {error && <p role="alert" className="text-red-600">{error}</p>}
+      <div className="flex gap-2"><Button type="submit" disabled={busy}>Confirmar recebimento e ativar</Button><Button type="button" variant="outline" disabled={busy} onClick={() => setSelected(null)}>Voltar</Button></div>
+    </div></form>}
+  </div>;
 }
 
 function PlanosView() {
-  const [plansList, setPlansList] = useState<any[]>([]);
-  const [newPlan, setNewPlan] = useState({ name: "", price: "", features: "" });
-
-  useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/superadmin/plans`, {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    })
-      .then(res => res.json())
-      .then(setPlansList)
-      .catch(console.error);
-  }, []);
-
-  const handleCreate = async () => {
-    const data = {
-      name: newPlan.name,
-      price: parseFloat(newPlan.price) || 0,
-      features: newPlan.features.split(',').map(f => f.trim())
-    };
-    await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/superadmin/plans`, {
-      method: 'POST',
-      headers: { 
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json' 
-      },
-      body: JSON.stringify(data)
-    });
-    setNewPlan({ name: "", price: "", features: "" });
-    const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/superadmin/plans`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }});
-    setPlansList(await res.json());
+  const [plansList, setPlansList] = useState<any[]>([]); const [error, setError] = useState(""); const [busy, setBusy] = useState(false);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [form, setForm] = useState({ name: "", price: "", maxProfessionals: "1" });
+  const load = () => api<any[]>("/superadmin/plans").then(setPlansList);
+  useEffect(() => { load().catch(error => setError(error.message)); }, []);
+  const save = async (event: React.FormEvent) => {
+    event.preventDefault(); if (busy) return; setBusy(true); setError("");
+    try { await api(`/superadmin/plans${editing ? `/${editing}` : ""}`, { method: editing ? "PUT" : "POST", body: JSON.stringify({ name: form.name.trim(), price: Number(form.price), period: "/mês", maxProfessionals: Number(form.maxProfessionals), features: [] }) }); await load(); setEditing(null); setForm({ name: "", price: "", maxProfessionals: "1" }); }
+    catch (error) { setError((error as Error).message); } finally { setBusy(false); }
   };
-
-  return (
-    <div className="p-3 sm:p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="font-serif text-2xl font-medium">Planos</h1>
-      </div>
-
-      {/* Form to create plan */}
-      <div className="bg-card border border-border rounded-2xl p-5 space-y-3 max-w-3xl">
-        <h3 className="font-semibold">Cadastrar Novo Plano</h3>
-        <div className="flex gap-4">
-          <input value={newPlan.name} onChange={e => setNewPlan({...newPlan, name: e.target.value})} placeholder="Nome do plano" className="flex-1 h-10 rounded-lg border border-border px-3 text-sm outline-none bg-background" />
-          <input value={newPlan.price} onChange={e => setNewPlan({...newPlan, price: e.target.value})} placeholder="Preço (ex: 49.90)" className="w-32 h-10 rounded-lg border border-border px-3 text-sm outline-none bg-background" />
-        </div>
-        <input value={newPlan.features} onChange={e => setNewPlan({...newPlan, features: e.target.value})} placeholder="Funcionalidades (separadas por vírgula)" className="w-full h-10 rounded-lg border border-border px-3 text-sm outline-none bg-background" />
-        <Button size="sm" onClick={handleCreate}>Cadastrar</Button>
-      </div>
-
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {plansList.map(p => (
-          <div key={p.id} className="bg-card border border-border rounded-2xl overflow-hidden relative">
-            <div className="h-2" style={{ background: p.color || '#000' }} />
-            <div className="p-5">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold">{p.name}</h3>
-              </div>
-              <div className="font-serif text-3xl font-medium mb-1">R$ {p.price}</div>
-              <div className="text-muted-foreground text-sm mb-4">{p.period || "/mês"}</div>
-              <ul className="space-y-2 mb-4">
-                {(p.features || []).map((f: string) => (
-                  <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> {f}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Comparison table */}
-      <div className="bg-card border border-border rounded-2xl overflow-x-auto">
-        <div className="p-5 border-b border-border">
-          <h3 className="font-semibold">Tabela comparativa</h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[680px]">
-            <thead>
-              <tr className="border-b border-border bg-muted/40">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Recurso</th>
-                {plans.map(p => <th key={p.name} className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground">{p.name}</th>)}
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                ["Profissionais", "1", "Até 5", "Ilimitado"],
-                ["Agendamentos/mês", "Ilimitado", "Ilimitado", "Ilimitado"],
-                ["Link na Bio do Instagram", "✓", "✓", "✓"],
-                ["Sinal obrigatório PIX", "✓", "✓", "✓"],
-                ["Lembretes automáticos", "✓", "✓", "✓"],
-                ["Gestão financeira & comandas", "—", "✓", "✓"],
-                ["Rateio de comissões", "—", "✓", "✓"],
-                ["Automação WhatsApp anti-furo", "—", "✓", "✓"],
-                ["Controle de estoque", "—", "—", "✓"],
-                ["Suporte prioritário VIP", "—", "—", "✓"],
-              ].map(([feat, ...vals]) => (
-                <tr key={feat} className="border-b border-border last:border-0 hover:bg-muted/20">
-                  <td className="px-4 py-3 text-sm text-muted-foreground">{feat}</td>
-                  {vals.map((v, i) => (
-                    <td key={i} className="px-4 py-3 text-center text-sm">
-                      {v === "✓" ? <span className="text-emerald-500">✓</span> : v === "—" ? <span className="text-muted-foreground/30">—</span> : <span className="font-medium">{v}</span>}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
+  return <div className="p-4 sm:p-6 space-y-5"><h1 className="font-serif text-2xl">Planos</h1><p className="text-sm text-muted-foreground">Os valores são mensais. Alterações não modificam períodos já pagos. Recursos disponíveis: agendamento, clientes, equipe, estoque, receitas e Pix com conferência manual.</p>
+    {error && <p role="alert" className="text-red-600">{error}</p>}
+    <form onSubmit={save} className="p-4 rounded-2xl border bg-card grid sm:grid-cols-3 gap-4">
+      <label className="text-sm">Nome<input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="block w-full min-w-0 border rounded-lg p-2 mt-1 bg-background" /></label>
+      <label className="text-sm">Preço mensal (R$)<input required type="number" min="0.01" step="0.01" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} className="block w-full min-w-0 border rounded-lg p-2 mt-1 bg-background" /></label>
+      <label className="text-sm">Profissionais ativos (0 = ilimitado)<input required type="number" min="0" step="1" value={form.maxProfessionals} onChange={e => setForm({ ...form, maxProfessionals: e.target.value })} className="block w-full min-w-0 border rounded-lg p-2 mt-1 bg-background" /></label>
+      <Button type="submit" disabled={busy}>{editing ? "Salvar plano" : "Cadastrar plano"}</Button>{editing && <Button type="button" variant="outline" onClick={() => { setEditing(null); setForm({ name: "", price: "", maxProfessionals: "1" }); }}>Cancelar edição</Button>}
+    </form>
+    <div className="grid md:grid-cols-3 gap-4">{plansList.map(plan => <article key={plan.id} className="border rounded-2xl bg-card p-4 space-y-3"><h2 className="font-semibold">{plan.name}</h2><p className="text-2xl">R$ {Number(plan.price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}/mês</p><ul className="text-sm space-y-2">{plan.features.map((feature: string) => <li key={feature}>{feature}</li>)}</ul><Button variant="outline" onClick={() => { setEditing(plan.id); setForm({ name: plan.name, price: String(plan.price), maxProfessionals: String(plan.maxProfessionals) }); }}>Editar plano</Button></article>)}</div>
+  </div>;
 }
 
 function SuporteView() {
@@ -1018,86 +735,10 @@ function UnidadesView() {
   );
 }
 
-const pagamentos = [
-  { salon: "Salão Rosé", plan: "Empresarial", value: "R$ 499", date: "01/10/2024", method: "Cartão", status: "paid" },
-  { salon: "Studio Carla", plan: "Profissional", value: "R$ 149", date: "15/10/2024", method: "PIX", status: "paid" },
-  { salon: "Bella Estética", plan: "Premium", value: "R$ 299", date: "20/10/2024", method: "Boleto", status: "paid" },
-  { salon: "Top Nails", plan: "Profissional", value: "R$ 149", date: "01/10/2024", method: "Cartão", status: "failed" },
-  { salon: "Hair Design", plan: "Básico", value: "—", date: "—", method: "—", status: "trial" },
-];
-
 function PagamentosView() {
-  const [localPagamentos, setLocalPagamentos] = useState(pagamentos);
-  const [openMenu, setOpenMenu] = useState<string | null>(null);
-
-  const handleAction = (salon: string, action: string) => {
-    setOpenMenu(null);
-    if (action === 'receipt') {
-      alert(`Gerando 2ª via do recibo para ${salon}...`);
-    } else if (action === 'charge') {
-      alert(`Enviando cobrança manual para ${salon}...`);
-      setLocalPagamentos(prev => prev.map(p => p.salon === salon ? { ...p, status: 'paid' } : p));
-    }
-  };
-
-  return (
-    <div className="p-3 sm:p-6 space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-serif text-2xl font-medium">Pagamentos</h1>
-        <Button variant="outline" size="sm"><Download className="w-4 h-4 mr-2" /> Exportar Faturamento (CSV)</Button>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-        <StatCard label="Recebido este mês" value="R$ 12.840" icon={CheckCircle} color="emerald" trend={9} />
-        <StatCard label="Inadimplente" value="R$ 1.490" icon={AlertCircle} color="amber" trend={-2} />
-        <StatCard label="Em trial" value="134 salões" icon={Clock} color="sky" />
-      </div>
-
-      <div className="bg-card border border-border rounded-2xl overflow-x-auto">
-        <table className="w-full min-w-[680px]">
-          <thead>
-            <tr className="border-b border-border bg-muted/40">
-              {["Salão", "Plano", "Valor", "Data", "Método", "Status", ""].map(h => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {localPagamentos.map(p => (
-              <tr key={p.salon} className="border-b border-border last:border-0 hover:bg-muted/20">
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <Avatar name={p.salon} size="sm" />
-                    <span className="font-medium text-sm">{p.salon}</span>
-                  </div>
-                </td>
-                <td className="px-4 py-3"><Badge variant="outline">{p.plan}</Badge></td>
-                <td className="px-4 py-3 text-sm font-semibold text-primary">{p.value}</td>
-                <td className="px-4 py-3 text-sm text-muted-foreground">{p.date}</td>
-                <td className="px-4 py-3 text-sm text-muted-foreground">{p.method}</td>
-                <td className="px-4 py-3">
-                  <Badge variant={p.status === "paid" ? "success" : p.status === "failed" ? "danger" : "info"}>
-                    {p.status === "paid" ? "Pago" : p.status === "failed" ? "Falhou" : "Trial"}
-                  </Badge>
-                </td>
-                <td className="px-4 py-3 relative">
-                  <button onClick={() => setOpenMenu(openMenu === p.salon ? null : p.salon)} className="p-1.5 rounded-lg hover:bg-muted"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
-                  {openMenu === p.salon && (
-                    <div className="absolute right-8 top-10 w-44 bg-white border border-gray-200 rounded-xl shadow-lg py-1 z-50">
-                      <button onClick={() => handleAction(p.salon, 'receipt')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700">Ver recibo</button>
-                      {p.status === 'failed' && (
-                        <button onClick={() => handleAction(p.salon, 'charge')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-amber-600">Reenviar cobrança</button>
-                      )}
-                    </div>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
+ const [payments, setPayments] = useState<any[]>([]); const [error, setError] = useState("");
+ useEffect(() => { api<any[]>("/superadmin/payments").then(setPayments).catch(error => setError(error.message)); }, []);
+ return <div className="p-4 sm:p-6 space-y-4"><h1 className="font-serif text-2xl">Recebimentos conferidos</h1><p className="text-sm text-muted-foreground">Histórico das confirmações manuais registradas pelo administrador.</p>{error && <p role="alert">{error}</p>}<div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr>{["Data", "Assinatura", "Referência", "Valor"].map(h => <th key={h} className="p-3 text-left">{h}</th>)}</tr></thead><tbody>{payments.map(p => <tr key={p.id} className="border-t"><td className="p-3">{new Date(p.createdAt).toLocaleString("pt-BR")}</td><td className="p-3">{p.subscriptionId}</td><td className="p-3">{p.reference}</td><td className="p-3">R$ {Number(p.amount).toFixed(2)}</td></tr>)}</tbody></table></div></div>;
 }
 
 const adminUsers = [

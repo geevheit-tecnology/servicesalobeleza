@@ -1,3 +1,5 @@
+import { planFeatures } from "@/components/PlanCatalog";
+import { api } from "@/lib/api";
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import {
@@ -49,7 +51,7 @@ export const ONBOARDING_PLANS = [
       "Página exclusiva na Bio do Instagram",
       "Agendamento online 24h",
       "Sinal antecipado via PIX sem taxas",
-      "Lembretes automáticos para clientes",
+      "Gestão de clientes",
       "Controle de atendimentos e clientes"
     ]
   },
@@ -64,10 +66,10 @@ export const ONBOARDING_PLANS = [
     desc: "Para salões e barbearias em equipe (até 5 profissionais)",
     features: [
       "Tudo do Essencial",
-      "Até 5 profissionais com acessos individuais",
-      "Divisão e cálculo automático de comissões",
+      "Até 5 profissionais",
+      "Estimativa de comissões",
       "Painel financeiro com controle de entradas",
-      "Lembretes anti-no show no WhatsApp",
+      "Agenda por profissional",
       "Controle de comandas e serviços",
       "🎁 14 dias de teste grátis"
     ]
@@ -81,10 +83,10 @@ export const ONBOARDING_PLANS = [
     features: [
       "Tudo do Studio",
       "Profissionais ilimitados",
-      "Automação completa no WhatsApp",
-      "Fidelização e mensagens de retorno",
+      "Página de agendamento",
+      "Histórico de atendimentos",
       "Controle de estoque e produtos",
-      "Multi-unidades (filiais)",
+      "Gestão do salão",
       "Suporte prioritário VIP"
     ]
   }
@@ -163,9 +165,13 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
     const p = (searchParams.get("planId") || "").toLowerCase();
     if (p === "1" || p === "essencial" || p === "starter" || p === "basico" || p === "básico") return "essencial";
     if (p === "3" || p === "elite" || p === "business" || p === "premium") return "elite";
-    return "studio"; // Padrão Studio com 14 dias grátis
+    return p || "studio";
   });
 
+  const [planCatalog, setPlanCatalog] = useState(ONBOARDING_PLANS);
+  const [catalogLoaded, setCatalogLoaded] = useState(false);
+  const [catalogError, setCatalogError] = useState("");
+  useEffect(() => { api<any[]>("/public/plans").then(plans => { setPlanCatalog(plans.map(p => ({ ...p, price: Number(p.price).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }), desc: "Assinatura mensal com conferência manual", features: planFeatures(p) }))); setCatalogLoaded(true); }).catch(error => setCatalogError(error.message)); }, []);
   const [step, setStep] = useState(1);
   const [salonName, setSalonName] = useState("Meu Salão");
   const [email, setEmail] = useState("");
@@ -201,10 +207,6 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
   const [cidade, setCidade] = useState("");
   const [estado, setEstado] = useState("");
 
-  const [cardNumber, setCardNumber] = useState("");
-  const [cardExp, setCardExp] = useState("");
-  const [cardCvc, setCardCvc] = useState("");
-  const [cardName, setCardName] = useState("");
   const [paymentError, setPaymentError] = useState("");
 
   const consultarCNPJ = async () => {
@@ -247,7 +249,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
   };
 
   const next = async () => {
-    if (loading) return; // Anti-double click
+    if (loading || !catalogLoaded) return; // Anti-double click
     if (step < 8) {
       setStep(s => s + 1);
     } else {
@@ -262,7 +264,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
           phone,
           services: services.filter(s => s.active),
           professionals: pros,
-          schedule: schedule.filter(s => s.open),
+          schedule: schedule,
           pixKey,
           logo,
           cover,
@@ -294,7 +296,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
           } else if (res.status === 403) {
             setPaymentError(errData.error || 'Não foi possível selecionar este plano no momento. Escolha outro plano.');
           } else if (res.status === 402) {
-            setPaymentError('O cartão informado não foi autorizado. Verifique os dados ou utilize outro cartão.');
+            setPaymentError('Não foi possível concluir o cadastro. Revise os dados.');
           } else {
             setPaymentError(errData.error || 'Não conseguimos concluir o cadastro neste momento. Tente novamente em instantes.');
           }
@@ -836,7 +838,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
 
         {/* Step 8: Assinatura */}
         {step === 8 && (() => {
-          const currentPlan = ONBOARDING_PLANS.find(p => p.id === selectedPlanId) || ONBOARDING_PLANS[1];
+          const currentPlan = planCatalog.find(p => p.id === selectedPlanId || p.name.toLowerCase() === selectedPlanId) || planCatalog[1];
           return (
             <div className="space-y-6">
               <div className="text-center mb-5">
@@ -851,7 +853,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
 
               {/* Seletor rápido de planos */}
               <div className="grid grid-cols-3 gap-2 p-1.5 bg-muted/60 rounded-2xl border border-border">
-                {ONBOARDING_PLANS.map(p => (
+                {planCatalog.map(p => (
                   <button
                     key={p.id}
                     type="button"
@@ -907,74 +909,10 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
                 </ul>
               </div>
 
-              {/* Formulário do Cartão 100% alinhado */}
-              <div className="bg-card rounded-2xl p-4 sm:p-5 border border-border shadow-md">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-semibold text-foreground flex items-center gap-2">
-                    <CreditCard className="w-4 h-4 text-primary" /> Dados do Cartão para o Trial
-                  </span>
-                  <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded font-medium">Anti-bot</span>
-                </div>
-
-                {paymentError && (
-                  <div className="mb-4 p-3 text-xs font-medium text-red-700 bg-red-100 border border-red-200 rounded-xl">
-                    {paymentError}
-                  </div>
-                )}
-
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-[11px] font-medium text-muted-foreground block mb-1">Número do cartão</label>
-                    <input 
-                      placeholder="0000 0000 0000 0000" 
-                      maxLength={19}
-                      value={cardNumber}
-                      onChange={e => setCardNumber(e.target.value.replace(/\D/g, '').replace(/(\d{4})(?=\d)/g, '$1 '))}
-                      className="w-full h-11 rounded-xl border border-border px-3 text-sm bg-background transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none font-mono" 
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="min-w-0">
-                      <label className="text-[11px] font-medium text-muted-foreground block mb-1">Validade (MM/AA)</label>
-                      <input 
-                        placeholder="MM/AA" 
-                        maxLength={5}
-                        value={cardExp}
-                        onChange={e => {
-                          let val = e.target.value.replace(/\D/g, '');
-                          if (val.length > 2) val = val.substring(0,2) + '/' + val.substring(2);
-                          setCardExp(val);
-                        }}
-                        className="w-full h-11 rounded-xl border border-border px-3 text-sm bg-background text-center transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none font-mono" 
-                      />
-                    </div>
-                    <div className="min-w-0">
-                      <label className="text-[11px] font-medium text-muted-foreground block mb-1">CVC / Segurança</label>
-                      <input 
-                        placeholder="123" 
-                        maxLength={4}
-                        value={cardCvc}
-                        onChange={e => setCardCvc(e.target.value.replace(/\D/g, ''))}
-                        className="w-full h-11 rounded-xl border border-border px-3 text-sm bg-background text-center transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none font-mono" 
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-medium text-muted-foreground block mb-1">Nome impresso no cartão</label>
-                    <input 
-                      placeholder="NOME COMO NO CARTÃO" 
-                      value={cardName}
-                      onChange={e => setCardName(e.target.value)}
-                      className="w-full h-11 rounded-xl border border-border px-3 text-sm bg-background uppercase transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none" 
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1.5 mt-4 text-[10px] text-muted-foreground justify-center">
-                  <Lock className="w-3 h-3 text-emerald-500" /> Criptografia de 256 bits · Cancelamento sem multa a qualquer momento
-                </div>
+              <div className="bg-card rounded-2xl p-5 border space-y-3">
+                <h3 className="font-semibold">14 dias para testar, sem cartão</h3>
+                <p className="text-sm text-muted-foreground">Ao concluir, seu salão inicia o período gratuito. A assinatura é solicitada no painel e liberada após a conferência manual do pagamento pelo administrador. Não há débito automático.</p>
+                {paymentError && <p role="alert" className="text-red-600">{paymentError}</p>}
               </div>
             </div>
           );
@@ -987,9 +925,10 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
           </Button>
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">{step} / {STEPS.length}</span>
-            <Button onClick={next} disabled={loading}>
+            {catalogError && <p role="alert">{catalogError}</p>}
+            <Button onClick={next} disabled={loading || !catalogLoaded}>
               {step === 8 ? (
-                <><Sparkles className="w-4 h-4" /> {loading ? "Processando..." : "Pagar e Publicar"}</>
+                <><Sparkles className="w-4 h-4" /> {loading ? "Processando..." : "Iniciar teste gratuito"}</>
               ) : (
                 <>Continuar <ArrowRight className="w-4 h-4" /></>
               )}

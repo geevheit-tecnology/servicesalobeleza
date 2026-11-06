@@ -1,0 +1,18 @@
+[Unit]
+Description=BelezaPura API health and revision probe
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=belezapura
+Group=belezapura
+EnvironmentFile=/etc/belezapura/monitor.env
+ExecStart=/usr/bin/python3 /opt/belezapura/scripts/check-health.py ${API_URL} --expected-revision ${APP_REVISION} --state-file /var/lib/belezapura/health.json --failure-threshold 3
+StateDirectory=belezapura
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+TimeoutStartSec=30s

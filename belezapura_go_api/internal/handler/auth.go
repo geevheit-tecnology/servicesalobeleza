@@ -1,10 +1,12 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
 	"belezapura_go_api/internal/db"
+	"belezapura_go_api/internal/identity"
 	"belezapura_go_api/internal/middleware"
 
 	"github.com/gin-gonic/gin"
@@ -31,7 +33,29 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
+	if user.Status != "active" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Credenciais inválidas."})
+		return
+	}
+
+	var token string
+	if user.AuthProvider == "supabase" {
+		provider, err := identity.FromEnv()
+		if err != nil {
+			c.JSON(503, gin.H{"error": "Autenticação indisponível."})
+			return
+		}
+		external, accessToken, err := provider.SignIn(c.Request.Context(), cleanEmail, req.Password)
+		if errors.Is(err, identity.ErrUnavailable) {
+			c.JSON(503, gin.H{"error": "Autenticação indisponível."})
+			return
+		}
+		if err != nil || external.ID != user.ID || !strings.EqualFold(external.Email, user.Email) {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Credenciais inválidas."})
+			return
+		}
+		token = accessToken
+	} else if user.AuthProvider != "local" || bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)) != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Credenciais inválidas."})
 		return
 	}
@@ -45,10 +69,13 @@ func Login(c *gin.Context) {
 		salonSlug = user.Salon.Slug
 	}
 
-	token, err := middleware.GenerateToken(user.ID, salonID, user.Role, user.Name)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao gerar token."})
-		return
+	if token == "" {
+		var err error
+		token, err = middleware.GenerateToken(user.ID, salonID, user.Role, user.Name)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao gerar token."})
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{

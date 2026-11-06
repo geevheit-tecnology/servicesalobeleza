@@ -16,17 +16,19 @@ func newUUID() string {
 // ─── Models ──────────────────────────────────────────────────────────────────
 
 type User struct {
-	ID        string         `gorm:"primaryKey;type:uuid" json:"id"`
-	Email     string         `gorm:"uniqueIndex;not null" json:"email"`
-	Password  string         `gorm:"not null" json:"-"`
-	Name      string         `gorm:"not null" json:"name"`
-	Role      string         `gorm:"default:owner" json:"role"` // owner | superadmin
-	Status    string         `gorm:"default:active" json:"status"`
-	SalonID   *string        `json:"salonId"`
-	Salon     *Salon         `gorm:"foreignKey:SalonID" json:"salon,omitempty"`
-	CreatedAt time.Time      `json:"createdAt"`
-	UpdatedAt time.Time      `json:"updatedAt"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	AuthProvider string         `gorm:"not null;default:local" json:"-"`
+	TokenVersion int            `gorm:"not null;default:0" json:"-"`
+	ID           string         `gorm:"primaryKey;type:uuid" json:"id"`
+	Email        string         `gorm:"uniqueIndex;not null" json:"email"`
+	Password     string         `gorm:"not null" json:"-"`
+	Name         string         `gorm:"not null" json:"name"`
+	Role         string         `gorm:"default:owner" json:"role"` // owner | superadmin
+	Status       string         `gorm:"default:active" json:"status"`
+	SalonID      *string        `json:"salonId"`
+	Salon        *Salon         `gorm:"foreignKey:SalonID" json:"salon,omitempty"`
+	CreatedAt    time.Time      `json:"createdAt"`
+	UpdatedAt    time.Time      `json:"updatedAt"`
+	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 func (u *User) BeforeCreate(tx *gorm.DB) error {
@@ -37,6 +39,8 @@ func (u *User) BeforeCreate(tx *gorm.DB) error {
 }
 
 type Salon struct {
+	Timezone      string         `gorm:"not null;default:America/Sao_Paulo" json:"timezone"`
+	BlockedDates  string         `gorm:"type:text;not null;default:'[]'" json:"blockedDates"`
 	ID            string         `gorm:"primaryKey;type:uuid" json:"id"`
 	Slug          string         `gorm:"uniqueIndex;not null" json:"slug"`
 	Name          string         `gorm:"not null" json:"name"`
@@ -134,6 +138,7 @@ func (s *Service) BeforeCreate(tx *gorm.DB) error {
 }
 
 type Appointment struct {
+	EndsAt         time.Time      `json:"endsAt"`
 	ID             string         `gorm:"primaryKey;type:uuid" json:"id"`
 	SalonID        string         `gorm:"not null" json:"salonId"`
 	Salon          Salon          `gorm:"foreignKey:SalonID" json:"-"`
@@ -183,17 +188,21 @@ func (p *Plan) BeforeCreate(tx *gorm.DB) error {
 }
 
 type Subscription struct {
-	ID        string         `gorm:"primaryKey;type:uuid" json:"id"`
-	SalonID   string         `gorm:"not null" json:"salonId"`
-	Salon     Salon          `gorm:"foreignKey:SalonID" json:"salon,omitempty"`
-	PlanID    string         `gorm:"not null" json:"planId"`
-	Plan      *Plan          `gorm:"foreignKey:PlanID" json:"plan,omitempty"`
-	Status    string         `gorm:"default:TRIAL" json:"status"` // ACTIVE | CANCELED | TRIAL | EXPIRED
-	Price     float64        `gorm:"type:decimal(10,2)" json:"price"`
-	TrialEnds *time.Time     `json:"trialEnds"`
-	CreatedAt time.Time      `json:"createdAt"`
-	UpdatedAt time.Time      `json:"updatedAt"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	CurrentPeriodEnd *time.Time     `json:"currentPeriodEnd"`
+	PendingPlanID    *string        `json:"pendingPlanId"`
+	PaymentReference string         `json:"paymentReference"`
+	RequestedPrice   *float64       `json:"requestedPrice"`
+	ID               string         `gorm:"primaryKey;type:uuid" json:"id"`
+	SalonID          string         `gorm:"not null" json:"salonId"`
+	Salon            Salon          `gorm:"foreignKey:SalonID" json:"salon,omitempty"`
+	PlanID           string         `gorm:"not null" json:"planId"`
+	Plan             *Plan          `gorm:"foreignKey:PlanID" json:"plan,omitempty"`
+	Status           string         `gorm:"default:TRIAL" json:"status"` // ACTIVE | CANCELED | TRIAL | EXPIRED
+	Price            float64        `gorm:"type:decimal(10,2)" json:"price"`
+	TrialEnds        *time.Time     `json:"trialEnds"`
+	CreatedAt        time.Time      `json:"createdAt"`
+	UpdatedAt        time.Time      `json:"updatedAt"`
+	DeletedAt        gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 func (s *Subscription) BeforeCreate(tx *gorm.DB) error {
@@ -234,6 +243,45 @@ type AdminAuditLog struct {
 func (a *AdminAuditLog) BeforeCreate(tx *gorm.DB) error {
 	if a.ID == "" {
 		a.ID = newUUID()
+	}
+	return nil
+}
+
+// Payment records administrator-confirmed subscription receipts. Reference is unique across salons.
+type Payment struct {
+	ID             string    `gorm:"primaryKey;type:uuid" json:"id"`
+	SubscriptionID string    `gorm:"not null" json:"subscriptionId"`
+	Reference      string    `gorm:"uniqueIndex;not null" json:"reference"`
+	Amount         float64   `gorm:"type:decimal(10,2);not null" json:"amount"`
+	ApprovedBy     string    `gorm:"not null" json:"approvedBy"`
+	CreatedAt      time.Time `json:"createdAt"`
+}
+
+func (p *Payment) BeforeCreate(tx *gorm.DB) error {
+	if p.ID == "" {
+		p.ID = newUUID()
+	}
+	return nil
+}
+
+type Product struct {
+	ID          string    `gorm:"primaryKey;type:uuid" json:"id"`
+	SalonID     string    `gorm:"not null;index" json:"-"`
+	Name        string    `gorm:"not null" json:"nome"`
+	Category    string    `json:"categoria"`
+	Quantity    int       `gorm:"not null" json:"qtde"`
+	Minimum     int       `gorm:"not null" json:"min"`
+	Price       float64   `gorm:"type:decimal(10,2);not null" json:"price"`
+	InternalUse bool      `json:"usoInterno"`
+	ForSale     bool      `json:"venda"`
+	Version     int       `gorm:"not null;default:1" json:"version"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+}
+
+func (p *Product) BeforeCreate(tx *gorm.DB) error {
+	if p.ID == "" {
+		p.ID = newUUID()
 	}
 	return nil
 }

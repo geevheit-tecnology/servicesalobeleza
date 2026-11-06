@@ -1,0 +1,8 @@
+{
+  "scope": "amostragem parcial do processo de carga; n\u00e3o inclui m\u00e9tricas do banco Docker",
+  "logicalCpus": 8,
+  "samples": 73,
+  "maxProcessCpuPercent": 169.9,
+  "maxProcessRssMiB": 214.57,
+  "minProcessRssMiB": 14.45
+}

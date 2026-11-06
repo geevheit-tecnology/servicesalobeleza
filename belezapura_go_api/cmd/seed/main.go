@@ -25,9 +25,18 @@ func main() {
 		log.Fatalf("Migrate error: %v", err)
 	}
 
-	email := "admin@geevheithair.com"
-	password := "admin123"
-	name := "Admin GeevheitHair"
+	if err := db.SeedPlans(); err != nil {
+		log.Fatal(err)
+	}
+	email := os.Getenv("ADMIN_EMAIL")
+	password := os.Getenv("ADMIN_PASSWORD")
+	name := os.Getenv("ADMIN_NAME")
+	if email == "" || len(password) < 12 {
+		log.Fatal("Configure ADMIN_EMAIL e ADMIN_PASSWORD (mínimo 12 caracteres).")
+	}
+	if name == "" {
+		name = "Administrador da plataforma"
+	}
 
 	// Check if already exists
 	var existing db.User
@@ -54,7 +63,6 @@ func main() {
 
 	fmt.Printf("✅ Super admin criado com sucesso!\n")
 	fmt.Printf("   Email: %s\n", email)
-	fmt.Printf("   Senha: %s\n", password)
 	fmt.Printf("   Role:  %s\n", user.Role)
 	os.Exit(0)
 }

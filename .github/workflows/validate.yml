@@ -1,0 +1,64 @@
+name: Validate
+on: [push, pull_request]
+jobs:
+  flutter:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: belezapura_flutter
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.9'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+  operations:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 -m unittest discover -s scripts/tests -v
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: belezapura_web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: belezapura_web/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: npm audit --omit=dev
+  api:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: local-ci-only
+          POSTGRES_DB: belezapura_test
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    defaults:
+      run:
+        working-directory: belezapura_go_api
+    env:
+      TEST_DATABASE_URL: postgres://postgres:local-ci-only@127.0.0.1:5432/belezapura_test?sslmode=disable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: belezapura_go_api/go.mod
+          cache-dependency-path: belezapura_go_api/go.sum
+      - run: go test -race -count=1 ./...
+      - run: go vet ./...

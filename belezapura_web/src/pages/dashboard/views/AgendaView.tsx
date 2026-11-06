@@ -452,7 +452,7 @@ export function AgendaView({ onNewAppointment }: { onNewAppointment: () => void 
                 <div className="grid grid-cols-3 gap-2">
                   <Button
                     size="sm"
-                    variant={selectedAppt.status === "confirmed" ? "default" : "outline"}
+                    variant={selectedAppt.status === "confirmed" ? "primary" : "outline"}
                     className="text-xs h-9"
                     disabled={actionLoading}
                     onClick={() => updateApptStatus(selectedAppt.id, "confirmed")}
@@ -461,7 +461,7 @@ export function AgendaView({ onNewAppointment }: { onNewAppointment: () => void 
                   </Button>
                   <Button
                     size="sm"
-                    variant={selectedAppt.status === "done" ? "default" : "outline"}
+                    variant={selectedAppt.status === "done" ? "primary" : "outline"}
                     className="text-xs h-9"
                     disabled={actionLoading}
                     onClick={() => updateApptStatus(selectedAppt.id, "done")}
@@ -470,7 +470,7 @@ export function AgendaView({ onNewAppointment }: { onNewAppointment: () => void 
                   </Button>
                   <Button
                     size="sm"
-                    variant={selectedAppt.status === "cancelled" ? "default" : "outline"}
+                    variant={selectedAppt.status === "cancelled" ? "primary" : "outline"}
                     className="text-xs h-9 text-red-500 hover:bg-red-50"
                     disabled={actionLoading}
                     onClick={() => updateApptStatus(selectedAppt.id, "cancelled")}

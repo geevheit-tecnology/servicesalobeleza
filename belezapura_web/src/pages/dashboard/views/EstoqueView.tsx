@@ -3,10 +3,12 @@ import {
   Package, Plus, AlertTriangle, MoreHorizontal, Download, Trash2, ArrowUpRight, ArrowDownRight, Edit3, X, Check
 } from "lucide-react";
 import { Button, Badge } from "@/components/ui";
+import { api } from "@/lib/api";
 import { formatCurrency, parseCurrency } from "@/utils/formatters";
 
 interface Produto {
   id: string;
+  version: number;
   nome: string;
   categoria: string;
   qtde: number;
@@ -16,23 +18,13 @@ interface Produto {
   venda: boolean;
 }
 
-const DEFAULT_PRODUTOS: Produto[] = [
-  { id: "1", nome: "Shampoo Pós-Química 1L", categoria: "Lavatório", qtde: 4, min: 2, valor: "R$ 68,00", usoInterno: true, venda: false },
-  { id: "2", nome: "Máscara Nutrição Intensa 500g", categoria: "Tratamento", qtde: 1, min: 3, valor: "R$ 95,00", usoInterno: true, venda: true },
-  { id: "3", nome: "Óleo Reparador de Pontas 60ml", categoria: "Finalizador", qtde: 12, min: 5, valor: "R$ 45,00", usoInterno: false, venda: true },
-  { id: "4", nome: "Oxidante 20 Vol 900ml", categoria: "Química", qtde: 6, min: 4, valor: "R$ 32,00", usoInterno: true, venda: false },
-  { id: "5", nome: "Pó Descolorante White 500g", categoria: "Química", qtde: 2, min: 2, valor: "R$ 82,00", usoInterno: true, venda: false },
-];
-
 export function EstoqueView() {
-  const [produtos, setProdutos] = useState<Produto[]>(() => {
-    const saved = localStorage.getItem("salon_estoque");
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) { /* ignore */ }
-    }
-    return DEFAULT_PRODUTOS;
-  });
-
+  const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const normalize = (p: any): Produto => ({ ...p, valor: formatCurrency(Number(p.price)) });
+  const load = async () => { const data = await api<any[]>("/salon/products"); setProdutos(data.map(normalize)); setLoaded(true); };
   const [filtro, setFiltro] = useState("Todos");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -48,10 +40,7 @@ export function EstoqueView() {
     venda: false,
   });
 
-  useEffect(() => {
-    localStorage.setItem("salon_estoque", JSON.stringify(produtos));
-  }, [produtos]);
-
+  useEffect(() => { load().catch(error => setMessage(error.message)); }, []);
   const openNewForm = () => {
     setEditingId(null);
     setFormData({
@@ -81,51 +70,23 @@ export function EstoqueView() {
     setShowModal(true);
   };
 
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault();
-    const numValor = parseCurrency(formData.valor);
-    const formattedValor = formatCurrency(numValor);
-
-    if (editingId) {
-      setProdutos(prev => prev.map(p => p.id === editingId ? {
-        ...p,
-        nome: formData.nome.trim(),
-        categoria: formData.categoria,
-        qtde: parseInt(formData.qtde, 10) || 0,
-        min: parseInt(formData.min, 10) || 0,
-        valor: formattedValor,
-        usoInterno: formData.usoInterno,
-        venda: formData.venda,
-      } : p));
-    } else {
-      const novo: Produto = {
-        id: String(Date.now()),
-        nome: formData.nome.trim(),
-        categoria: formData.categoria,
-        qtde: parseInt(formData.qtde, 10) || 0,
-        min: parseInt(formData.min, 10) || 0,
-        valor: formattedValor,
-        usoInterno: formData.usoInterno,
-        venda: formData.venda,
-      };
-      setProdutos(prev => [novo, ...prev]);
-    }
-    setShowModal(false);
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault(); if (busy || !loaded) return; setBusy(true); setMessage("");
+    try {
+      const current = produtos.find(p => p.id === editingId);
+      await api(`/salon/products${editingId ? `/${editingId}` : ""}`, { method: editingId ? "PUT" : "POST", body: JSON.stringify({ ...formData, nome: formData.nome.trim(), qtde: Number(formData.qtde), min: Number(formData.min), price: parseCurrency(formData.valor), version: current?.version }) });
+      await load(); setShowModal(false);
+    } catch (error) { setMessage((error as Error).message); } finally { setBusy(false); }
   };
-
-  const adjustStock = (id: string, delta: number) => {
-    setOpenMenuId(null);
-    setProdutos(prev => prev.map(p => {
-      if (p.id !== id) return p;
-      const nextQtde = Math.max(0, p.qtde + delta);
-      return { ...p, qtde: nextQtde };
-    }));
+  const adjustStock = async (id: string, delta: number) => {
+    if (busy || !loaded) return; const p = produtos.find(p => p.id === id); if (!p) return;
+    setBusy(true); setOpenMenuId(null);
+    try { await api(`/salon/products/${id}`, { method: "PUT", body: JSON.stringify({ ...p, qtde: Math.max(0, p.qtde + delta), price: parseCurrency(p.valor) }) }); await load(); }
+    catch (error) { setMessage((error as Error).message); await load().catch(() => {}); } finally { setBusy(false); }
   };
-
-  const deleteProduct = (id: string, name: string) => {
-    setOpenMenuId(null);
-    if (!confirm(`Deseja realmente excluir "${name}" do estoque?`)) return;
-    setProdutos(prev => prev.filter(p => p.id !== id));
+  const deleteProduct = async (id: string, name: string) => {
+    if (busy || !confirm(`Deseja realmente excluir "${name}" do estoque?`)) return; setBusy(true); setOpenMenuId(null);
+    try { await api(`/salon/products/${id}`, { method: "DELETE" }); await load(); } catch (error) { setMessage((error as Error).message); } finally { setBusy(false); }
   };
 
   const dadosExibicao = filtro === "Todos"
@@ -138,13 +99,14 @@ export function EstoqueView() {
 
   return (
     <div className="p-4 sm:p-6 space-y-4 max-w-[1600px] mx-auto" onClick={() => setOpenMenuId(null)}>
+ {message && <p role="alert" className="p-3 bg-secondary rounded-lg">{message}</p>}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="font-serif text-2xl font-medium">Controle de Estoque</h1>
           <p className="text-xs text-muted-foreground mt-0.5">Gestão de consumo interno no salão e produtos para revenda</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button size="sm" onClick={openNewForm} className="gap-1.5 shadow-sm">
+          <Button size="sm" disabled={!loaded || busy} onClick={openNewForm} className="gap-1.5 shadow-sm">
             <Plus className="w-4 h-4" /> Adicionar Produto
           </Button>
         </div>
@@ -233,7 +195,7 @@ export function EstoqueView() {
                           <span className={`font-bold text-sm ${isLow ? "text-red-500" : "text-foreground"}`}>
                             {p.qtde} un.
                           </span>
-                          {isLow && <AlertTriangle className="w-3.5 h-3.5 text-red-500" title="Estoque abaixo do mínimo!" />}
+                          {isLow && <AlertTriangle className="w-3.5 h-3.5 text-red-500" aria-label="Estoque abaixo do mínimo!" />}
                         </div>
                       </td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">{p.min} un.</td>
@@ -259,7 +221,7 @@ export function EstoqueView() {
                             setOpenMenuId(openMenuId === p.id ? null : p.id);
                           }}
                           className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors"
-                          title="Opções"
+                          aria-label="Opções"
                         >
                           <MoreHorizontal className="w-4 h-4" />
                         </button>
@@ -336,6 +298,7 @@ export function EstoqueView() {
                 <label className="text-xs font-medium text-muted-foreground block mb-1">Nome do Produto *</label>
                 <input
                   required
+                  aria-label="Nome do produto"
                   value={formData.nome}
                   onChange={e => setFormData({ ...formData, nome: e.target.value })}
                   placeholder="Ex: Tinta Louro Médio 7.0"
@@ -370,6 +333,7 @@ export function EstoqueView() {
                       R$
                     </span>
                     <input
+                      aria-label="Custo unitário"
                       value={formData.valor}
                       onChange={e => setFormData({ ...formData, valor: e.target.value })}
                       onBlur={() => {
@@ -390,6 +354,7 @@ export function EstoqueView() {
                   <label className="text-xs font-medium text-muted-foreground block mb-1">Quantidade Atual</label>
                   <input
                     type="number"
+                    aria-label="Quantidade atual"
                     value={formData.qtde}
                     onChange={e => setFormData({ ...formData, qtde: e.target.value })}
                     className="w-full h-10 rounded-xl border border-border px-3 text-sm bg-background outline-none focus:border-primary"
@@ -399,6 +364,7 @@ export function EstoqueView() {
                   <label className="text-xs font-medium text-muted-foreground block mb-1">Alerta Mínimo</label>
                   <input
                     type="number"
+                    aria-label="Alerta mínimo"
                     value={formData.min}
                     onChange={e => setFormData({ ...formData, min: e.target.value })}
                     className="w-full h-10 rounded-xl border border-border px-3 text-sm bg-background outline-none focus:border-primary"
@@ -431,7 +397,7 @@ export function EstoqueView() {
                 <Button type="button" variant="outline" size="sm" onClick={() => setShowModal(false)}>
                   Cancelar
                 </Button>
-                <Button type="submit" size="sm">
+                <Button type="submit" disabled={busy} size="sm">
                   {editingId ? "Salvar Alterações" : "Adicionar Produto"}
                 </Button>
               </div>

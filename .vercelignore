@@ -1,0 +1,20 @@
+# This Vercel project builds only belezapura_web from the repository root.
+.codegraph/
+.git/
+.github/
+.vscode/
+.agents/
+.codex/
+.cache/
+belezapura_go_api/
+belezapura_api/
+belezapura_flutter/
+docs/
+scripts/
+.env*
+belezapura_web/node_modules/**
+belezapura_web/dist/**
+belezapura_web/.vercel/**
+belezapura_web/.env*
+belezapura_web/test-results/**
+belezapura_web/playwright-report/**

@@ -1,0 +1,31 @@
+{
+  "counts": {
+    "appointments": 0,
+    "auth_users": 2,
+    "availability_blocks": 0,
+    "customers": 0,
+    "professionals": 1,
+    "profiles": 2,
+    "services": 1,
+    "tenants": 2
+  },
+  "integrity": {
+    "cross_tenant_appointments": 0,
+    "invalid_appointments": 0,
+    "invalid_services": 0,
+    "orphan_customers": 0,
+    "orphan_professionals": 0,
+    "orphan_profiles": 0,
+    "orphan_services": 0,
+    "profiles_without_tenant": 0
+  },
+  "projectRef": "yugrmyjvespydrggutvo",
+  "remoteBusinessDataModified": false,
+  "rehearsalEnvironment": "local Docker; synthetic data only",
+  "migrationRunsPassed": 2,
+  "localLegacyDumpUnchanged": true,
+  "localLegacyDumpSha256": "aed7d6ff5a9a0cba5ffb0f3973f74c53a6a676980cdd4ff7fe1aa4102de16684",
+  "syntheticImportPassed": true,
+  "productionMigrationExecuted": false,
+  "supabaseAuthTransitionValidated": false
+}

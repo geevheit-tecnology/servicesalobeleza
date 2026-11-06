@@ -1,203 +1,147 @@
 package handler
 
 import (
-	"fmt"
-	"net/http"
-	"time"
-
 	"belezapura_go_api/internal/db"
-
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
+	"math"
+	"net/http"
+	"strings"
+	"time"
 )
 
-// GET /api/public/salons/:slug
-func GetSalonBySlug(c *gin.Context) {
-	slug := c.Param("slug")
-
+func publicSalon(c *gin.Context, id string) (db.Salon, bool) {
 	var salon db.Salon
-	if err := db.DB.
-		Preload("Services", "status = ?", "active").
-		Preload("Professionals", "status = ?", "active").
-		Preload("Subscriptions.Plan").
-		Where("slug = ?", slug).
-		First(&salon).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Salão não encontrado."})
-		return
+	if db.DB.Preload("Services", "status = ?", "active").Preload("Professionals", "status = ?", "active").Where("id::text = ? OR slug = ?", id, id).First(&salon).Error != nil {
+		c.JSON(404, gin.H{"error": "Salão não encontrado."})
+		return salon, false
 	}
-
-	// Check trial expiration: block if expired and not paid
-	if len(salon.Subscriptions) > 0 {
-		sub := salon.Subscriptions[0]
-		isExpired := sub.Status == "EXPIRED" ||
-			(sub.Status == "TRIAL" && sub.TrialEnds != nil && time.Now().After(*sub.TrialEnds)) ||
-			(sub.Status == "TRIAL" && sub.TrialEnds == nil && time.Since(sub.CreatedAt) > 14*24*time.Hour)
-		if isExpired {
-			c.JSON(http.StatusPaymentRequired, gin.H{
-				"error":     "O período de demonstração gratuita (14 dias) deste salão expirou. Os agendamentos online estão temporariamente suspensos até a ativação do plano.",
-				"suspended": true,
-			})
-			return
-		}
-	}
-
-	c.JSON(http.StatusOK, salon)
-}
-
-// GET /api/public/availability?salonId=...&professionalId=...&date=2024-10-15
-func GetAvailability(c *gin.Context) {
-	salonID := c.Query("salonId")
-	professionalID := c.Query("professionalId")
-	dateStr := c.Query("date")
-
-	if salonID == "" || professionalID == "" || dateStr == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "salonId, professionalId and date are required"})
-		return
-	}
-
-	date, err := time.Parse("2006-01-02", dateStr)
+	sub, err := db.CurrentSubscription(salon.ID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid date format (use YYYY-MM-DD)"})
+		c.JSON(503, gin.H{"error": "Assinatura indisponível."})
+		return salon, false
+	}
+	if !sub.AllowsAccess(time.Now()) {
+		c.JSON(402, gin.H{"error": "Salão temporariamente suspenso.", "suspended": true})
+		return salon, false
+	}
+	return salon, true
+}
+func GetSalonBySlug(c *gin.Context) {
+	s, ok := publicSalon(c, c.Param("slug"))
+	if !ok {
 		return
 	}
-
-	dayStart := date.Truncate(24 * time.Hour)
-	dayEnd := dayStart.Add(24 * time.Hour)
-
+	c.JSON(200, gin.H{"id": s.ID, "slug": s.Slug, "name": s.Name, "phone": s.Phone, "pixKey": s.PixKey, "logo": s.Logo, "cover": s.Cover, "gallery": s.Gallery, "mainColor": s.MainColor, "scheduleRaw": s.ScheduleRaw, "timezone": s.Timezone, "blockedDates": s.BlockedDates, "services": s.Services, "professionals": s.Professionals})
+}
+func GetAvailability(c *gin.Context) {
+	if c.Query("salonId") == "" || c.Query("professionalId") == "" || c.Query("serviceId") == "" || c.Query("date") == "" {
+		c.JSON(400, gin.H{"error": "Informe salão, serviço, profissional e data."})
+		return
+	}
+	s, ok := publicSalon(c, c.Query("salonId"))
+	if !ok {
+		return
+	}
+	loc, err := salonLocation(s)
+	if err != nil {
+		bookingFailure(c, err)
+		return
+	}
+	date, err := time.ParseInLocation("2006-01-02", c.Query("date"), loc)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Data inválida."})
+		return
+	}
+	var service db.Service
+	var pro db.Professional
+	if db.DB.Where("id = ? AND salon_id = ? AND status = ?", c.Query("serviceId"), s.ID, "active").First(&service).Error != nil || db.DB.Where("id = ? AND salon_id = ? AND status = ?", c.Query("professionalId"), s.ID, "active").First(&pro).Error != nil {
+		c.JSON(404, gin.H{"error": "Serviço ou profissional não encontrado."})
+		return
+	}
+	available := []string{}
+	slots := map[string]string{}
+	open, close, err := scheduleFor(s, date)
+	if err != nil {
+		c.JSON(200, gin.H{"available": available, "slots": slots})
+		return
+	}
 	var booked []db.Appointment
-	db.DB.Where(
-		"salon_id = ? AND professional_id = ? AND date >= ? AND date < ? AND status != ?",
-		salonID, professionalID, dayStart, dayEnd, "cancelled",
-	).Find(&booked)
-
-	bookedSlots := make([]string, 0, len(booked))
-	for _, a := range booked {
-		bookedSlots = append(bookedSlots, a.Date.Format("15:04"))
+	if err := db.DB.Where("salon_id = ? AND professional_id = ? AND date < ? AND ends_at > ? AND status <> ?", s.ID, pro.ID, close, open, "cancelled").Find(&booked).Error; err != nil {
+		bookingFailure(c, err)
+		return
 	}
-
-	// Generate all 30-min slots from 08:00 to 20:00
-	var allSlots []string
-	t := dayStart.Add(8 * time.Hour)
-	end := dayStart.Add(20 * time.Hour)
-	for t.Before(end) {
-		allSlots = append(allSlots, t.Format("15:04"))
-		t = t.Add(30 * time.Minute)
+	if service.Duration <= 0 {
+		c.JSON(409, gin.H{"error": "Duração inválida."})
+		return
 	}
-
-	bookedMap := make(map[string]bool)
-	for _, s := range bookedSlots {
-		bookedMap[s] = true
-	}
-
-	var available []string
-	for _, s := range allSlots {
-		if !bookedMap[s] {
-			available = append(available, s)
+	for t := open; !t.Add(time.Duration(service.Duration) * time.Minute).After(close); t = t.Add(30 * time.Minute) {
+		if !t.After(time.Now()) {
+			continue
+		}
+		end := t.Add(time.Duration(service.Duration) * time.Minute)
+		free := true
+		for _, a := range booked {
+			if t.Before(a.EndsAt) && end.After(a.Date) {
+				free = false
+				break
+			}
+		}
+		if free {
+			label := t.Format("15:04")
+			available = append(available, label)
+			slots[label] = t.Format(time.RFC3339)
 		}
 	}
-
-	c.JSON(http.StatusOK, gin.H{"available": available, "booked": bookedSlots})
+	c.JSON(200, gin.H{"available": available, "slots": slots, "timezone": s.Timezone})
 }
-
-// POST /api/public/appointments
 func CreatePublicAppointment(c *gin.Context) {
 	var body struct {
 		SalonID        string  `json:"salonId" binding:"required"`
 		ProfessionalID string  `json:"professionalId" binding:"required"`
 		ServiceID      string  `json:"serviceId" binding:"required"`
-		ClientName     string  `json:"clientName" binding:"required"`
-		ClientPhone    string  `json:"clientPhone"`
-		Date           string  `json:"date" binding:"required"` // "2024-10-15T10:00:00Z"
+		ClientName     string  `json:"clientName" binding:"required,max=120"`
+		ClientPhone    string  `json:"clientPhone" binding:"required,min=8,max=30"`
+		Date           string  `json:"date" binding:"required"`
 		PaymentMethod  *string `json:"paymentMethod"`
 	}
-	if err := c.ShouldBindJSON(&body); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if c.ShouldBindJSON(&body) != nil {
+		c.JSON(400, gin.H{"error": "Informe seus dados, serviço, profissional e horário."})
 		return
 	}
-
+	s, ok := publicSalon(c, body.SalonID)
+	if !ok {
+		return
+	}
 	date, err := time.Parse(time.RFC3339, body.Date)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Formato de data inválido."})
+		c.JSON(400, gin.H{"error": "Data inválida."})
 		return
 	}
-
-	// 1. Check if salon exists by ID or Slug and verify trial status
-	var salon db.Salon
-	if err := db.DB.Preload("Subscriptions").First(&salon, "id = ? OR slug = ?", body.SalonID, body.SalonID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Salão não encontrado."})
+	var service db.Service
+	if db.DB.Where("id = ? AND salon_id = ? AND status = ?", body.ServiceID, s.ID, "active").First(&service).Error != nil {
+		c.JSON(404, gin.H{"error": "Serviço não encontrado."})
 		return
 	}
-	body.SalonID = salon.ID // Normalize to UUID for downstream relations
-
-	if len(salon.Subscriptions) > 0 {
-		sub := salon.Subscriptions[0]
-		isExpired := sub.Status == "EXPIRED" ||
-			(sub.Status == "TRIAL" && sub.TrialEnds != nil && time.Now().After(*sub.TrialEnds)) ||
-			(sub.Status == "TRIAL" && sub.TrialEnds == nil && time.Since(sub.CreatedAt) > 14*24*time.Hour)
-		if isExpired {
-			c.JSON(http.StatusPaymentRequired, gin.H{
-				"error": "Os agendamentos online deste salão estão temporariamente suspensos pois o período de demonstração gratuita expirou.",
-			})
+	pix := ""
+	deposit := 0.0
+	if s.PixKey != nil && strings.TrimSpace(*s.PixKey) != "" && service.Price > 0 {
+		deposit = math.Round(service.Price*20) / 100
+		if deposit > 0 {
+			pix, err = generatePix(*s.PixKey, s.Name, deposit)
+		}
+		if err != nil {
+			c.JSON(409, gin.H{"error": "O salão precisa revisar a configuração Pix."})
 			return
 		}
 	}
-
-	// 2. Anti-duplicity check: prevent double booking for the exact same slot and professional
-	var duplicate db.Appointment
-	if err := db.DB.Where(
-		"salon_id = ? AND professional_id = ? AND date = ? AND status != ?",
-		body.SalonID, body.ProfessionalID, date, "cancelled",
-	).First(&duplicate).Error; err == nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "Este horário já foi reservado por outro cliente. Por favor, escolha outro horário."})
-		return
-	}
-
-	var service db.Service
-	if err := db.DB.First(&service, "id = ? AND salon_id = ? AND status = ?", body.ServiceID, body.SalonID, "active").Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Serviço não encontrado."})
-		return
-	}
-
-	var professional db.Professional
-	if err := db.DB.First(&professional, "id = ? AND salon_id = ? AND status = ?", body.ProfessionalID, body.SalonID, "active").Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Profissional não encontrado."})
-		return
-	}
-
-	// Upsert client
-	var client db.Client
-	db.DB.Where("salon_id = ? AND name = ?", body.SalonID, body.ClientName).FirstOrCreate(&client, db.Client{
-		SalonID: body.SalonID,
-		Name:    body.ClientName,
-		Phone:   &body.ClientPhone,
+	appt := db.Appointment{SalonID: s.ID, ServiceID: body.ServiceID, ProfessionalID: body.ProfessionalID, Date: date, PaymentMethod: body.PaymentMethod}
+	err = db.DB.Transaction(func(tx *gorm.DB) error {
+		return reserve(tx, &appt, strings.TrimSpace(body.ClientName), strings.TrimSpace(body.ClientPhone))
 	})
-
-	appt := db.Appointment{
-		SalonID:        body.SalonID,
-		ClientID:       client.ID,
-		ProfessionalID: body.ProfessionalID,
-		ServiceID:      body.ServiceID,
-		Date:           date,
-		Value:          service.Price,
-		PaymentMethod:  body.PaymentMethod,
-		Status:         "waiting",
-	}
-
-	if err := db.DB.Create(&appt).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if err != nil {
+		bookingFailure(c, err)
 		return
 	}
-
-	pixKey := "financeiro@salao.com"
-	if salon.PixKey != nil && *salon.PixKey != "" {
-		pixKey = *salon.PixKey
-	}
-	depositVal := service.Price * 0.20
-	pixPayload := fmt.Sprintf("00020126580014BR.GOV.BCB.PIX0136%s520400005303986540%0.2f5802BR5913%s6008SAOPAULO62070503***6304", pixKey, depositVal, salon.Name)
-
-	c.JSON(http.StatusCreated, gin.H{
-		"appointment": appt,
-		"pixCode":     pixPayload,
-		"deposit":     depositVal,
-		"message":     "Agendamento criado com sucesso.",
-	})
+	c.JSON(http.StatusCreated, gin.H{"appointment": gin.H{"id": appt.ID, "status": appt.Status, "date": appt.Date}, "pixCode": pix, "deposit": deposit, "paymentStatus": "pending_manual_review", "message": "Reserva registrada. A confirmação do sinal será feita pelo salão."})
 }

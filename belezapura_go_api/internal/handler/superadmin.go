@@ -10,6 +10,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+	"math"
+	"time"
 )
 
 // ─── Super Admin ─────────────────────────────────────────────────────────────
@@ -22,8 +26,10 @@ func normalizeSubscriptionStatus(status string) string {
 	switch strings.ToUpper(status) {
 	case "ACTIVE":
 		return "ACTIVE"
-	case "TRIAL", "PENDING":
+	case "TRIAL":
 		return "TRIAL"
+	case "PENDING":
+		return "PENDING"
 	case "BLOCKED":
 		return "BLOCKED"
 	case "LATE":
@@ -204,35 +210,25 @@ func UpdateSalon(c *gin.Context) {
 		return
 	}
 
-	if body.Name != nil && *body.Name != "" {
-		salon.Name = *body.Name
-		db.DB.Model(&salon).Update("name", *body.Name)
-	}
-
-	if body.Owner != nil && *body.Owner != "" {
-		var ownerUser db.User
-		if err := db.DB.Where("salon_id = ? AND role = ?", salon.ID, "owner").First(&ownerUser).Error; err == nil {
-			db.DB.Model(&ownerUser).Update("name", *body.Owner)
-		}
-	}
-
 	if body.Plan != nil && *body.Plan != "" {
-		var plan db.Plan
-		if err := db.DB.Where("LOWER(name) = ?", strings.ToLower(*body.Plan)).First(&plan).Error; err == nil {
-			if len(salon.Subscriptions) > 0 {
-				sub := salon.Subscriptions[len(salon.Subscriptions)-1]
-				db.DB.Model(&sub).Updates(map[string]interface{}{
-					"plan_id": plan.ID,
-					"status":  "ACTIVE",
-				})
-			} else {
-				db.DB.Create(&db.Subscription{
-					SalonID: salon.ID,
-					PlanID:  plan.ID,
-					Status:  "ACTIVE",
-				})
+		c.JSON(400, gin.H{"error": "Alterações de plano exigem solicitação e conferência na aba Assinaturas."})
+		return
+	}
+	if err := db.DB.Transaction(func(tx *gorm.DB) error {
+		if body.Name != nil && strings.TrimSpace(*body.Name) != "" {
+			if err := tx.Model(&salon).Update("name", strings.TrimSpace(*body.Name)).Error; err != nil {
+				return err
 			}
 		}
+		if body.Owner != nil && strings.TrimSpace(*body.Owner) != "" {
+			if err := tx.Model(&db.User{}).Where("salon_id = ? AND role = ?", salon.ID, "owner").Update("name", strings.TrimSpace(*body.Owner)).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		bookingFailure(c, err)
+		return
 	}
 
 	writeAuditLog(c, "UPDATE_SALON", salon.Name, "Dados do salão atualizados pelo superadmin.", "info")
@@ -313,18 +309,33 @@ func GetSubscriptions(c *gin.Context) {
 
 		next := "—"
 		if s.Status == "ACTIVE" {
-			next = "Próximo mês"
+			if s.CurrentPeriodEnd != nil {
+				next = s.CurrentPeriodEnd.Format("02/01/2006")
+			}
 		}
 
+		pendingName := ""
+		if s.PendingPlanID != nil {
+			var plan db.Plan
+			if db.DB.First(&plan, "id = ?", *s.PendingPlanID).Error == nil {
+				pendingName = plan.Name
+			}
+		}
+		effectiveStatus := s.Status
+		if (s.Status == "ACTIVE" || s.Status == "TRIAL") && !s.AllowsAccess(time.Now()) {
+			effectiveStatus = "EXPIRED"
+		}
 		result = append(result, gin.H{
-			"id":       s.ID,
-			"salon":    salonName,
-			"salonId":  s.SalonID,
-			"document": document,
-			"plan":     planName,
-			"value":    "R$ " + formatMoney(s.Price),
-			"status":   s.Status,
-			"next":     next,
+			"pendingPlanName": pendingName,
+			"id":              s.ID,
+			"salon":           salonName,
+			"salonId":         s.SalonID,
+			"document":        document,
+			"plan":            planName,
+			"value":           "R$ " + formatMoney(s.Price),
+			"status":          effectiveStatus,
+			"next":            next,
+			"pendingPlanId":   s.PendingPlanID, "requestedPrice": s.RequestedPrice, "currentPeriodEnd": s.CurrentPeriodEnd,
 		})
 	}
 
@@ -332,35 +343,95 @@ func GetSubscriptions(c *gin.Context) {
 }
 
 func UpdateSubscriptionStatus(c *gin.Context) {
-	id := c.Param("id")
 	var body struct {
-		Status string `json:"status" binding:"required"`
+		Status           string  `json:"status" binding:"required"`
+		PaymentReference string  `json:"paymentReference"`
+		Amount           float64 `json:"amount"`
 	}
-	if err := c.ShouldBindJSON(&body); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if c.ShouldBindJSON(&body) != nil {
+		c.JSON(400, gin.H{"error": "Dados inválidos."})
 		return
 	}
-
 	status := normalizeSubscriptionStatus(body.Status)
-	if status == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Status inválido."})
+	if status == "" || status == "TRIAL" || status == "PENDING" {
+		c.JSON(400, gin.H{"error": "Status inválido. Trial não pode ser reiniciado."})
 		return
 	}
-
-	var sub db.Subscription
-	if err := db.DB.First(&sub, "id = ?", id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Assinatura não encontrada."})
+	err := db.DB.Transaction(func(tx *gorm.DB) error {
+		var sub db.Subscription
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&sub, "id = ?", c.Param("id")).Error; err != nil {
+			return bookingError{404, "Assinatura não encontrada."}
+		}
+		updates := map[string]interface{}{"status": status}
+		if status == "ACTIVE" {
+			ref := strings.TrimSpace(body.PaymentReference)
+			if len(ref) < 6 || len(ref) > 160 || sub.PendingPlanID == nil || sub.RequestedPrice == nil {
+				return bookingError{400, "Selecione uma solicitação pendente e informe a referência bancária do pagamento."}
+			}
+			if *sub.RequestedPrice <= 0 {
+				return bookingError{400, "Valor de assinatura inválido."}
+			}
+			if math.Abs(body.Amount-*sub.RequestedPrice) > 0.005 {
+				return bookingError{400, "O valor recebido deve corresponder ao valor solicitado."}
+			}
+			var plan db.Plan
+			if err := tx.First(&plan, "id = ?", *sub.PendingPlanID).Error; err != nil {
+				return bookingError{409, "Plano solicitado indisponível."}
+			}
+			if plan.MaxSubscriptions > 0 {
+				var n int64
+				if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&plan, "id = ?", plan.ID).Error; err != nil {
+					return err
+				}
+				if err := tx.Model(&db.Subscription{}).Where("plan_id = ? AND salon_id <> ? AND status = ? AND current_period_end > ?", plan.ID, sub.SalonID, "ACTIVE", time.Now()).Count(&n).Error; err != nil {
+					return err
+				}
+				if n >= int64(plan.MaxSubscriptions) {
+					return bookingError{409, "Plano sem vagas."}
+				}
+			}
+			if plan.MaxProfessionals > 0 {
+				var active int64
+				if err := tx.Model(&db.Professional{}).Where("salon_id = ? AND status = ?", sub.SalonID, "active").Count(&active).Error; err != nil {
+					return err
+				}
+				if active > int64(plan.MaxProfessionals) {
+					return bookingError{409, "Reduza a equipe ativa antes de aprovar este plano."}
+				}
+			}
+			payment := db.Payment{SubscriptionID: sub.ID, Reference: ref, Amount: body.Amount, ApprovedBy: c.GetString("userId")}
+			if err := tx.Create(&payment).Error; err != nil {
+				return err
+			}
+			start := time.Now()
+			if sub.Status == "ACTIVE" && sub.CurrentPeriodEnd != nil && sub.CurrentPeriodEnd.After(start) {
+				start = *sub.CurrentPeriodEnd
+			}
+			end := start.AddDate(0, 1, 0)
+			updates["plan_id"] = plan.ID
+			updates["price"] = *sub.RequestedPrice
+			updates["current_period_end"] = end
+			updates["trial_ends"] = nil
+			updates["pending_plan_id"] = nil
+			updates["requested_price"] = nil
+			updates["payment_reference"] = ref
+		}
+		if status == "CANCELED" || status == "BLOCKED" {
+			updates["pending_plan_id"] = nil
+			updates["requested_price"] = nil
+		}
+		if err := tx.Model(&sub).Updates(updates).Error; err != nil {
+			return err
+		}
+		return tx.Create(&db.AdminAuditLog{Action: "SUBSCRIPTION_STATUS_UPDATE", UserID: ptr(c.GetString("userId")), Resource: sub.ID, Detail: "Assinatura alterada para " + status, Level: "info"}).Error
+	})
+	if err != nil {
+		bookingFailure(c, err)
 		return
 	}
-
-	if err := db.DB.Model(&sub).Update("status", status).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	writeAuditLog(c, "SUBSCRIPTION_STATUS_UPDATE", sub.ID, "Assinatura alterada para "+status+".", "info")
-	c.JSON(http.StatusOK, sub)
+	c.JSON(200, gin.H{"message": "Assinatura atualizada."})
 }
+func ptr(s string) *string { return &s }
 
 type adminUserRequest struct {
 	Name     string `json:"name"`
@@ -453,8 +524,12 @@ func UpdateUser(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Usuário não encontrado."})
 		return
 	}
+	if user.AuthProvider == "supabase" && (req.Password != "" || (req.Email != "" && !strings.EqualFold(strings.TrimSpace(req.Email), user.Email))) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "E-mail e senha desta conta são gerenciados pelo Supabase."})
+		return
+	}
 
-	updates := map[string]interface{}{}
+	updates := map[string]interface{}{"token_version": gorm.Expr("token_version + 1")}
 	if strings.TrimSpace(req.Name) != "" {
 		updates["name"] = strings.TrimSpace(req.Name)
 	}
@@ -516,8 +591,12 @@ type planResponse struct {
 }
 
 func planToResponse(p db.Plan) planResponse {
-	var features []string
-	_ = json.Unmarshal([]byte(p.Features), &features)
+	features := []string{"Página exclusiva e agendamento online", "Pix com conferência manual pelo salão", "Gestão de clientes e atendimentos", "Estoque por salão e painel financeiro"}
+	if p.MaxProfessionals > 0 {
+		features = append([]string{fmt.Sprintf("Até %d profissional(is)", p.MaxProfessionals)}, features...)
+	} else {
+		features = append([]string{"Profissionais ilimitados"}, features...)
+	}
 	return planResponse{
 		ID:               p.ID,
 		Name:             p.Name,
@@ -558,6 +637,10 @@ func CreatePlan(c *gin.Context) {
 		return
 	}
 
+	if strings.TrimSpace(req.Name) == "" || req.Price <= 0 || req.MaxProfessionals < 0 {
+		c.JSON(400, gin.H{"error": "Nome, preço e limite do plano inválidos."})
+		return
+	}
 	featuresJSON, _ := json.Marshal(req.Features)
 	plan := db.Plan{
 		Name:             req.Name,
@@ -591,6 +674,10 @@ func UpdatePlan(c *gin.Context) {
 		return
 	}
 
+	if strings.TrimSpace(req.Name) == "" || req.Price <= 0 || req.MaxProfessionals < 0 {
+		c.JSON(400, gin.H{"error": "Nome, preço e limite do plano inválidos."})
+		return
+	}
 	featuresJSON, _ := json.Marshal(req.Features)
 	db.DB.Model(&plan).Updates(db.Plan{
 		Name:             req.Name,
@@ -649,4 +736,16 @@ func GetAuditLogs(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, result)
+}
+
+func GetPayments(c *gin.Context) {
+	var payments []db.Payment
+	if err := db.DB.Order("created_at desc").Limit(1000).Find(&payments).Error; err != nil {
+		bookingFailure(c, err)
+		return
+	}
+	if payments == nil {
+		payments = []db.Payment{}
+	}
+	c.JSON(200, payments)
 }

@@ -1,3 +1,4 @@
+import { PlanCatalog } from "@/components/PlanCatalog";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -59,8 +60,8 @@ const CORE_BENEFITS = [
     icon: ShieldCheck,
     title: "Sinal Antecipado via PIX",
     subtitle: "Elimine o prejuízo de cadeiras vazias",
-    desc: "A cliente confirma a reserva pagando uma porcentagem de sinal definida por você. O dinheiro cai instantaneamente na sua conta bancária sem retenção ou taxas da plataforma.",
-    highlight: "Redução de até 40% nas faltas",
+    desc: "Com uma chave Pix cadastrada, o sistema apresenta um sinal de 20% do serviço. O salão confere o recebimento no banco e confirma o atendimento.",
+    highlight: "Conferência pelo responsável do salão",
     border: "border-[#E5E7EB] hover:border-[#E5A991]"
   },
   {
@@ -73,34 +74,34 @@ const CORE_BENEFITS = [
   },
   {
     icon: Users,
-    title: "Divisão Automática de Comissões",
+    title: "Resumo de Comissões",
     subtitle: "Transparência total com seus profissionais",
-    desc: "Defina o percentual de cada parceiro por serviço ou produto. A cada atendimento fechado, o sistema rateia os valores sem erros na calculadora e sem atrito na equipe.",
-    highlight: "Cálculo exato a cada comanda",
+    desc: "Consulte uma estimativa de comissão sobre atendimentos concluídos, usando o percentual atual de cada profissional. O pagamento é feito pelo salão.",
+    highlight: "Estimativa sobre serviços concluídos",
     border: "border-[#E5E7EB] hover:border-[#E5A991]"
   },
   {
     icon: BarChart3,
-    title: "Painel Financeiro & Lucro Líquido",
+    title: "Painel de Receitas",
     subtitle: "Clareza sobre o faturamento real",
-    desc: "Acompanhe faturamento diário, semanal e mensal, ticket médio por atendimento, faturamento por cadeira e previsão de fluxo de caixa em gráficos limpos e intuitivos.",
+    desc: "Consulte receitas dos serviços concluídos e o histórico de atendimentos pelo painel do salão.",
     highlight: "Visão estratégica em tempo real",
     border: "border-[#E5E7EB] hover:border-[#111827]"
   },
   {
     icon: MessageSquare,
-    title: "Lembretes Automáticos Anti-No Show",
-    subtitle: "Clientes sempre avisadas com antecedência",
-    desc: "Dispare confirmações automáticas com antecedência para garantir que a cliente não se esqueça da data. Caso precise remarcar, o horário é liberado para outra pessoa.",
-    highlight: "Zero esquecimentos de horário",
+    title: "Estoque do Salão",
+    subtitle: "Produtos e quantidades organizados",
+    desc: "Cadastre produtos, acompanhe quantidades e consulte os itens abaixo do mínimo. Os registros ficam associados ao seu salão.",
+    highlight: "Estoque compartilhado entre dispositivos",
     border: "border-[#E5E7EB] hover:border-[#E5A991]"
   },
   {
     icon: Calendar,
     title: "Agenda Sincronizada sem Conflitos",
     subtitle: "Fim definitivo das folhas rasuradas",
-    desc: "Cada profissional acessa sua própria agenda no celular com horários, intervalos de almoço e folgas configuráveis. Chega de dois clientes marcados na mesma hora.",
-    highlight: "Sincronização em milissegundos",
+    desc: "O responsável acompanha a agenda da equipe. O sistema considera o expediente do salão, dias bloqueados e a duração dos serviços.",
+    highlight: "Disponibilidade por profissional",
     border: "border-[#E5E7EB] hover:border-[#111827]"
   }
 ];
@@ -125,11 +126,11 @@ const FAQ_ITEMS = [
   },
   {
     q: "Como funciona o cálculo e rateio de comissões da equipe?",
-    a: "Você define a regra de comissão de cada profissional (por exemplo: 50% em químicas, 60% em cortes, 10% em produtos). O sistema divide automaticamente cada atendimento e gera relatórios individuais prontos para prestação de contas."
+    a: "O painel estima comissões dos serviços concluídos a partir do percentual atual de cada profissional. O repasse bancário é realizado pelo salão fora do sistema."
   },
   {
     q: "Já tenho clientes anotados em planilhas ou cadernos. Como migrar?",
-    a: "Nosso importador inteligente lê seus dados em formato CSV ou planilhas do Excel em instantes. Nossa equipe de suporte também está pronta para ajudar você a cadastrar seus serviços e horários sem complicação."
+    a: "Cadastre seus clientes, serviços e profissionais pelo painel. A importação automática de planilhas ainda não está disponível."
   }
 ];
 
@@ -138,7 +139,6 @@ export default function Marketing() {
   const [mobileMenu, setMobileMenu] = useState(false);
   
   // Ciclo de cobrança (Mensal vs Anual)
-  const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
   
   // Demonstrador interativo
   const [activeScenario, setActiveScenario] = useState<BookingScenario>(BOOKING_SCENARIOS[0]);
@@ -555,7 +555,7 @@ export default function Marketing() {
               {
                 step: "04",
                 title: "Agenda Confirmada",
-                desc: "O horário entra automaticamente na agenda do profissional e ambos recebem a confirmação."
+                desc: "A reserva aparece no painel para conferência e confirmação pelo responsável do salão."
               }
             ].map((st, i) => (
               <div key={i} className="bg-white rounded-3xl p-6 border border-[#E5E7EB] hover:border-[#E5A991] transition-all shadow-xs">
@@ -703,405 +703,7 @@ export default function Marketing() {
       </section>
 
       {/* Planos Oficiais BelezaPura */}
-      <section id="planos" className="relative z-10 py-24 bg-[#FAFAFA] border-t border-[#E5E7EB] overflow-hidden">
-        
-        {/* Elemento de iluminação ambiente no fundo da seção */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[550px] bg-gradient-to-tr from-[#E5A991]/10 via-[#111827]/5 to-transparent blur-[140px] rounded-full pointer-events-none" />
-
-        <div className="max-w-7xl mx-auto px-5 relative z-10">
-          
-          <div className="text-center max-w-3xl mx-auto mb-10 animate-fade-up">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#E5A991]/15 border border-[#E5A991]/40 text-[#9C5A42] text-xs font-bold mb-4 shadow-xs">
-              <Award className="w-3.5 h-3.5 text-[#C47F65]" /> Planos Transparentes & Sem Pegadinhas
-            </div>
-            <h2 className="font-serif text-3xl sm:text-5xl font-bold tracking-tight text-[#111827] mb-5">
-              Escolha o plano ideal para a <span className="brand-text-gradient">fase do seu negócio</span>
-            </h2>
-            <p className="text-[#4B5563] text-base sm:text-lg">
-              Sem taxas ocultas, sem fidelidade obrigatória. Experimente o plano Studio por 14 dias inteiramente por nossa conta.
-            </p>
-          </div>
-
-          {/* Toggle Interativo Mensal / Anual */}
-          <div className="flex items-center justify-center mb-14">
-            <div className="bg-white p-1.5 rounded-2xl flex items-center shadow-md border border-[#E5E7EB]">
-              <button
-                type="button"
-                onClick={() => setBillingCycle("monthly")}
-                className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 cursor-pointer ${
-                  billingCycle === "monthly"
-                    ? "bg-[#111827] text-white shadow-md scale-100"
-                    : "text-[#6B7280] hover:text-[#111827]"
-                }`}
-              >
-                Cobrança Mensal
-              </button>
-              <button
-                type="button"
-                onClick={() => setBillingCycle("annual")}
-                className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex items-center gap-2 cursor-pointer ${
-                  billingCycle === "annual"
-                    ? "bg-[#111827] text-white shadow-md scale-100"
-                    : "text-[#6B7280] hover:text-[#111827]"
-                }`}
-              >
-                <span>Cobrança Anual</span>
-                <span className="bg-[#E5A991] text-[#111827] text-[10px] font-black uppercase px-2 py-0.5 rounded-full shadow-xs tracking-wider animate-pulse">
-                  -20% OFF
-                </span>
-              </button>
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
-            
-            {/* Plano Essencial */}
-            <div className="group relative bg-white rounded-3xl p-8 border border-[#E5E7EB] hover:border-[#111827] transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-11 h-11 rounded-2xl bg-stone-100 text-[#111827] flex items-center justify-center group-hover:scale-110 group-hover:bg-[#E5A991]/25 transition-all duration-300 shadow-xs">
-                    <Scissors className="w-5 h-5" />
-                  </div>
-                  <span className="text-xs font-semibold text-[#6B7280] bg-stone-100 px-3 py-1 rounded-full">
-                    Autônomos
-                  </span>
-                </div>
-
-                <div className="mb-4">
-                  <h3 className="text-2xl font-black text-[#111827] mb-1">Essencial</h3>
-                  <p className="text-xs text-[#6B7280]">Para quem atende sozinho e quer parar de perder dinheiro com furos.</p>
-                </div>
-
-                <div className="mb-2 flex items-baseline gap-1.5">
-                  <span className="font-serif text-4xl sm:text-5xl font-black text-[#111827] tracking-tight transition-all duration-300">
-                    {billingCycle === "annual" ? "R$ 47,90" : "R$ 59,90"}
-                  </span>
-                  <span className="text-sm font-medium text-[#6B7280]">/mês</span>
-                </div>
-                <p className="text-xs text-[#9C5A42] font-semibold mb-6 min-h-[18px]">
-                  {billingCycle === "annual" ? "Faturado R$ 574,80/ano (economia de R$ 144)" : "Sem fidelidade, cancele a qualquer mês"}
-                </p>
-
-                <div className="h-px w-full bg-[#E5E7EB] mb-6" />
-
-                <ul className="space-y-3.5 mb-8 text-sm text-[#374151]">
-                  <li className="flex items-start gap-2.5 group/item">
-                    <div className="w-5 h-5 rounded-full bg-stone-100 text-[#111827] group-hover/item:bg-[#111827] group-hover/item:text-white flex items-center justify-center shrink-0 mt-0.5 transition-colors">
-                      <Check className="w-3.5 h-3.5" />
-                    </div>
-                    <span><strong>1 profissional</strong> atendendo</span>
-                  </li>
-                  <li className="flex items-start gap-2.5 group/item">
-                    <div className="w-5 h-5 rounded-full bg-stone-100 text-[#111827] group-hover/item:bg-[#111827] group-hover/item:text-white flex items-center justify-center shrink-0 mt-0.5 transition-colors">
-                      <Check className="w-3.5 h-3.5" />
-                    </div>
-                    <span>Página exclusiva para bio do Instagram</span>
-                  </li>
-                  <li className="flex items-start gap-2.5 group/item">
-                    <div className="w-5 h-5 rounded-full bg-stone-100 text-[#111827] group-hover/item:bg-[#111827] group-hover/item:text-white flex items-center justify-center shrink-0 mt-0.5 transition-colors">
-                      <Check className="w-3.5 h-3.5" />
-                    </div>
-                    <span>Cobrança de sinal obrigatório via PIX</span>
-                  </li>
-                  <li className="flex items-start gap-2.5 group/item">
-                    <div className="w-5 h-5 rounded-full bg-stone-100 text-[#111827] group-hover/item:bg-[#111827] group-hover/item:text-white flex items-center justify-center shrink-0 mt-0.5 transition-colors">
-                      <Check className="w-3.5 h-3.5" />
-                    </div>
-                    <span>Lembretes automáticos para clientes</span>
-                  </li>
-                  <li className="flex items-start gap-2.5 group/item">
-                    <div className="w-5 h-5 rounded-full bg-stone-100 text-[#111827] group-hover/item:bg-[#111827] group-hover/item:text-white flex items-center justify-center shrink-0 mt-0.5 transition-colors">
-                      <Check className="w-3.5 h-3.5" />
-                    </div>
-                    <span>Controle completo de clientes e histórico</span>
-                  </li>
-                </ul>
-              </div>
-
-              <button 
-                type="button"
-                onClick={() => navigate("/onboarding?planId=essencial")} 
-                className="w-full h-13 border-2 border-[#111827] text-[#111827] hover:bg-[#111827] hover:text-white font-extrabold text-sm rounded-xl transition-all duration-300 cursor-pointer flex items-center justify-center shadow-xs"
-              >
-                Começar no Essencial &rarr;
-              </button>
-            </div>
-
-            {/* Plano Studio (Destaque Principal Animado) */}
-            <div className="relative group md:-mt-4">
-              
-              {/* Aura / Halo pulsante em Rose Gold e Grafite */}
-              <div className="absolute -inset-1.5 rounded-[36px] bg-gradient-to-r from-[#E5A991] via-[#111827] to-[#E5A991] opacity-75 blur-xl group-hover:opacity-100 animate-glow-pulse transition-all duration-500" />
-              
-              <div className="relative bg-white rounded-[32px] p-8 sm:p-9 border-2 border-[#111827] shadow-2xl flex flex-col justify-between transition-all duration-300 group-hover:-translate-y-2 h-full">
-                
-                {/* Badge Topo Flutuante Animado */}
-                <div className="absolute -top-5 left-0 right-0 flex justify-center">
-                  <div className="bg-[#111827] text-[#E5A991] border border-[#E5A991]/70 text-xs font-black uppercase tracking-wider py-1.5 px-5 rounded-full shadow-xl flex items-center gap-2">
-                    <Sparkles className="w-3.5 h-3.5 text-[#E5A991] animate-spin" style={{ animationDuration: "6s" }} />
-                    <span>Mais Escolhido • 14 Dias Grátis</span>
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-4 pt-2">
-                    <div className="w-11 h-11 rounded-2xl bg-[#111827] text-[#E5A991] flex items-center justify-center shadow-md">
-                      <Zap className="w-5 h-5 fill-[#E5A991]" />
-                    </div>
-                    <span className="text-xs font-bold text-[#111827] bg-[#E5A991]/25 px-3 py-1 rounded-full border border-[#E5A991]/50">
-                      Recomendado
-                    </span>
-                  </div>
-
-                  <div className="mb-4">
-                    <h3 className="text-2xl sm:text-3xl font-black text-[#111827] mb-1">Studio</h3>
-                    <p className="text-xs text-[#6B7280]">Para salões, estúdios e barbearias com equipe e foco em lucro.</p>
-                  </div>
-
-                  <div className="mb-2 flex items-baseline gap-1.5">
-                    <span className="font-serif text-4xl sm:text-5xl font-black text-[#111827] tracking-tight transition-all duration-300">
-                      {billingCycle === "annual" ? "R$ 95,90" : "R$ 119,90"}
-                    </span>
-                    <span className="text-sm font-medium text-[#6B7280]">/mês</span>
-                  </div>
-                  <p className="text-xs text-[#9C5A42] font-bold mb-6 min-h-[18px]">
-                    {billingCycle === "annual" ? "Faturado R$ 1.150,80/ano (economia de R$ 288)" : "14 dias sem pagar nada • Cancele quando quiser"}
-                  </p>
-
-                  {/* Banner de destaque interno do teste */}
-                  <div className="bg-gradient-to-r from-[#E5A991]/20 via-[#FAFAFA] to-[#E5A991]/15 border border-[#E5A991]/50 rounded-2xl p-3 mb-6 flex items-center gap-3 shadow-xs">
-                    <div className="w-7 h-7 rounded-full bg-[#111827] text-[#E5A991] flex items-center justify-center shrink-0">
-                      <ShieldCheck className="w-4 h-4" />
-                    </div>
-                    <div className="text-[11px] leading-tight">
-                      <p className="font-bold text-[#111827]">Teste Completo Sem Risco</p>
-                      <p className="text-[#6B7280]">Não pedimos cartão para começar</p>
-                    </div>
-                  </div>
-
-                  <div className="h-px w-full bg-[#E5E7EB] mb-6" />
-
-                  <ul className="space-y-3.5 mb-8 text-sm text-[#111827]">
-                    <li className="flex items-start gap-2.5">
-                      <div className="w-5 h-5 rounded-full bg-[#E5A991]/25 text-[#9C5A42] flex items-center justify-center shrink-0 mt-0.5">
-                        <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                      </div>
-                      <span><strong>Até 5 profissionais</strong> com login próprio</span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <div className="w-5 h-5 rounded-full bg-[#E5A991]/25 text-[#9C5A42] flex items-center justify-center shrink-0 mt-0.5">
-                        <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                      </div>
-                      <span>Divisão e cálculo automático de comissões</span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <div className="w-5 h-5 rounded-full bg-[#E5A991]/25 text-[#9C5A42] flex items-center justify-center shrink-0 mt-0.5">
-                        <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                      </div>
-                      <span>Painel financeiro com faturamento e despesas</span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <div className="w-5 h-5 rounded-full bg-[#E5A991]/25 text-[#9C5A42] flex items-center justify-center shrink-0 mt-0.5">
-                        <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                      </div>
-                      <span>Lembretes anti-no show automáticos no WhatsApp</span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <div className="w-5 h-5 rounded-full bg-[#E5A991]/25 text-[#9C5A42] flex items-center justify-center shrink-0 mt-0.5">
-                        <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                      </div>
-                      <span>Controle completo de comandas e caixa</span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <div className="w-5 h-5 rounded-full bg-[#111827] text-[#E5A991] flex items-center justify-center shrink-0 mt-0.5">
-                        <Sparkles className="w-3.5 h-3.5" />
-                      </div>
-                      <span><strong>14 dias grátis</strong> liberados imediatamente</span>
-                    </li>
-                  </ul>
-                </div>
-
-                <div>
-                  <button 
-                    type="button"
-                    onClick={() => navigate("/onboarding?planId=studio")} 
-                    className="relative overflow-hidden w-full h-14 bg-[#111827] hover:bg-[#1F2937] text-white font-extrabold text-base rounded-2xl shadow-xl shadow-[#111827]/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer group/cta"
-                  >
-                    {/* Efeito feixe de luz brilhante passando pelo botão */}
-                    <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12 animate-shimmer pointer-events-none" />
-                    <span className="relative z-10">Experimentar 14 dias grátis</span>
-                    <ArrowRight className="w-4 h-4 relative z-10 group-hover/cta:translate-x-1 transition-transform" />
-                  </button>
-                  <p className="text-center text-[11px] text-[#6B7280] mt-2.5 flex items-center justify-center gap-1.5">
-                    <Lock className="w-3 h-3 text-[#9C5A42]" /> Cancelamento em 1 clique • Sem fidelidade
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Plano Elite (Black Card VIP) */}
-            <div className="group relative bg-[#111827] rounded-3xl p-8 border border-stone-800 hover:border-[#E5A991]/50 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl flex flex-col justify-between text-white overflow-hidden">
-              
-              {/* Efeito suave de luz no canto superior do Black Card */}
-              <div className="absolute -top-24 -right-24 w-48 h-48 bg-[#E5A991]/15 blur-3xl rounded-full pointer-events-none group-hover:scale-150 transition-transform duration-700" />
-
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-11 h-11 rounded-2xl bg-stone-800 text-[#E5A991] flex items-center justify-center group-hover:scale-110 group-hover:bg-[#E5A991]/20 transition-all duration-300 shadow-inner">
-                    <Crown className="w-5 h-5 text-[#E5A991]" />
-                  </div>
-                  <span className="text-xs font-bold text-[#E5A991] bg-[#E5A991]/15 px-3 py-1 rounded-full border border-[#E5A991]/30">
-                    VIP & Redes
-                  </span>
-                </div>
-
-                <div className="mb-4">
-                  <h3 className="text-2xl font-black text-white mb-1">Elite</h3>
-                  <p className="text-xs text-stone-400">Para clínicas, barbearias premium e salões de alto padrão.</p>
-                </div>
-
-                <div className="mb-2 flex items-baseline gap-1.5">
-                  <span className="font-serif text-4xl sm:text-5xl font-black text-white tracking-tight transition-all duration-300">
-                    {billingCycle === "annual" ? "R$ 255,27" : "R$ 319,09"}
-                  </span>
-                  <span className="text-sm font-medium text-stone-400">/mês</span>
-                </div>
-                <p className="text-xs text-[#E5A991] font-semibold mb-6 min-h-[18px]">
-                  {billingCycle === "annual" ? "Faturado R$ 3.063,24/ano (economia de R$ 765,84)" : "Infraestrutura dedicada de alta capacidade"}
-                </p>
-
-                <div className="h-px w-full bg-stone-800 mb-6" />
-
-                <ul className="space-y-3.5 mb-8 text-sm text-stone-300">
-                  <li className="flex items-start gap-2.5 group/item">
-                    <div className="w-5 h-5 rounded-full bg-stone-800 text-[#E5A991] group-hover/item:bg-[#E5A991] group-hover/item:text-[#111827] flex items-center justify-center shrink-0 mt-0.5 transition-colors">
-                      <Check className="w-3.5 h-3.5" />
-                    </div>
-                    <span><strong>Profissionais ilimitados</strong></span>
-                  </li>
-                  <li className="flex items-start gap-2.5 group/item">
-                    <div className="w-5 h-5 rounded-full bg-stone-800 text-[#E5A991] group-hover/item:bg-[#E5A991] group-hover/item:text-[#111827] flex items-center justify-center shrink-0 mt-0.5 transition-colors">
-                      <Check className="w-3.5 h-3.5" />
-                    </div>
-                    <span>Automação completa no WhatsApp</span>
-                  </li>
-                  <li className="flex items-start gap-2.5 group/item">
-                    <div className="w-5 h-5 rounded-full bg-stone-800 text-[#E5A991] group-hover/item:bg-[#E5A991] group-hover/item:text-[#111827] flex items-center justify-center shrink-0 mt-0.5 transition-colors">
-                      <Check className="w-3.5 h-3.5" />
-                    </div>
-                    <span>Controle de estoque e produtos de revenda</span>
-                  </li>
-                  <li className="flex items-start gap-2.5 group/item">
-                    <div className="w-5 h-5 rounded-full bg-stone-800 text-[#E5A991] group-hover/item:bg-[#E5A991] group-hover/item:text-[#111827] flex items-center justify-center shrink-0 mt-0.5 transition-colors">
-                      <Check className="w-3.5 h-3.5" />
-                    </div>
-                    <span>Campanhas de retorno para clientes inativos</span>
-                  </li>
-                  <li className="flex items-start gap-2.5 group/item">
-                    <div className="w-5 h-5 rounded-full bg-stone-800 text-[#E5A991] group-hover/item:bg-[#E5A991] group-hover/item:text-[#111827] flex items-center justify-center shrink-0 mt-0.5 transition-colors">
-                      <Check className="w-3.5 h-3.5" />
-                    </div>
-                    <span>Suporte prioritário VIP via WhatsApp</span>
-                  </li>
-                </ul>
-              </div>
-
-              <button 
-                type="button"
-                onClick={() => navigate("/onboarding?planId=elite")} 
-                className="relative overflow-hidden w-full h-13 bg-[#E5A991] hover:bg-[#D89981] text-[#111827] font-extrabold text-sm rounded-xl shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 group/eliteBtn"
-              >
-                <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12 animate-shimmer pointer-events-none" />
-                <span className="relative z-10">Contratar Plano Elite</span>
-                <ArrowRight className="w-4 h-4 relative z-10 group-hover/eliteBtn:translate-x-1 transition-transform" />
-              </button>
-            </div>
-
-          </div>
-
-          {/* Plano Especial / Sob Medida - Redes & Franquias */}
-          <div className="mt-10 max-w-6xl mx-auto bg-gradient-to-br from-[#111827] via-stone-900 to-[#111827] border-2 border-[#E5A991]/30 rounded-[32px] p-6 sm:p-10 shadow-2xl relative overflow-hidden text-white">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-[#E5A991]/10 rounded-full blur-3xl pointer-events-none" />
-
-            <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8">
-              <div className="max-w-2xl text-center lg:text-left">
-                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#E5A991]/20 border border-[#E5A991]/40 text-[#E5A991] text-xs font-bold mb-3 shadow-xs">
-                  <Sparkles className="w-3.5 h-3.5 text-[#E5A991]" /> Plano Especial & Sob Medida
-                </div>
-                <h3 className="text-2xl sm:text-3xl font-bold tracking-tight mb-3">
-                  Gerencia uma rede de salões, barbearias ou franquia?
-                </h3>
-                <p className="text-stone-300 text-sm sm:text-base leading-relaxed mb-6">
-                  Se você precisa de condições comerciais diferenciadas, migração assistida do seu sistema anterior ou integração de múltiplas filiais, <strong>montamos um plano sob consulta</strong>, com acompanhamento direto da nossa diretoria.
-                </p>
-
-                <div className="grid sm:grid-cols-2 gap-3 text-xs sm:text-sm text-stone-200">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-[#E5A991] shrink-0" />
-                    <span>Múltiplas unidades integradas</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-[#E5A991] shrink-0" />
-                    <span>Migração assistida do sistema antigo</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-[#E5A991] shrink-0" />
-                    <span>Gerente de contas e WhatsApp VIP</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-[#E5A991] shrink-0" />
-                    <span>Treinamento ao vivo para sua equipe</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="shrink-0 flex flex-col items-center gap-3 w-full lg:w-auto">
-                <div className="text-center lg:text-right mb-1">
-                  <span className="text-xs font-semibold text-[#E5A991] uppercase tracking-wider block">Valores e Condições</span>
-                  <span className="text-2xl sm:text-3xl font-black text-white">Sob Consulta</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const msg = encodeURIComponent("Olá! Gostaria de uma proposta de plano especial sob medida para meu salão / rede no BelezaPura.");
-                    window.open(`https://wa.me/5511999999999?text=${msg}`, "_blank");
-                  }}
-                  className="w-full sm:w-auto px-8 h-13 bg-[#E5A991] hover:bg-[#D89981] text-[#111827] font-extrabold text-sm rounded-xl shadow-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <MessageSquare className="w-4 h-4" />
-                  <span>Consulte Nossa Equipe &rarr;</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigate("/contato")}
-                  className="text-xs text-stone-400 hover:text-white transition-colors underline underline-offset-4 cursor-pointer"
-                >
-                  Ou fale pelo formulário de contato
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Garantia e Segurança embaixo dos cards */}
-          <div className="mt-12 text-center flex flex-wrap items-center justify-center gap-6 text-xs text-[#6B7280]">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-[#C47F65]" />
-              <span>Sem fidelidade ou multas rescisórias</span>
-            </div>
-            <span className="hidden sm:inline text-stone-300">•</span>
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[#C47F65]" />
-              <span>Ativação imediata em menos de 3 minutos</span>
-            </div>
-            <span className="hidden sm:inline text-stone-300">•</span>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-[#C47F65]" />
-              <span>Seus dados e finanças 100% seguros</span>
-            </div>
-          </div>
-
-        </div>
-      </section>
+      <PlanCatalog />
 
       {/* FAQ */}
       <section id="faq" className="relative z-10 py-24 max-w-4xl mx-auto px-5">
