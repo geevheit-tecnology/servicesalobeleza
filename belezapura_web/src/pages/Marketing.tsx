@@ -8,6 +8,7 @@ import {
   CheckCircle2, ChevronDown, Copy, Play, CheckCheck, Heart, UserCheck, Crown, Lock
 } from "lucide-react";
 import { Button, Badge } from "@/components/ui";
+import { formatCurrency } from "@/utils/formatters";
 
 // Cenários da Demonstração Interativa do BelezaPura
 interface BookingScenario {
@@ -23,34 +24,34 @@ interface BookingScenario {
 
 const BOOKING_SCENARIOS: BookingScenario[] = [
   {
-    id: "mechas",
-    service: "Mechas & Tratamento Reconstrutor",
-    price: "R$ 380,00",
-    duration: "2h30",
-    professional: "Rafaela Silva",
-    clientMessage: "Olá! Gostaria de agendar mechas e tratamento para este sábado às 14h com a Rafaela.",
-    systemReply: "Horário reservado com sucesso no BelezaPura! Segue o PIX do sinal de 20% (R$ 76,00) para confirmar sua cadeira. O restante é pago no dia:",
-    pixCode: "00020126580014br.gov.bcb.pix0136belezapura-sinal-59102452040000530398654076.005802BR5913Studio Rafaela6009Sao Paulo62070503***6304A1B2"
+    id: "alongamento",
+    service: "Alongamento em gel",
+    price: "R$ 180,00",
+    duration: "3h",
+    professional: "Rafaela",
+    clientMessage: "Oi! Quero agendar alongamento em gel pra sábado às 14h com a Rafaela.",
+    systemReply: "Horário reservado! Pra confirmar, o sinal de 20% (R$ 36,00) é no Pix. O resto você paga no dia.",
+    pixCode: "00020126580014br.gov.bcb.pix0136belezapura-sinal-59102452040000530398654036.005802BR5913Studio Rafaela6009Sao Paulo62070503***6304A1B2"
   },
   {
-    id: "barba",
-    service: "Corte Degradê & Barba Terapia",
-    price: "R$ 85,00",
-    duration: "50 min",
-    professional: "Marcos Vinicius",
-    clientMessage: "Opa, tudo bem? Quero agendar cabelo e barba hoje às 18h30.",
-    systemReply: "Cadeira reservada com Marcos! Para garantir o horário e evitar no-shows, realize o sinal de R$ 25,00 via PIX:",
-    pixCode: "00020126580014br.gov.bcb.pix0136belezapura-sinal-88419252040000530398654025.005802BR5913Barber Club6009Sao Paulo62070503***6304F4C8"
+    id: "drenagem",
+    service: "Drenagem",
+    price: "R$ 150,00",
+    duration: "1h",
+    professional: "Camila",
+    clientMessage: "Olá! Gostaria de agendar uma drenagem na sexta às 16h com a Camila.",
+    systemReply: "Horário reservado! Pra confirmar, o sinal de 20% (R$ 30,00) é no Pix. O resto você paga no dia.",
+    pixCode: "00020126580014br.gov.bcb.pix0136belezapura-sinal-88419252040000530398654030.005802BR5913Studio Camila6009Sao Paulo62070503***6304F4C8"
   },
   {
-    id: "manicure",
-    service: "Unhas em Gel & Esmaltação",
-    price: "R$ 130,00",
-    duration: "1h15",
-    professional: "Camila Santos",
-    clientMessage: "Boa tarde! Tem horário para unhas em gel na sexta às 16h?",
-    systemReply: "Perfeito Camila! Horário disponível com a Camila Santos. Sinal de garantia de R$ 30,00 via PIX:",
-    pixCode: "00020126580014br.gov.bcb.pix0136belezapura-sinal-33491052040000530398654030.005802BR5913Esmalteria VIP6009Sao Paulo62070503***6304D9E1"
+    id: "bronzeamento",
+    service: "Bronzeamento com fita",
+    price: "R$ 120,00",
+    duration: "1h30",
+    professional: "Juliana",
+    clientMessage: "Oi! Quero marcar bronzeamento com fita para quinta às 10h com a Juliana.",
+    systemReply: "Horário reservado! Pra confirmar, o sinal de 20% (R$ 24,00) é no Pix. O resto você paga no dia.",
+    pixCode: "00020126580014br.gov.bcb.pix0136belezapura-sinal-33491052040000530398654024.005802BR5913Studio Juliana6009Sao Paulo62070503***6304D9E1"
   }
 ];
 
@@ -58,51 +59,43 @@ const BOOKING_SCENARIOS: BookingScenario[] = [
 const CORE_BENEFITS = [
   {
     icon: ShieldCheck,
-    title: "Sinal Antecipado via PIX",
-    subtitle: "Elimine o prejuízo de cadeiras vazias",
-    desc: "Com uma chave Pix cadastrada, o sistema apresenta um sinal de 20% do serviço. O salão confere o recebimento no banco e confirma o atendimento.",
-    highlight: "Conferência pelo responsável do salão",
+    title: "Faltou? Quem paga não é você.",
+    subtitle: "Compromisso com o sinal",
+    desc: "Uma progressiva ou um alongamento ocupam horas de cadeira. Com o sinal no Pix, a cliente só segura o horário se realmente pretende vir.",
+    highlight: "Sinal no Pix direto na sua conta",
     border: "border-[#E5E7EB] hover:border-[#E5A991]"
   },
   {
     icon: Smartphone,
-    title: "Página Exclusiva para a Bio",
-    subtitle: "Seu salão aberto 24 horas por dia",
-    desc: "Um link elegante e ultrarrápido para colocar no Instagram e WhatsApp. Suas clientes escolhem os procedimentos, o especialista e o horário em segundos, até de madrugada.",
-    highlight: "Agendamento automático 24/7",
+    title: "Link na bio que agenda de madrugada.",
+    subtitle: "Agenda 24 horas",
+    desc: "A cliente que pensou no assunto às 23h30 marca na hora, sem esperar você responder o direct.",
+    highlight: "Agendamento direto sem esperar direct",
     border: "border-[#E5E7EB] hover:border-[#111827]"
   },
   {
     icon: Users,
-    title: "Resumo de Comissões",
-    subtitle: "Transparência total com seus profissionais",
-    desc: "Consulte uma estimativa de comissão sobre atendimentos concluídos, usando o percentual atual de cada profissional. O pagamento é feito pelo salão.",
+    title: "Comissão sem caderninho.",
+    subtitle: "Controle da equipe",
+    desc: "No fim do mês você vê quanto cada profissional produziu e uma estimativa da comissão.",
     highlight: "Estimativa sobre serviços concluídos",
     border: "border-[#E5E7EB] hover:border-[#E5A991]"
   },
   {
-    icon: BarChart3,
-    title: "Painel de Receitas",
-    subtitle: "Clareza sobre o faturamento real",
-    desc: "Consulte receitas dos serviços concluídos e o histórico de atendimentos pelo painel do salão.",
-    highlight: "Visão estratégica em tempo real",
-    border: "border-[#E5E7EB] hover:border-[#111827]"
-  },
-  {
     icon: MessageSquare,
-    title: "Estoque do Salão",
-    subtitle: "Produtos e quantidades organizados",
-    desc: "Cadastre produtos, acompanhe quantidades e consulte os itens abaixo do mínimo. Os registros ficam associados ao seu salão.",
-    highlight: "Estoque compartilhado entre dispositivos",
-    border: "border-[#E5E7EB] hover:border-[#E5A991]"
+    title: "Estoque que avisa.",
+    subtitle: "Controle de materiais",
+    desc: "Esmalte, gel, creme, óleo de bronzeamento: cadastre e veja o que está abaixo do mínimo.",
+    highlight: "Alerta de itens abaixo do mínimo",
+    border: "border-[#E5E7EB] hover:border-[#111827]"
   },
   {
     icon: Calendar,
-    title: "Agenda Sincronizada sem Conflitos",
-    subtitle: "Fim definitivo das folhas rasuradas",
-    desc: "O responsável acompanha a agenda da equipe. O sistema considera o expediente do salão, dias bloqueados e a duração dos serviços.",
-    highlight: "Disponibilidade por profissional",
-    border: "border-[#E5E7EB] hover:border-[#111827]"
+    title: "Agenda que respeita o tempo de cada serviço.",
+    subtitle: "Horários sem atropelo",
+    desc: "Alongamento leva 3h, manutenção 1h30. O sistema considera a duração, o expediente e os dias bloqueados.",
+    highlight: "Duração real e dias bloqueados",
+    border: "border-[#E5E7EB] hover:border-[#E5A991]"
   }
 ];
 
@@ -110,27 +103,27 @@ const CORE_BENEFITS = [
 const FAQ_ITEMS = [
   {
     q: "Como funciona a demonstração gratuita de 14 dias?",
-    a: "Você tem acesso irrestrito a todas as ferramentas do plano Studio durante 14 dias completos. Você cadastra seus serviços, equipe e chave PIX para testar na prática com suas clientes. Se decidir não continuar, basta cancelar antes do 15º dia e nada será cobrado."
+    a: "Você tem acesso irrestrito a todas as ferramentas durante 14 dias completos para testar na prática com suas clientes. Você cadastra seus serviços, equipe e chave Pix. Sem cartão de crédito e sem taxas de adesão."
   },
   {
-    q: "Para onde vai o dinheiro do sinal cobrado no PIX?",
-    a: "O valor do sinal vai 100% diretamente para a chave PIX bancária configurada pelo seu salão. O BelezaPura não retém seus valores e não cobra porcentagem sobre o faturamento dos seus agendamentos."
+    q: "Para onde vai o dinheiro do sinal cobrado no Pix?",
+    a: "O valor do sinal vai 100% diretamente para a sua chave Pix bancária cadastrada. O BelezaPura não retém seu dinheiro e não cobra porcentagem sobre o agendamento. Você confere o recebimento no seu aplicativo bancário e confirma a reserva no painel."
   },
   {
     q: "Minhas clientes precisam baixar algum aplicativo?",
-    a: "Não! O agendamento é feito de forma instantânea através do link exclusivo do seu salão no navegador do celular (ideal para colocar na bio do Instagram e WhatsApp). É rápido, leve e não ocupa memória do aparelho."
+    a: "Não! O agendamento é feito pelo navegador do celular através do link exclusivo da sua bio do Instagram ou WhatsApp. É rápido, leve e não ocupa memória do aparelho."
   },
   {
-    q: "O BelezaPura serve para profissionais que atendem sozinhos?",
-    a: "Com certeza! O Plano Essencial (R$ 59,90) foi desenhado sob medida para quem atende de forma autônoma e precisa de uma recepção digital trabalhando enquanto você está com a mão no procedimento."
+    q: "O BelezaPura serve para profissionais que atendem sozinhas?",
+    a: "Com certeza! É ideal para nail designers, esteticistas e profissionais de bronzeamento que atendem de forma autônoma e precisam que a agenda trabalhe enquanto estão com a mão no procedimento."
   },
   {
     q: "Como funciona o cálculo e rateio de comissões da equipe?",
-    a: "O painel estima comissões dos serviços concluídos a partir do percentual atual de cada profissional. O repasse bancário é realizado pelo salão fora do sistema."
+    a: "O painel calcula uma estimativa de comissão para cada profissional com base nos atendimentos concluídos e na porcentagem definida. O repasse financeiro é feito pelo salão fora do sistema."
   },
   {
     q: "Já tenho clientes anotados em planilhas ou cadernos. Como migrar?",
-    a: "Cadastre seus clientes, serviços e profissionais pelo painel. A importação automática de planilhas ainda não está disponível."
+    a: "Cadastre seus clientes, serviços e profissionais diretamente pelo painel em poucos minutos. A importação automática de planilhas ainda não está disponível."
   }
 ];
 
@@ -176,7 +169,7 @@ export default function Marketing() {
       {/* Top Banner Elegante Preto Profundo */}
       <div className="relative z-50 bg-[#111827] text-white py-2.5 px-4 text-center text-xs md:text-sm font-medium tracking-wide flex items-center justify-center gap-2 shadow-xs">
         <Sparkles className="w-4 h-4 text-[#E5A991]" />
-        <span>Experimente o <strong>BelezaPura</strong> com 14 dias de demonstração gratuita. Sem taxas de adesão!</span>
+        <span>14 dias grátis, sem cartão. Você testa com suas clientes de verdade.</span>
         <button 
           onClick={() => navigate("/onboarding?planId=studio")}
           className="underline font-bold text-[#E5A991] hover:text-white cursor-pointer ml-1 hidden sm:inline"
@@ -199,7 +192,7 @@ export default function Marketing() {
                 <span className="font-serif text-2xl font-bold tracking-tight text-[#111827]">BelezaPura</span>
                 <span className="brand-badge text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider">Gestão</span>
               </div>
-              <span className="text-[10px] text-[#6B7280] font-medium tracking-wider uppercase">Plataforma para Salões</span>
+              <span className="text-[10px] text-[#6B7280] font-medium tracking-wider uppercase">Estética, Bronze & Unhas</span>
             </div>
           </div>
 
@@ -262,7 +255,7 @@ export default function Marketing() {
                 className="w-full justify-center bg-[#111827] hover:bg-[#1F2937] text-white font-bold h-12 shadow-md" 
                 onClick={() => { setMobileMenu(false); navigate("/onboarding?planId=studio"); }}
               >
-                Começar 14 dias grátis
+                Testar 14 dias grátis
               </Button>
             </div>
           </div>
@@ -278,16 +271,15 @@ export default function Marketing() {
             
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#E5A991]/15 border border-[#E5A991]/40 text-[#9C5A42] text-xs md:text-sm font-semibold mb-6 shadow-xs">
               <Sparkles className="w-4 h-4 text-[#C47F65]" />
-              <span>Seu salão. Sua agenda. Seu negócio.</span>
+              <span>Seu espaço. Sua agenda. Suas clientes.</span>
             </div>
 
             <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight text-[#111827] leading-[1.08] mb-6">
-              Agende, receba e organize seu salão{" "}
-              <span className="brand-text-gradient">com elegância e controle.</span>
+              Cliente marcou, pagou o sinal, veio.
             </h1>
 
             <p className="text-[#4B5563] text-lg sm:text-xl leading-relaxed mb-8 max-w-2xl font-normal">
-              O ecossistema definitivo para salões de beleza, barbearias e clínicas de estética: sua cliente agenda online 24h, garante a vaga com <strong>sinal no PIX</strong> e sua equipe atende sem atritos.
+              Agenda online para estética, bronzeamento e unhas. Sua cliente escolhe o serviço e a profissional pelo link do Instagram, paga o sinal no Pix e o horário fica reservado.
             </p>
 
             {/* CTAs */}
@@ -297,13 +289,13 @@ export default function Marketing() {
                 onClick={() => navigate("/onboarding?planId=studio")} 
                 className="h-14 sm:h-16 px-8 bg-[#111827] hover:bg-[#1F2937] text-white font-bold text-base sm:text-lg rounded-2xl shadow-xl shadow-[#111827]/15 hover-lift justify-center"
               >
-                Experimentar 14 dias grátis <ArrowRight className="w-5 h-5 ml-2 text-[#E5A991]" />
+                Testar 14 dias grátis <ArrowRight className="w-5 h-5 ml-2 text-[#E5A991]" />
               </Button>
               <a 
                 href="#demonstracao"
                 className="inline-flex items-center justify-center h-14 sm:h-16 px-6 rounded-2xl border border-[#E5E7EB] bg-white hover:bg-stone-50 text-[#111827] font-semibold text-base transition-all shadow-xs hover-lift gap-2"
               >
-                <Play className="w-4 h-4 text-[#111827] fill-[#111827]" /> Ver demonstração
+                <Play className="w-4 h-4 text-[#111827] fill-[#111827]" /> Ver como a cliente agenda
               </a>
             </div>
 
@@ -332,7 +324,7 @@ export default function Marketing() {
                   <ShieldCheck className="w-5 h-5" />
                 </div>
                 <div>
-                  <div className="text-xs font-bold text-[#111827]">Sinal no PIX Garantido</div>
+                  <div className="text-xs font-bold text-[#111827]">Sinal no Pix, direto na sua conta</div>
                   <div className="text-[10px] text-[#6B7280]">Direto na sua conta bancária</div>
                 </div>
               </div>
@@ -460,9 +452,9 @@ export default function Marketing() {
           </div>
 
           <div className="flex flex-col items-center">
-            <span className="font-serif text-3xl sm:text-4xl font-extrabold text-emerald-700 tracking-tight">-40% Faltas</span>
+            <span className="font-serif text-2xl sm:text-3xl font-extrabold text-emerald-700 tracking-tight">Menos faltas com o sinal</span>
             <span className="text-[#6B7280] text-xs sm:text-sm font-medium mt-1">
-              Sinal obrigatório que garante o horário
+              Horário garantido pelo Pix antecipado
             </span>
           </div>
 
@@ -480,10 +472,10 @@ export default function Marketing() {
       <section id="beneficios" className="relative z-10 py-24 max-w-7xl mx-auto px-5">
         <div className="text-center max-w-3xl mx-auto mb-16 animate-fade-up">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#E5A991]/15 border border-[#E5A991]/40 text-[#9C5A42] text-xs font-semibold mb-4 shadow-xs">
-            <Sparkles className="w-3.5 h-3.5 text-[#C47F65]" /> Eficiência Operacional
+            <Sparkles className="w-3.5 h-3.5 text-[#C47F65]" /> Mais praticidade no seu dia a dia
           </div>
           <h2 className="font-serif text-3xl sm:text-5xl font-bold tracking-tight text-[#111827] mb-5">
-            Tudo o que seu salão precisa para <span className="brand-text-gradient">faturar mais e organizar sua equipe</span>
+            Tudo o que seu espaço precisa para <span className="brand-text-gradient">atender com tranquilidade</span>
           </h2>
           <p className="text-[#4B5563] text-base sm:text-lg leading-relaxed">
             Menos tempo respondendo mensagens repetitivas e calculando comissões no papel. Mais foco em atender bem suas clientes.
@@ -528,10 +520,10 @@ export default function Marketing() {
           
           <div className="text-center max-w-3xl mx-auto mb-16 animate-fade-up">
             <h2 className="font-serif text-3xl sm:text-5xl font-bold tracking-tight text-[#111827] mb-5">
-              Simples para o salão. <span className="brand-text-gradient">Encantador para a cliente.</span>
+              Simples para o seu negócio. <span className="brand-text-gradient">Prático para a cliente.</span>
             </h2>
             <p className="text-[#4B5563] text-base sm:text-lg">
-              Em menos de 1 minuto sua cliente escolhe o procedimento, agenda e confirma o sinal.
+              Em menos de 1 minuto sua cliente escolhe o procedimento, agenda e paga o sinal.
             </p>
           </div>
 
@@ -539,23 +531,23 @@ export default function Marketing() {
             {[
               {
                 step: "01",
-                title: "Acesso pelo Link",
-                desc: "A cliente clica no link exclusivo da sua bio do Instagram ou recebe no WhatsApp."
+                title: "Link na bio",
+                desc: "Ela abre o link da sua bio."
               },
               {
                 step: "02",
-                title: "Procedimento & Especialista",
-                desc: "Ela vê os preços, durações e escolhe o profissional que prefere para o atendimento."
+                title: "Serviço e profissional",
+                desc: "Escolhe o serviço, a profissional e o horário."
               },
               {
                 step: "03",
-                title: "Sinal Inteligente",
-                desc: "Paga uma porcentagem simbólica de sinal via PIX para blindar o horário contra faltas."
+                title: "Sinal no Pix",
+                desc: "Paga o sinal no Pix."
               },
               {
                 step: "04",
-                title: "Agenda Confirmada",
-                desc: "A reserva aparece no painel para conferência e confirmação pelo responsável do salão."
+                title: "Conferência e confirmação",
+                desc: "Você confere no banco e confirma."
               }
             ].map((st, i) => (
               <div key={i} className="bg-white rounded-3xl p-6 border border-[#E5E7EB] hover:border-[#E5A991] transition-all shadow-xs">
@@ -575,13 +567,13 @@ export default function Marketing() {
       <section id="calculadora" className="relative z-10 py-24 max-w-7xl mx-auto px-5">
         <div className="text-center max-w-3xl mx-auto mb-16 animate-fade-up">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold mb-4 shadow-xs">
-            <DollarSign className="w-3.5 h-3.5" /> Retorno Real do Investimento
+            <DollarSign className="w-3.5 h-3.5" /> Retorno do Investimento
           </div>
           <h2 className="font-serif text-3xl sm:text-5xl font-bold tracking-tight text-[#111827] mb-5">
-            O BelezaPura se paga <span className="brand-text-gradient">evitando um único furo</span>
+            Quanto as faltas custam pra você?
           </h2>
           <p className="text-[#4B5563] text-base sm:text-lg leading-relaxed">
-            Veja quanto seu salão perde hoje com cadeiras vazias e quanto você protege exigindo o sinal prévio.
+            Veja quanto seu espaço deixa de perder exigindo o sinal prévio no Pix.
           </p>
         </div>
 
@@ -613,7 +605,7 @@ export default function Marketing() {
               <div className="flex justify-between items-center mb-2">
                 <label className="text-sm font-semibold text-[#111827]">Ticket Médio do Atendimento:</label>
                 <span className="font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-lg text-sm border border-emerald-200">
-                  R$ {ticketMedio},00
+                  {formatCurrency(ticketMedio)}
                 </span>
               </div>
               <input 
@@ -630,7 +622,7 @@ export default function Marketing() {
             {/* Faltas semanais */}
             <div>
               <div className="flex justify-between items-center mb-2">
-                <label className="text-sm font-semibold text-[#111827]">Faltas / No-Shows por Semana:</label>
+                <label className="text-sm font-semibold text-[#111827]">Faltas por Semana:</label>
                 <span className="font-bold text-rose-700 bg-rose-50 px-3 py-1 rounded-lg text-sm border border-rose-200">
                   {noShowsPerWeek} {noShowsPerWeek === 1 ? "falta/semana" : "faltas/semana"}
                 </span>
@@ -646,12 +638,12 @@ export default function Marketing() {
             </div>
 
             <div className="pt-3 border-t border-[#E5E7EB] text-xs text-[#6B7280] leading-relaxed">
-              * O cálculo considera a redução real de no-shows proporcionada pela confirmação de sinal via PIX antecipado.
+              Estimativa: considera que o sinal reduz as faltas em 40%. Seu resultado pode variar.
             </div>
 
           </div>
 
-          {/* Resultado Empresarial com Classe */}
+          {/* Resultado Empresarial */}
           <div className="lg:col-span-5 bg-[#111827] rounded-3xl p-6 sm:p-8 border border-[#E5A991]/40 shadow-2xl flex flex-col justify-between text-white">
             
             <div>
@@ -663,20 +655,20 @@ export default function Marketing() {
                 <div>
                   <div className="text-xs text-stone-400">Prejuízo mensal estimado em faltas:</div>
                   <div className="text-xl font-bold text-rose-300 line-through">
-                    - R$ {prejuizoAtual.toLocaleString('pt-BR')},00 / mês
+                    - {formatCurrency(prejuizoAtual)} / mês
                   </div>
                 </div>
 
                 <div>
-                  <div className="text-xs text-stone-400">Faturamento protegido com o sinal PIX:</div>
+                  <div className="text-xs text-stone-400">Faturamento protegido com o sinal no Pix:</div>
                   <div className="text-3xl font-extrabold text-emerald-400 font-serif">
-                    + R$ {faturamentoSalvo.toLocaleString('pt-BR')},00
+                    + {formatCurrency(faturamentoSalvo)}
                   </div>
                 </div>
 
                 <div className="p-3 rounded-xl bg-black/40 border border-stone-800 flex justify-between items-center text-xs">
                   <span className="text-stone-400">Investimento Plano Studio:</span>
-                  <span className="font-bold text-white">R$ 119,90 / mês</span>
+                  <span className="font-bold text-white">{formatCurrency(custoPlanoStudio)} / mês</span>
                 </div>
               </div>
 
@@ -685,7 +677,7 @@ export default function Marketing() {
                   Lucro Líquido Preservado no seu Bolso:
                 </div>
                 <div className="text-2xl font-black text-emerald-400 mt-1">
-                  + R$ {lucroLiquidoExtra.toLocaleString('pt-BR')},00 / mês
+                  {lucroLiquidoExtra >= 0 ? `+ ${formatCurrency(lucroLiquidoExtra)}` : formatCurrency(lucroLiquidoExtra)} / mês
                 </div>
               </div>
             </div>
@@ -694,7 +686,7 @@ export default function Marketing() {
               onClick={() => navigate("/onboarding?planId=studio")} 
               className="w-full h-13 bg-[#E5A991] hover:bg-[#D89981] text-[#111827] font-extrabold text-base rounded-xl shadow-lg hover-lift justify-center flex items-center cursor-pointer transition-all"
             >
-              Blindar minha agenda com 14 dias grátis &rarr;
+              Testar 14 dias grátis &rarr;
             </button>
 
           </div>
@@ -750,15 +742,15 @@ export default function Marketing() {
       <section className="relative z-10 py-24 overflow-hidden border-t border-[#E5E7EB] bg-gradient-to-b from-[#FAFAFA] to-[#F3F4F6]">
         <div className="max-w-4xl mx-auto px-5 text-center relative z-10">
           <Badge className="bg-[#E5A991]/20 text-[#9C5A42] border border-[#E5A991]/40 font-bold mb-6 text-sm py-1.5 px-4">
-            🚀 Comece hoje seu teste gratuito
+            🚀 14 dias grátis, sem cartão
           </Badge>
 
           <h2 className="font-serif text-4xl sm:text-6xl font-bold tracking-tight text-[#111827] mb-6 leading-tight">
-            Sua agenda cheia e seu tempo de volta.
+            Comece hoje.
           </h2>
 
           <p className="text-[#4B5563] text-lg sm:text-xl mb-10 max-w-2xl mx-auto leading-relaxed">
-            Cadastre seu salão em menos de 3 minutos e comece a receber agendamentos com sinal garantido no PIX.
+            Cadastre seus serviços e sua chave Pix em uns 3 minutos e mande o link pras clientes.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
@@ -767,7 +759,7 @@ export default function Marketing() {
               onClick={() => navigate("/onboarding?planId=studio")} 
               className="h-16 px-10 bg-[#111827] hover:bg-[#1F2937] text-white font-extrabold text-lg rounded-2xl shadow-xl shadow-[#111827]/25 hover:scale-105 transition-transform"
             >
-              Iniciar meus 14 dias grátis agora &rarr;
+              Testar 14 dias grátis <ArrowRight className="w-5 h-5 ml-2 text-[#E5A991]" />
             </Button>
           </div>
 
@@ -788,13 +780,16 @@ export default function Marketing() {
                 <Sparkles className="w-4 h-4 text-[#E5A991]" />
               </div>
               <span className="font-serif text-xl font-bold text-white tracking-tight">BelezaPura</span>
-              <span className="text-xs text-[#E5A991] font-medium">Tecnologia & Gestão</span>
+              <span className="text-xs text-[#E5A991] font-medium">Estética & Unhas</span>
             </div>
             <p className="text-xs text-stone-400 max-w-sm mt-1">
-              A plataforma inteligente para salões de beleza, barbearias, esmalterias e clínicas de estética no Brasil.
+              Plataforma de agendamento para estética, bronzeamento e nail designers.
+            </p>
+            <p className="text-xs text-stone-400 mt-2">
+              Feito por [SEU NOME], em [SUA CIDADE]. Fale comigo no WhatsApp: [NÚMERO]
             </p>
             <p className="text-xs text-stone-500 mt-2">
-              © 2026 BelezaPura Tecnologia. Todos os direitos reservados.
+              © 2026 BelezaPura. Todos os direitos reservados.
             </p>
           </div>
 
