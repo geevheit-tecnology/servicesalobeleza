@@ -173,7 +173,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
   const [catalogError, setCatalogError] = useState("");
   useEffect(() => { api<any[]>("/public/plans").then(plans => { setPlanCatalog(plans.map(p => ({ ...p, price: Number(p.price).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }), desc: "Assinatura mensal com conferência manual", features: planFeatures(p) }))); setCatalogLoaded(true); }).catch(error => setCatalogError(error.message)); }, []);
   const [step, setStep] = useState(1);
-  const [salonName, setSalonName] = useState("Meu Salão");
+  const [salonName, setSalonName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [services, setServices] = useState(defaultServices);
@@ -358,13 +358,26 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
       <div className="sticky top-0 bg-background/95 backdrop-blur border-b border-border z-10">
         <div className="max-w-2xl mx-auto px-5 py-4">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate("/")}
+              className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity bg-transparent border-0 p-0 text-left"
+              title="Voltar para a página inicial"
+            >
               <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
                 <Sparkles className="w-3.5 h-3.5 text-white" />
               </div>
               <span className="font-serif font-bold text-sm text-foreground">BelezaPura</span>
+            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate("/")}
+                className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 font-medium cursor-pointer transition-colors"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" /> Voltar ao site
+              </button>
+              <span className="text-muted-foreground/40">•</span>
+              <div className="text-xs text-muted-foreground">Etapa {step} de {STEPS.length}</div>
             </div>
-            <div className="text-xs text-muted-foreground">Etapa {step} de {STEPS.length}</div>
           </div>
           <StepIndicator current={step} />
         </div>
@@ -410,11 +423,11 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
                 </div>
               </div>
               <div>
-                <label className="text-sm font-medium block mb-1.5">Nome do salão *</label>
+                <label className="text-sm font-medium block mb-1.5">Nome do seu espaço *</label>
                 <input
                   value={salonName}
                   onChange={e => setSalonName(e.target.value)}
-                  placeholder="Nome do seu negócio"
+                  placeholder="Ex: Studio Bella Estética"
                   className="w-full h-11 rounded-xl border border-border px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-card"
                 />
               </div>
@@ -920,17 +933,23 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
 
         {/* Navigation */}
         <div className="flex items-center justify-between mt-8 pt-6 border-t border-border">
-          <Button variant="ghost" onClick={back} disabled={step === 1}>
-            <ArrowLeft className="w-4 h-4" /> Voltar
-          </Button>
+          {step === 1 ? (
+            <Button variant="ghost" onClick={() => navigate("/")} className="text-muted-foreground hover:text-foreground">
+              <ArrowLeft className="w-4 h-4 mr-1" /> Voltar ao site
+            </Button>
+          ) : (
+            <Button variant="ghost" onClick={back}>
+              <ArrowLeft className="w-4 h-4 mr-1" /> Voltar
+            </Button>
+          )}
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">{step} / {STEPS.length}</span>
             {catalogError && <p role="alert">{catalogError}</p>}
             <Button onClick={next} disabled={loading || !catalogLoaded}>
               {step === 8 ? (
-                <><Sparkles className="w-4 h-4" /> {loading ? "Processando..." : "Iniciar teste gratuito"}</>
+                <><Sparkles className="w-4 h-4 mr-1" /> {loading ? "Processando..." : "Iniciar teste gratuito"}</>
               ) : (
-                <>Continuar <ArrowRight className="w-4 h-4" /></>
+                <>Continuar <ArrowRight className="w-4 h-4 ml-1" /></>
               )}
             </Button>
           </div>

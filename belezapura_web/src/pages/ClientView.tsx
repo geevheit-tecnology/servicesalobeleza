@@ -67,7 +67,7 @@ export default function ClientView() {
 
   // Carrega dados públicos do salão
   useEffect(() => {
-    const targetSlug = slug || "geevheithair-studio";
+    const targetSlug = slug || "studio-belezapura";
     setLoading(true);
     fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/public/salons/${targetSlug}`)
       .then(res => res.json())

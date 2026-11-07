@@ -23,7 +23,7 @@ export default function SalonDashboard() {
   const [showModal, setShowModal] = useState(false);
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [role, setRole] = useState<string>(localStorage.getItem('role') || 'owner');
-  const [userName, setUserName] = useState<string>(localStorage.getItem('userName') || 'Geevheit Gestão');
+  const [userName, setUserName] = useState<string>(localStorage.getItem('userName') || 'Responsável');
 
 
   const allowedNav = useMemo(() => {

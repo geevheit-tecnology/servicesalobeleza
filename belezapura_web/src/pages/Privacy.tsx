@@ -27,7 +27,7 @@ export default function Privacy() {
       content: (
         <>
           <p className="text-muted-foreground leading-relaxed">
-            A <strong>Geevheit Technology</strong>, desenvolvedora e mantenedora da plataforma <strong>GeevheitHair</strong>, tem como pilar inegociável a segurança da informação, a confidencialidade e a privacidade dos dados de todos os usuários que interagem com o nosso ecossistema.
+            A <strong>Geevheit Technology</strong>, desenvolvedora e mantenedora da plataforma <strong>BelezaPura</strong>, tem como pilar inegociável a segurança da informação, a confidencialidade e a privacidade dos dados de todos os usuários que interagem com o nosso ecossistema.
           </p>
           <p className="text-muted-foreground leading-relaxed mt-3">
             Esta Política de Privacidade foi elaborada em estrita conformidade com a <strong>Lei Geral de Proteção de Dados Pessoais (LGPD - Lei Federal nº 13.709/2018)</strong>, com o <strong>Marco Civil da Internet (Lei Federal nº 12.965/2014)</strong> e com as melhores práticas internacionais de segurança da informação.
@@ -55,10 +55,10 @@ export default function Privacy() {
             </div>
             <div className="p-4 rounded-2xl border border-border bg-muted/20">
               <span className="font-semibold text-foreground text-sm block mb-1">
-                O GeevheitHair é o OPERADOR
+                O BelezaPura é o OPERADOR
               </span>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                O GeevheitHair processa, armazena e protege os dados em nome do estabelecimento, fornecendo os recursos computacionais, automação de agendamentos e regras técnicas sem comercializar os dados para terceiros.
+                O BelezaPura processa, armazena e protege os dados em nome do estabelecimento, fornecendo os recursos computacionais, automação de agendamentos e regras técnicas sem comercializar os dados para terceiros.
               </p>
             </div>
           </div>
@@ -121,7 +121,7 @@ export default function Privacy() {
       content: (
         <>
           <p className="text-muted-foreground leading-relaxed">
-            O GeevheitHair adota medidas técnicas, organizacionais e criptográficas robustas para resguardar a integridade e sigilo dos dados:
+            O <strong>BelezaPura</strong> adota medidas técnicas, organizacionais e criptográficas robustas para resguardar a integridade e sigilo dos dados:
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
             <div className="p-3.5 rounded-2xl border border-border bg-card flex items-start gap-3">
@@ -264,7 +264,7 @@ export default function Privacy() {
               <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center shadow-sm">
                 <Sparkles className="w-3.5 h-3.5 text-white" />
               </div>
-              <span className="font-serif text-lg font-semibold tracking-tight">GeevheitHair</span>
+              <span className="font-serif text-lg font-semibold tracking-tight">BelezaPura</span>
             </div>
           </div>
 
@@ -285,7 +285,7 @@ export default function Privacy() {
             Política de Privacidade e Segurança
           </h1>
           <p className="text-muted-foreground text-base md:text-lg max-w-3xl leading-relaxed">
-            Transparência total sobre como tratamos, armazenamos e protegemos os seus dados e os dados dos clientes do seu salão de beleza no <strong>GeevheitHair</strong>.
+            Transparência total sobre como tratamos, armazenamos e protegemos os seus dados e os dados dos clientes da sua clínica, studio ou espaço no <strong>BelezaPura</strong>.
           </p>
           <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
             <span>Última atualização: Outubro de 2026</span>

@@ -25,7 +25,7 @@ export default function Contact() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [subject, setSubject] = useState("Dúvida sobre o GeevheitHair");
+  const [subject, setSubject] = useState("Dúvida sobre o BelezaPura");
   const [message, setMessage] = useState("");
 
   const OFFICIAL_EMAIL = "geevheittecnology@gmail.com";
@@ -48,7 +48,7 @@ export default function Contact() {
   };
 
   const handleDirectEmail = () => {
-    const mailtoSubject = encodeURIComponent(`[Contato Geevheith] ${subject}`);
+    const mailtoSubject = encodeURIComponent(`[Contato BelezaPura] ${subject}`);
     const mailtoBody = encodeURIComponent(
       `Nome: ${name || "Não informado"}\n` +
       `Email: ${email || "Não informado"}\n` +
@@ -76,7 +76,7 @@ export default function Contact() {
               <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center shadow-sm">
                 <Sparkles className="w-3.5 h-3.5 text-white" />
               </div>
-              <span className="font-serif text-lg font-semibold tracking-tight">GeevheitHair</span>
+              <span className="font-serif text-lg font-semibold tracking-tight">BelezaPura</span>
             </div>
           </div>
 
@@ -97,7 +97,7 @@ export default function Contact() {
             Fale Conosco & Tire suas Dúvidas
           </h1>
           <p className="text-muted-foreground text-base md:text-lg max-w-2xl leading-relaxed">
-            Dúvidas sobre o funcionamento do <strong>GeevheitHair</strong>, planos comerciais ou suporte especializado? Nossa equipe está à disposição.
+            Dúvidas sobre o funcionamento do <strong>BelezaPura</strong>, planos comerciais ou suporte especializado? Nossa equipe está à disposição.
           </p>
         </div>
 
@@ -256,9 +256,9 @@ export default function Contact() {
                       onChange={(e) => setSubject(e.target.value)}
                       className="h-10 w-full rounded-lg border border-border bg-card px-3 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/15"
                     >
-                      <option value="Dúvida sobre o GeevheitHair">Dúvida sobre o GeevheitHair</option>
+                      <option value="Dúvida sobre o BelezaPura">Dúvida sobre o BelezaPura</option>
                       <option value="Dúvida sobre planos e sinal PIX">Dúvida sobre planos e sinal PIX</option>
-                      <option value="Suporte e implantação no salão">Suporte e implantação no salão</option>
+                      <option value="Suporte e implantação no salão/studio">Suporte e implantação no salão/studio</option>
                       <option value="Interesse em outros aplicativos Geevheith">Interesse em outros aplicativos da Geevheith</option>
                       <option value="Parceria comercial ou contratação">Parceria comercial ou contratação</option>
                       <option value="Outro assunto">Outro assunto</option>

@@ -125,7 +125,7 @@ export function PaginaSalaoView() {
     }
   };
 
-  const slug = salonData?.slug || localStorage.getItem('salonSlug') || 'geevheithair-studio';
+  const slug = salonData?.slug || localStorage.getItem('salonSlug') || 'studio-belezapura';
   const publicUrl = `${window.location.origin}/agendar/${slug}`;
 
   return (

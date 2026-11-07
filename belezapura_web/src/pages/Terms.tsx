@@ -26,10 +26,10 @@ export default function Terms() {
       content: (
         <>
           <p className="text-muted-foreground leading-relaxed">
-            A plataforma <strong>GeevheitHair</strong> (desenvolvida e operada por <em>Geevheit Technology</em>) é um software como serviço (SaaS) especializado na gestão operacional, controle de horários, catálogo de serviços e agendamento online inteligente para clínicas de estética, studios de bronzeamento, esmalterias, nail designers, salões de beleza e profissionais autônomas.
+            A plataforma <strong>BelezaPura</strong> (desenvolvida e operada por <em>Geevheit Technology</em>) é um software como serviço (SaaS) especializado na gestão operacional, controle de horários, catálogo de serviços e agendamento online inteligente para clínicas de estética, studios de bronzeamento, esmalterias, nail designers, salões de beleza e profissionais autônomas.
           </p>
           <p className="text-muted-foreground leading-relaxed mt-3">
-            O GeevheitHair atua como facilitador tecnológico e ponte de comunicação entre os estabelecimentos de beleza (Contratantes/Lojistas) e seus respectivos clientes finais (Usuários Agendadores). O serviço abrange painel administrativo, link público de agendamento personalizado (<code className="text-xs bg-muted px-1.5 py-0.5 rounded text-foreground">/agendar/:slug</code>), gestão de profissionais e regras automáticas de confirmação e lembretes.
+            O BelezaPura atua como facilitador tecnológico e ponte de comunicação entre os estabelecimentos de beleza (Contratantes/Lojistas) e seus respectivos clientes finais (Usuários Agendadores). O serviço abrange painel administrativo, link público de agendamento personalizado (<code className="text-xs bg-muted px-1.5 py-0.5 rounded text-foreground">/agendar/:slug</code>), gestão de profissionais e regras automáticas de confirmação e lembretes.
           </p>
         </>
       ),
@@ -61,12 +61,12 @@ export default function Terms() {
       content: (
         <>
           <p className="text-muted-foreground leading-relaxed">
-            O GeevheitHair concede a novos estabelecimentos um período de avaliação gratuita de <strong>10 (dez) dias corridos</strong>, sem necessidade de inserção prévia de dados de cartão de crédito.
+            O BelezaPura concede a novos estabelecimentos um período de avaliação gratuita de <strong>14 (quatorze) dias corridos</strong>, sem necessidade de inserção prévia de dados de cartão de crédito.
           </p>
           <div className="bg-muted/40 border border-border/80 rounded-2xl p-4 mt-3 space-y-2">
             <p className="text-foreground text-sm font-medium">Condições do Período de Testes:</p>
             <p className="text-muted-foreground text-sm leading-relaxed">
-              Durante o trial, o estabelecimento tem acesso a todas as funcionalidades essenciais do plano selecionado. Ao término dos 10 dias, caso não ocorra a migração para um plano pago ativo, os agendamentos online e acessos de gestão serão temporariamente suspensos até a confirmação da assinatura.
+              Durante o trial, o estabelecimento tem acesso a todas as funcionalidades essenciais do plano selecionado. Ao término dos 14 dias, caso não ocorra a migração para um plano pago ativo, os agendamentos online e acessos de gestão serão temporariamente suspensos até a confirmação da assinatura.
             </p>
           </div>
           <p className="text-muted-foreground leading-relaxed mt-3">
@@ -82,7 +82,7 @@ export default function Terms() {
       content: (
         <>
           <p className="text-muted-foreground leading-relaxed">
-            Um dos recursos centrais do GeevheitHair é a funcionalidade de <strong>Sinal PIX Anti-Furo</strong>, desenvolvida para resguardar o faturamento e a agenda do profissional de beleza contra ausências imprevistas (<em>no-show</em>).
+            Um dos recursos centrais do BelezaPura é a funcionalidade de <strong>Sinal no Pix</strong>, desenvolvida para resguardar o faturamento e a agenda do profissional contra ausências imprevistas (<em>no-show</em>).
           </p>
           <div className="border border-indigo-200/50 bg-indigo-50/30 dark:bg-indigo-950/20 rounded-2xl p-4 mt-3 space-y-3">
             <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-semibold text-sm">
@@ -113,14 +113,14 @@ export default function Terms() {
       content: (
         <>
           <p className="text-muted-foreground leading-relaxed">
-            O GeevheitHair é estritamente um <strong>provedor de infraestrutura tecnológica e software de gestão</strong>.
+            O BelezaPura é estritamente um <strong>provedor de infraestrutura tecnológica e software de gestão</strong>.
           </p>
           <ul className="list-disc pl-5 mt-3 space-y-2 text-muted-foreground">
             <li>
               <strong>Serviços de Beleza e Estética:</strong> A execução técnica, qualidade, segurança física, aplicação de produtos cosméticos, biossegurança e pontualidade dos procedimentos realizados no salão são de responsabilidade exclusiva do estabelecimento prestador e de seus profissionais.
             </li>
             <li>
-              <strong>Transações Financeiras Diretas:</strong> As transações de PIX e pagamentos presenciais ocorrem diretamente entre o cliente final e a conta receptora configurada pelo salão. O GeevheitHair não custodia valores e não atua como instituição financeira ou emissora de moeda eletrônica.
+              <strong>Transações Financeiras Diretas:</strong> As transações de PIX e pagamentos presenciais ocorrem diretamente entre o cliente final e a conta receptora configurada pelo salão. O BelezaPura não custodia valores e não atua como instituição financeira ou emissora de moeda eletrônica.
             </li>
           </ul>
         </>
@@ -192,11 +192,11 @@ export default function Terms() {
               <span>Voltar ao Início</span>
             </button>
             <span className="text-border">|</span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
               <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center shadow-sm">
                 <Sparkles className="w-3.5 h-3.5 text-white" />
               </div>
-              <span className="font-serif text-lg font-semibold tracking-tight">GeevheitHair</span>
+              <span className="font-serif text-lg font-semibold tracking-tight">BelezaPura</span>
             </div>
           </div>
 
@@ -217,7 +217,7 @@ export default function Terms() {
             Termos e Condições de Uso
           </h1>
           <p className="text-muted-foreground text-base md:text-lg max-w-3xl leading-relaxed">
-            Bem-vindo ao <strong>GeevheitHair</strong>. Estes termos detalham os direitos, responsabilidades e normas de convivência comercial entre nossa plataforma, os estabelecimentos cadastrados e seus clientes finais.
+            Bem-vindo ao <strong>BelezaPura</strong>. Estes termos detalham os direitos, responsabilidades e normas de convivência comercial entre nossa plataforma, os estabelecimentos cadastrados e seus clientes finais.
           </p>
           <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
             <span>Última atualização: Outubro de 2026</span>
@@ -291,7 +291,7 @@ export default function Terms() {
       {/* Footer */}
       <footer className="border-t border-border bg-card py-8 mt-12">
         <div className="max-w-5xl mx-auto px-5 text-center text-xs text-muted-foreground">
-          © 2026 Geevheith Software Solutions. Todos os direitos reservados.
+          © 2026 BelezaPura Tecnologia. Todos os direitos reservados.
         </div>
       </footer>
     </div>

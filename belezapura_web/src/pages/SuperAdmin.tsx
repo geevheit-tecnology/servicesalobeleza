@@ -741,12 +741,7 @@ function PagamentosView() {
  return <div className="p-4 sm:p-6 space-y-4"><h1 className="font-serif text-2xl">Recebimentos conferidos</h1><p className="text-sm text-muted-foreground">Histórico das confirmações manuais registradas pelo administrador.</p>{error && <p role="alert">{error}</p>}<div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr>{["Data", "Assinatura", "Referência", "Valor"].map(h => <th key={h} className="p-3 text-left">{h}</th>)}</tr></thead><tbody>{payments.map(p => <tr key={p.id} className="border-t"><td className="p-3">{new Date(p.createdAt).toLocaleString("pt-BR")}</td><td className="p-3">{p.subscriptionId}</td><td className="p-3">{p.reference}</td><td className="p-3">R$ {Number(p.amount).toFixed(2)}</td></tr>)}</tbody></table></div></div>;
 }
 
-const adminUsers = [
-  { id: 1, name: "Administrador", role: "Super Admin", email: "admin@geevheithair.com", last: "Agora", status: "active", permissions: ["all"] },
-  { id: 2, name: "Carlos Mendes", role: "Suporte N1", email: "carlos@geevheithair.com", last: "2h atrás", status: "active", permissions: ["tickets:read", "tickets:write"] },
-  { id: 3, name: "Fernanda Ramos", role: "Suporte N2", email: "fernanda@geevheithair.com", last: "Hoje", status: "active", permissions: ["tickets:read", "tickets:write", "salons:read"] },
-  { id: 4, name: "Rodrigo Lima", role: "Financeiro", email: "rodrigo@geevheithair.com", last: "Ontem", status: "inactive", permissions: ["finance:read", "finance:write"] },
-];
+const adminUsers: any[] = [];
 
 function UsuariosView() {
   const [localUsers, setLocalUsers] = useState<any[]>([]);
@@ -978,13 +973,13 @@ function ConfiguracoesAdminView() {
       .then(res => res.json())
       .then(data => {
         setPlatformData({
-          platformName: data.platformName || "GeevheitHair",
-          domain: data.domain || "geevheithair.com",
-          supportEmail: data.supportEmail || "geevheittecnology@gmail.com"
+          platformName: data.platformName || "BelezaPura",
+          domain: data.domain || "servicesalobeleza.vercel.app",
+          supportEmail: data.supportEmail || "contato@belezapura.com"
         });
         setTrialData({
-          trialDays: data.trialDays || 10,
-          defaultPlanId: data.defaultPlanId || ""
+          trialDays: data.trialDays || 14,
+          defaultPlanId: data.defaultPlanId || "studio"
         });
       })
       .catch(console.error);
