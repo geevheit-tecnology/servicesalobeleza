@@ -63,7 +63,7 @@ export const ONBOARDING_PLANS = [
     highlight: true,
     badge: "MAIS ESCOLHIDO",
     trialBadge: "🎁 14 DIAS GRÁTIS NO STUDIO COMPLETO",
-    desc: "Para salões e barbearias em equipe (até 5 profissionais)",
+    desc: "Para clínicas, studios e salões em equipe (até 5 profissionais)",
     features: [
       "Tudo do Essencial",
       "Até 5 profissionais",
@@ -493,11 +493,11 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
               <div>
                 <label className="text-sm font-medium block mb-1.5">Categoria principal</label>
                 <select className="w-full h-11 rounded-xl border border-border px-3 text-sm outline-none focus:border-primary bg-card appearance-none">
-                  <option>Salão de beleza</option>
                   <option>Estética</option>
-                  <option>Manicure</option>
+                  <option>Nail Designer / Manicure</option>
+                  <option>Studio de Bronzeamento</option>
+                  <option>Salão de beleza</option>
                   <option>SPA</option>
-                  <option>Barbearia</option>
                 </select>
               </div>
             </div>

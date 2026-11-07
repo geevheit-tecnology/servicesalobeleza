@@ -225,7 +225,7 @@ export function ProfissionaisView() {
                 disabled={loading}
                 value={formPro.name}
                 onChange={e => setFormPro({ ...formPro, name: e.target.value })}
-                placeholder="Ex: Carlos Barbeiro"
+                placeholder="Ex: Rafaela Silva"
                 className="w-full h-10 rounded-xl border border-border px-3 text-sm outline-none focus:border-primary bg-card"
               />
             </div>
@@ -235,7 +235,7 @@ export function ProfissionaisView() {
                 disabled={loading}
                 value={formPro.specialty}
                 onChange={e => setFormPro({ ...formPro, specialty: e.target.value })}
-                placeholder="Ex: Barba & Cabelo, Colorista, Manicure"
+                placeholder="Ex: Nail Designer, Esteticista, Bronzeamento"
                 className="w-full h-10 rounded-xl border border-border px-3 text-sm outline-none focus:border-primary bg-card"
               />
             </div>
