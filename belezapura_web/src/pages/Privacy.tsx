@@ -359,7 +359,16 @@ export default function Privacy() {
       {/* Footer */}
       <footer className="border-t border-border bg-card py-8 mt-12">
         <div className="max-w-5xl mx-auto px-5 text-center text-xs text-muted-foreground">
-          © 2026 Geevheith Software Solutions. Todos os direitos reservados.
+          © 2026{" "}
+          <a
+            href="https://geevheith-site.vercel.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-foreground underline transition-colors"
+          >
+            Geevheith Software Solutions
+          </a>
+          . Todos os direitos reservados.
         </div>
       </footer>
     </div>

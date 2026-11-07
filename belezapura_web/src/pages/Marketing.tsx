@@ -786,7 +786,24 @@ export default function Marketing() {
               Plataforma de agendamento para estética, bronzeamento e nail designers.
             </p>
             <p className="text-xs text-stone-400 mt-2">
-              Feito por [SEU NOME], em [SUA CIDADE]. Fale comigo no WhatsApp: [NÚMERO]
+              Desenvolvido por{" "}
+              <a 
+                href="https://geevheith-site.vercel.app/" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-[#E5A991] hover:underline font-medium"
+              >
+                Geevheit Software Solutions
+              </a>
+              {" "}• Nosso contato:{" "}
+              <a 
+                href="https://geevheith-site.vercel.app/" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-stone-300 hover:text-white underline transition-colors"
+              >
+                geevheith-site.vercel.app
+              </a>
             </p>
             <p className="text-xs text-stone-500 mt-2">
               © 2026 BelezaPura. Todos os direitos reservados.
