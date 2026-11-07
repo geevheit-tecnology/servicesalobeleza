@@ -2,7 +2,32 @@
 
 Referência: [auditoria de 04/11/2026](AUDITORIA_ASSINATURAS_50_CLIENTES.md).
 
-## Execução atual — retomada até o deploy em 05/11/2026
+## Revisão de 07/11/2026 — preparação para uso em 09/11
+
+Branch: `ajuste-posicionamento-revisao-20261107`. Evidências: [revisão atual](docs/validation/2026-11-07-prontidao-comercial.md).
+
+- [x] Revisar `melhorias.md`, histórico Git e implementação atual pelo CodeGraph; preservar o arquivo de requisitos não rastreado.
+- [x] Identificar exemplos fictícios na landing e no mockup Pix; explicitar ausência de automação WhatsApp e confirmação manual.
+- [x] Retirar afirmação de recebimento inexistente no contato: formulário prepara mensagem para envio pelo leitor de e-mail.
+- [x] Validar moeda em 240 casos, incluindo `R$ 424,10`, sem alterar fórmula.
+- [x] Executar integração Go com PostgreSQL descartável e detector de corrida; `go vet` aprovado.
+- [x] Validar cinco fluxos de navegador existentes na versão compilada local.
+- [x] Validar landing/calculadora em 390 e 1440 px e contato: três testes adicionais aprovados.
+- [x] Confirmar Supabase `beautifullcare` ativo por consulta atual; manter dados existentes.
+- [x] Corrigir cadastro completo após autorização: endereço, Instagram, contato, categoria, duração, favorecido e política de sinal persistidos; configuração editável; reservas verificadas no navegador.
+- [x] Testar migração aditiva `004_onboarding_details.sql` no banco descartável; restaurar backup e comparar contagens/hashes das 13 tabelas.
+- [x] Executar suíte final: 11 testes de navegador, integração Go com detector de corrida e auditoria npm de produção sem vulnerabilidades.
+- [ ] Conectar Render e inspecionar serviço `srv-davihg5g1s2s73alboag`, revisão, logs e conexão real.
+- [x] Atualizar auditoria de integridade e obter backup privado Supabase; restaurar localmente os dados de negócio/identidade e ensaiar migrações 001–004 em schema separado, preservando os legados.
+- [ ] Comprovar restauração gerenciada, cópia externa/retida do backup e corte consistente; exportação CLI não inclui registros de duas tabelas internas de migração da plataforma.
+- [ ] Comprovar login real e migração em ambiente publicado, incluindo cadastro, serviço, profissional, horário, reserva, Pix e confirmação manual.
+- [x] Publicar prévia web Ready: [revisão de 07/11](https://servicesalobeleza-4rw2yhmfh-geevheits-projects.vercel.app), deploy `dpl_AQbwJPBdeYqmiKtLvJp3Ndmazqv3`.
+- [ ] Integrar prévia com API atualizada; produção depende da aprovação prevista em `melhorias.md`.
+- [ ] Validar capacidade no destino, rotina de backup, alertas e operação assistida antes de abrir vendas.
+
+Não há liberação comercial comprovada. O frontend público retornou HTTP 200; a API histórica não respondeu em 45 segundos. Testes locais não encerram os itens remotos.
+
+## Execução anterior — retomada até o deploy em 05/11/2026
 
 - [x] Conferir projeto Vercel correto e corrigir vínculo local/empacotamento.
 - [x] Publicar prévia web com TypeScript obrigatório: [prévia Ready](https://servicesalobeleza-8dkoptd5t-geevheits-projects.vercel.app), deploy `dpl_CpYYhYdwDj9KXAPdAkdWk3UdCPT9`.

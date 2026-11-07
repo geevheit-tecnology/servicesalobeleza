@@ -1,0 +1,54 @@
+{
+  "date": "2026-11-07",
+  "project": "beautifullcare",
+  "projectRef": "yugrmyjvespydrggutvo",
+  "scope": [
+    "public",
+    "auth",
+    "storage"
+  ],
+  "backupPrivate": true,
+  "remoteModified": false,
+  "localEngine": "PostgreSQL 17 descartável",
+  "tablesCompared": 44,
+  "tablesWithMatchingCountsAndRowHashes": 42,
+  "businessAndIdentityDataMatch": true,
+  "platformMetadataDifferences": {
+    "auth.schema_migrations": {
+      "remoteCount": 82,
+      "restoredCount": 0
+    },
+    "storage.migrations": {
+      "remoteCount": 80,
+      "restoredCount": 0
+    }
+  },
+  "summary": {
+    "public.tenants": 3,
+    "public.profiles": 1,
+    "public.services": 1,
+    "public.professionals": 1,
+    "public.appointments": 0,
+    "auth.users": 1,
+    "storage.objects": 0
+  },
+  "artifacts": [
+    {
+      "kind": "schema",
+      "bytes": 184584,
+      "mode": "0o600",
+      "sha256": "3a3cf730bac1abf5e065d053d80a3b5ac3d858ece91c29171611733e11791ff7"
+    },
+    {
+      "kind": "data",
+      "bytes": 14643,
+      "mode": "0o600",
+      "sha256": "d5a205e3971a45815f145b9dc257ab2d931ad4c802383598871576fa1a975a35"
+    }
+  ],
+  "limitations": [
+    "Backup gerado pela CLI não trouxe registros das tabelas internas auth.schema_migrations e storage.migrations; isso impede afirmar cópia integral do estado gerenciado.",
+    "Restauração local não certifica restauração gerenciada Supabase, autenticação externa ou políticas em produção.",
+    "Backup privado na máquina local; cópia externa, retenção e corte consistente ainda precisam ser definidos."
+  ]
+}

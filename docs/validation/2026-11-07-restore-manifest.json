@@ -1,0 +1,112 @@
+{
+  "environment": "PostgreSQL 17 local descart\u00e1vel; somente dados sint\u00e9ticos",
+  "source": {
+    "plans": {
+      "count": 3,
+      "digest": "3fa50ec6c4ca4ebbb0117ae13b97270d"
+    },
+    "users": {
+      "count": 38,
+      "digest": "06134ca3527d7c8af17447a8d1e0ed86"
+    },
+    "salons": {
+      "count": 29,
+      "digest": "6952c063e748ef6d42aeeaf8de1fe434"
+    },
+    "clients": {
+      "count": 31,
+      "digest": "e211df71076a551f927b5553f50be3a9"
+    },
+    "payments": {
+      "count": 8,
+      "digest": "374f519de222654d6b1c7d9709004af2"
+    },
+    "products": {
+      "count": 3,
+      "digest": "f33bdfecb513f92cde9f4dd041548b65"
+    },
+    "services": {
+      "count": 29,
+      "digest": "9f1de8146ffc370036712ba8ef43b00d"
+    },
+    "appointments": {
+      "count": 28,
+      "digest": "2d2e2e81e0a533fc8da5855c90f0d973"
+    },
+    "professionals": {
+      "count": 32,
+      "digest": "63c4913784c3b24ce53923a0c2f35565"
+    },
+    "subscriptions": {
+      "count": 29,
+      "digest": "c921f5e38ed4053683e3368e0684fe7f"
+    },
+    "system_settings": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "admin_audit_logs": {
+      "count": 25,
+      "digest": "10c5c0ce2698692bebbaa396a5d19271"
+    },
+    "schema_migrations": {
+      "count": 4,
+      "digest": "b7e2fe6b55aa877b1f3f58fe388dac7c"
+    }
+  },
+  "restored": {
+    "plans": {
+      "count": 3,
+      "digest": "3fa50ec6c4ca4ebbb0117ae13b97270d"
+    },
+    "users": {
+      "count": 38,
+      "digest": "06134ca3527d7c8af17447a8d1e0ed86"
+    },
+    "salons": {
+      "count": 29,
+      "digest": "6952c063e748ef6d42aeeaf8de1fe434"
+    },
+    "clients": {
+      "count": 31,
+      "digest": "e211df71076a551f927b5553f50be3a9"
+    },
+    "payments": {
+      "count": 8,
+      "digest": "374f519de222654d6b1c7d9709004af2"
+    },
+    "products": {
+      "count": 3,
+      "digest": "f33bdfecb513f92cde9f4dd041548b65"
+    },
+    "services": {
+      "count": 29,
+      "digest": "9f1de8146ffc370036712ba8ef43b00d"
+    },
+    "appointments": {
+      "count": 28,
+      "digest": "2d2e2e81e0a533fc8da5855c90f0d973"
+    },
+    "professionals": {
+      "count": 32,
+      "digest": "63c4913784c3b24ce53923a0c2f35565"
+    },
+    "subscriptions": {
+      "count": 29,
+      "digest": "c921f5e38ed4053683e3368e0684fe7f"
+    },
+    "system_settings": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "admin_audit_logs": {
+      "count": 25,
+      "digest": "10c5c0ce2698692bebbaa396a5d19271"
+    },
+    "schema_migrations": {
+      "count": 4,
+      "digest": "b7e2fe6b55aa877b1f3f58fe388dac7c"
+    }
+  },
+  "match": true
+}
