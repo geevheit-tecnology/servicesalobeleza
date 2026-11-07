@@ -1,5 +1,5 @@
 import { PlanCatalog } from "@/components/PlanCatalog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   Sparkles, Calendar, CreditCard, BarChart3, Users, Store, Check, ArrowRight, 
@@ -9,6 +9,14 @@ import {
 } from "lucide-react";
 import { Button, Badge } from "@/components/ui";
 import { formatCurrency } from "@/utils/formatters";
+
+// Notificações de Atividade em Tempo Real (Social Proof Dinâmico)
+const LIVE_NOTIFICATIONS = [
+  { name: "Mariana S.", action: "agendou Alongamento em Gel com Rafaela", time: "há 2 min", value: "Sinal de R$ 36 no Pix" },
+  { name: "Camila R.", action: "garantiu horário de Drenagem", time: "há 5 min", value: "Sinal de R$ 30 no Pix" },
+  { name: "Juliana M.", action: "marcou Bronzeamento com Fita", time: "há 8 min", value: "Sinal de R$ 24 no Pix" },
+  { name: "Studio Bella", action: "liberou 4 horários no Instagram", time: "há 11 min", value: "Link da bio ativo" }
+];
 
 // Cenários da Demonstração Interativa do BelezaPura
 interface BookingScenario {
@@ -137,6 +145,17 @@ export default function Marketing() {
   const [activeScenario, setActiveScenario] = useState<BookingScenario>(BOOKING_SCENARIOS[0]);
   const [copiedPix, setCopiedPix] = useState(false);
 
+  // Notificações flutuantes dinâmicas
+  const [liveNotifIndex, setLiveNotifIndex] = useState(0);
+  const [showLiveNotif, setShowLiveNotif] = useState(true);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setLiveNotifIndex((prev) => (prev + 1) % LIVE_NOTIFICATIONS.length);
+    }, 5500);
+    return () => clearInterval(timer);
+  }, []);
+
   // Calculadora de Retorno do BelezaPura
   const [numStaff, setNumStaff] = useState<number>(3);
   const [ticketMedio, setTicketMedio] = useState<number>(85);
@@ -159,11 +178,14 @@ export default function Marketing() {
   };
 
   return (
-    <div className="min-h-full bg-[#FAFAFA] text-[#111827] font-sans selection:bg-[#E5A991]/30 selection:text-[#111827] antialiased overflow-x-hidden">
+    <div className="min-h-full bg-[#FAFAFA] text-[#111827] font-sans selection:bg-[#E5A991]/30 selection:text-[#111827] antialiased overflow-x-hidden relative">
       
-      {/* Background glow ultra-suave */}
+      {/* Background dinâmico, malha de textura e orbes luminosas */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[850px] h-[500px] bg-gradient-to-b from-[#E5A991]/10 via-[#111827]/5 to-transparent blur-[140px] rounded-full" />
+        <div className="absolute inset-0 mesh-grid opacity-50" />
+        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[900px] h-[550px] bg-gradient-to-b from-[#E5A991]/20 via-[#F5D0C5]/15 to-transparent blur-[130px] rounded-full animate-pulse-soft" />
+        <div className="absolute top-[25%] -left-32 w-[550px] h-[550px] bg-gradient-to-tr from-[#E5A991]/15 via-[#FCE7F3]/25 to-transparent blur-[140px] rounded-full animate-float-slow" />
+        <div className="absolute top-[60%] -right-32 w-[600px] h-[600px] bg-gradient-to-bl from-[#FEF3C7]/20 via-[#E5A991]/10 to-transparent blur-[140px] rounded-full animate-float-delay" />
       </div>
 
       {/* Top Banner Elegante Preto Profundo */}
@@ -287,7 +309,7 @@ export default function Marketing() {
               <Button 
                 size="lg" 
                 onClick={() => navigate("/onboarding?planId=studio")} 
-                className="h-14 sm:h-16 px-8 bg-[#111827] hover:bg-[#1F2937] text-white font-bold text-base sm:text-lg rounded-2xl shadow-xl shadow-[#111827]/15 hover-lift justify-center"
+                className="btn-sheen h-14 sm:h-16 px-8 bg-[#111827] hover:bg-[#1F2937] text-white font-bold text-base sm:text-lg rounded-2xl shadow-xl shadow-[#111827]/15 hover-lift justify-center"
               >
                 Testar 14 dias grátis <ArrowRight className="w-5 h-5 ml-2 text-[#E5A991]" />
               </Button>
@@ -316,16 +338,30 @@ export default function Marketing() {
 
           {/* Hero Right Visual: Demonstrador do Agendamento BelezaPura */}
           <div className="lg:col-span-5 flex justify-center lg:justify-end animate-fade-up">
-            <div className="w-full max-w-[390px] relative">
+            <div className="w-full max-w-[390px] relative animate-float-gentle">
               
-              {/* Badge Flutuante de Segurança */}
-              <div className="absolute -top-4 -left-6 z-20 bg-white/95 border border-[#E5E7EB] rounded-2xl p-3 shadow-xl backdrop-blur-md hidden sm:flex items-center gap-3">
+              {/* Badge Flutuante Superior */}
+              <div className="absolute -top-4 -left-6 z-20 bg-white/95 border border-[#E5E7EB] rounded-2xl p-3 shadow-xl backdrop-blur-md hidden sm:flex items-center gap-3 animate-float-delay">
                 <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
                   <ShieldCheck className="w-5 h-5" />
                 </div>
                 <div>
                   <div className="text-xs font-bold text-[#111827]">Sinal no Pix, direto na sua conta</div>
                   <div className="text-[10px] text-[#6B7280]">Direto na sua conta bancária</div>
+                </div>
+              </div>
+
+              {/* Badge Flutuante Inferior de Confirmação */}
+              <div className="absolute -bottom-4 -right-6 z-20 bg-white/95 border border-emerald-100 rounded-2xl p-3 shadow-xl backdrop-blur-md hidden sm:flex items-center gap-3 animate-float-delay">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold">
+                  <CheckCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-[#111827] flex items-center gap-1.5">
+                    <span>Sinal Confirmado</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                  </div>
+                  <div className="text-[10px] text-emerald-700 font-semibold">Horário reservado com Pix</div>
                 </div>
               </div>
 
@@ -343,8 +379,12 @@ export default function Marketing() {
                         <div className="text-sm font-bold text-white flex items-center gap-1.5">
                           Studio BelezaPura
                         </div>
-                        <div className="text-[11px] text-emerald-100 flex items-center gap-1">
-                          ● agendamento online ativo
+                        <div className="text-[11px] text-emerald-100 flex items-center gap-1.5">
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-300"></span>
+                          </span>
+                          agendamento online ativo
                         </div>
                       </div>
                     </div>
@@ -486,10 +526,11 @@ export default function Marketing() {
           {CORE_BENEFITS.map((item, idx) => (
             <div 
               key={idx}
-              className={`rounded-3xl p-7 bg-white border ${item.border} relative overflow-hidden flex flex-col justify-between hover:scale-[1.02] transition-all duration-300 group shadow-xs hover:shadow-md`}
+              className={`rounded-3xl p-7 bg-white/95 backdrop-blur-xs border ${item.border} relative overflow-hidden flex flex-col justify-between hover:scale-[1.02] hover:-translate-y-1 transition-all duration-300 group shadow-xs hover:shadow-xl`}
             >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#E5A991]/10 to-transparent rounded-bl-full pointer-events-none group-hover:from-[#E5A991]/25 transition-all duration-500" />
               <div>
-                <div className="w-12 h-12 rounded-2xl bg-[#FAFAFA] border border-[#E5E7EB] text-[#111827] flex items-center justify-center font-bold mb-5 shadow-xs group-hover:scale-110 transition-transform">
+                <div className="w-12 h-12 rounded-2xl bg-[#FAFAFA] border border-[#E5E7EB] text-[#111827] flex items-center justify-center font-bold mb-5 shadow-xs group-hover:scale-110 group-hover:rotate-3 group-hover:bg-[#111827] group-hover:text-white transition-all duration-300">
                   <item.icon className="w-6 h-6" />
                 </div>
 
@@ -550,8 +591,8 @@ export default function Marketing() {
                 desc: "Você confere no banco e confirma."
               }
             ].map((st, i) => (
-              <div key={i} className="bg-white rounded-3xl p-6 border border-[#E5E7EB] hover:border-[#E5A991] transition-all shadow-xs">
-                <div className="w-10 h-10 rounded-xl bg-[#111827] text-[#E5A991] flex items-center justify-center font-bold text-sm mb-4 shadow-xs">
+              <div key={i} className="bg-white/95 rounded-3xl p-6 border border-[#E5E7EB] hover:border-[#E5A991] hover:-translate-y-1.5 transition-all duration-300 shadow-xs hover:shadow-xl group">
+                <div className="w-10 h-10 rounded-xl bg-[#111827] text-[#E5A991] flex items-center justify-center font-bold text-sm mb-4 shadow-xs group-hover:scale-110 group-hover:bg-[#E5A991] group-hover:text-[#111827] transition-all duration-300">
                   {st.step}
                 </div>
                 <h3 className="font-bold text-[#111827] text-lg mb-2">{st.title}</h3>
@@ -846,6 +887,37 @@ export default function Marketing() {
 
         </div>
       </footer>
+
+      {/* Notificação Flutuante de Atividade em Tempo Real (Social Proof) */}
+      {showLiveNotif && (
+        <div className="fixed bottom-6 left-6 z-40 hidden sm:flex items-center gap-3 bg-white/95 border border-[#E5E7EB] p-3.5 rounded-2xl shadow-2xl backdrop-blur-md animate-fade-up max-w-sm transition-all duration-300 hover:scale-[1.02]">
+          <div className="w-10 h-10 rounded-xl bg-[#E5A991]/20 text-[#9C5A42] flex items-center justify-center shrink-0">
+            <Sparkles className="w-5 h-5 text-[#C47F65]" />
+          </div>
+          <div className="flex-1 pr-2">
+            <div className="text-xs font-bold text-[#111827] flex items-center gap-1.5">
+              <span>{LIVE_NOTIFICATIONS[liveNotifIndex].name}</span>
+              <span className="text-[10px] font-normal text-[#6B7280]">
+                • {LIVE_NOTIFICATIONS[liveNotifIndex].time}
+              </span>
+            </div>
+            <div className="text-[11px] text-[#4B5563] truncate">
+              {LIVE_NOTIFICATIONS[liveNotifIndex].action}
+            </div>
+            <div className="text-[10px] font-bold text-emerald-700 mt-0.5 flex items-center gap-1">
+              <Check className="w-3 h-3 stroke-[3]" />
+              {LIVE_NOTIFICATIONS[liveNotifIndex].value}
+            </div>
+          </div>
+          <button 
+            onClick={() => setShowLiveNotif(false)}
+            className="text-stone-400 hover:text-stone-600 p-1 rounded-md cursor-pointer"
+            aria-label="Fechar notificação"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
     </div>
   );
