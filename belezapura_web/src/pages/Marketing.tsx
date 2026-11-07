@@ -351,20 +351,6 @@ export default function Marketing() {
                 </div>
               </div>
 
-              {/* Badge Flutuante Inferior de Confirmação */}
-              <div className="absolute -bottom-4 -right-6 z-20 bg-white/95 border border-emerald-100 rounded-2xl p-3 shadow-xl backdrop-blur-md hidden sm:flex items-center gap-3 animate-float-delay">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold">
-                  <CheckCheck className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="text-xs font-bold text-[#111827] flex items-center gap-1.5">
-                    <span>Sinal Confirmado</span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                  </div>
-                  <div className="text-[10px] text-emerald-700 font-semibold">Horário reservado com Pix</div>
-                </div>
-              </div>
-
               {/* Moldura do Celular */}
               <div className="rounded-[44px] p-3.5 bg-gradient-to-b from-[#E5E7EB] via-stone-300 to-[#111827] shadow-2xl border-4 border-[#E5E7EB]">
                 <div className="rounded-[36px] bg-[#EFEAE2] overflow-hidden border border-[#E5E7EB] flex flex-col h-[540px]">
