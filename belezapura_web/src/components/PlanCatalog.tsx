@@ -70,23 +70,23 @@ export function planFeatures(plan: { maxProfessionals: number }) {
 }
 
 export function PlanCatalog() {
-  const [plans, setPlans] = useState<PlanItem[]>(FALLBACK_PLANS); 
+  const [plans, setPlans] = useState<PlanItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => { 
     api<any[]>("/public/plans")
       .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
-          const merged = FALLBACK_PLANS.map(fb => {
-            const apiPlan = data.find(p => p.id === fb.id || p.name?.toLowerCase() === fb.name.toLowerCase());
-            return apiPlan ? { ...fb, price: Number(apiPlan.price) || fb.price } : fb;
-          });
-          setPlans(merged);
-        }
+        if (!Array.isArray(data) || data.length === 0) throw new Error("Nenhum plano disponível.");
+        setPlans(data.map(plan => {
+          const presentation = FALLBACK_PLANS.find(p => p.name.toLowerCase() === plan.name?.toLowerCase());
+          return { id: plan.id, name: plan.name, price: Number(plan.price), desc: presentation?.desc || "Assinatura mensal com conferência manual", highlight: plan.name?.toLowerCase() === "studio", features: planFeatures(plan) };
+        }));
       })
       .catch(() => {
-        // Mantém planos padrão caso a API esteja temporariamente inacessível
-      }); 
+        setError("Não foi possível carregar os planos. Tente novamente em instantes ou fale conosco.");
+      }).finally(() => setLoading(false));
   }, []);
 
   return (
@@ -104,6 +104,8 @@ export function PlanCatalog() {
           </p>
         </div>
 
+        {loading && <p role="status" className="text-center text-sm">Carregando planos disponíveis...</p>}
+        {error && <p role="alert" className="text-center text-sm">{error}</p>}
         <div className="grid md:grid-cols-3 gap-6 items-stretch">
           {plans.map(p => (
             <article 
@@ -136,7 +138,7 @@ export function PlanCatalog() {
                     <span className={`text-sm ${p.highlight ? "text-stone-300" : "text-[#6B7280]"}`}>/mês</span>
                   </div>
                   <span className={`text-[11px] block mt-1 font-medium ${p.highlight ? "text-[#E5A991]" : "text-emerald-700"}`}>
-                    {p.id === "studio" ? "🎁 14 dias de teste grátis" : "Sem taxa de adesão"}
+                    🎁 14 dias de teste grátis
                   </span>
                 </div>
 

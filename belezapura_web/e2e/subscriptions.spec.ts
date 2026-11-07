@@ -49,7 +49,10 @@ test("reserva pública apresenta Pix pendente sem afirmar recebimento", async ({
 
 test("assinatura solicita revisão e administrador confirma pagamento antes de liberar", async ({ page, browser, request }) => {
  await login(page); await page.getByRole("button", { name: "Assinar Plano", exact: true }).first().click();
- page.once("dialog", dialog => dialog.accept()); await page.getByRole("button", { name: "Solicitar Studio", exact: true }).click();
+ page.once("dialog", dialog => dialog.accept());
+ const requested = page.waitForResponse(response => response.url() === `${apiUrl}/api/salon/upgrade-plan` && response.request().method() === "POST");
+ await page.getByRole("button", { name: "Solicitar Studio", exact: true }).click();
+ expect((await requested).status()).toBe(202);
  const before = await request.get(`${apiUrl}/api/salon/details`, { headers: { Authorization: `Bearer ${fixture.owner.token}` } }); const beforeData = await before.json(); expect(beforeData.subscriptions[0].status).toBe("TRIAL"); expect(beforeData.subscriptions[0].pendingPlanId).toBeTruthy();
  const context = await browser.newContext(); const admin = await context.newPage(); await login(admin, "admin"); await nav(admin, "Assinaturas");
  const row = admin.getByRole("row").filter({ has: admin.getByText(fixture.subscriptionId, { exact: true }) });

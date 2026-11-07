@@ -33,6 +33,7 @@ interface OnboardingService {
 interface OnboardingPro {
   name: string;
   specialty?: string;
+  phone?: string;
   active: boolean;
 }
 
@@ -168,10 +169,15 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
     return p || "studio";
   });
 
-  const [planCatalog, setPlanCatalog] = useState(ONBOARDING_PLANS);
+  const [planCatalog, setPlanCatalog] = useState<typeof ONBOARDING_PLANS>([]);
   const [catalogLoaded, setCatalogLoaded] = useState(false);
   const [catalogError, setCatalogError] = useState("");
-  useEffect(() => { api<any[]>("/public/plans").then(plans => { setPlanCatalog(plans.map(p => ({ ...p, price: Number(p.price).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }), desc: "Assinatura mensal com conferência manual", features: planFeatures(p) }))); setCatalogLoaded(true); }).catch(error => setCatalogError(error.message)); }, []);
+  useEffect(() => { api<any[]>("/public/plans").then(plans => {
+    if (!Array.isArray(plans) || plans.length === 0) throw new Error("Não há planos disponíveis. Entre em contato antes de iniciar o cadastro.");
+    setPlanCatalog(plans.map(p => ({ ...p, period: "/mês", price: Number(p.price).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }), desc: "Assinatura mensal com conferência manual", features: planFeatures(p) })));
+    setSelectedPlanId(current => (plans.find(p => p.id === current || p.name.toLowerCase() === current) || plans[0]).id);
+    setCatalogLoaded(true);
+  }).catch(error => setCatalogError(error.message)); }, []);
   const [step, setStep] = useState(1);
   const [salonName, setSalonName] = useState("");
   const [email, setEmail] = useState("");
@@ -181,6 +187,11 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
   const [schedule, setSchedule] = useState(defaultSchedule);
   const [pixKey, setPixKey] = useState("");
   const [pixType, setPixType] = useState("cpf");
+  const [pixName, setPixName] = useState("");
+  const [depositPolicy, setDepositPolicy] = useState("required");
+  const [depositType, setDepositType] = useState("percentage");
+  const [depositValue, setDepositValue] = useState("20");
+  const [instagram, setInstagram] = useState("");
   const [done, setDone] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -191,6 +202,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
 
   const [newProName, setNewProName] = useState("");
   const [newProSpec, setNewProSpec] = useState("");
+  const [newProPhone, setNewProPhone] = useState("");
 
   const [logo, setLogo] = useState<string | null>(null);
   const [cover, setCover] = useState<string>("");
@@ -250,6 +262,16 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
 
   const next = async () => {
     if (loading || !catalogLoaded) return; // Anti-double click
+    setPaymentError("");
+    if (step === 1 && (!salonName.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) || password.length < 6)) {
+      setPaymentError("Preencha o nome do espaço, um e-mail válido e uma senha com pelo menos 6 caracteres."); return;
+    }
+    if (step === 3 && !services.some(s => s.active)) { setPaymentError("Adicione ao menos um serviço ativo."); return; }
+    if (step === 4 && pros.length === 0) { setPaymentError("Adicione ao menos uma profissional."); return; }
+    if (step === 5 && !schedule.some(s => s.open)) { setPaymentError("Abra ao menos um dia de atendimento."); return; }
+    if (step === 6 && depositPolicy !== "none" && (!pixKey.trim() || !Number.isFinite(Number(depositValue.replace(",", "."))) || Number(depositValue.replace(",", ".")) <= 0 || (depositType === "percentage" && Number(depositValue.replace(",", ".")) > 100))) {
+      setPaymentError("Informe a chave Pix e um sinal positivo. O percentual deve ser de até 100%."); return;
+    }
     if (step < 8) {
       setStep(s => s + 1);
     } else {
@@ -262,10 +284,16 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
           password,
           document: documento,
           phone,
+          address: { zipCode: cep, street: endereco, number: numero, district: bairro, city: cidade, state: estado.toUpperCase() },
+          instagram,
+          pixName: pixName.trim() || salonName,
+          depositPolicy,
+          depositType,
+          depositValue: Number(depositValue.replace(",", ".")),
           services: services.filter(s => s.active),
           professionals: pros,
           schedule: schedule,
-          pixKey,
+          pixKey: ["cpf", "cnpj"].includes(pixType) ? pixKey.replace(/\D/g, "") : pixType === "celular" ? (pixKey.startsWith("+") ? "+" + pixKey.replace(/\D/g, "") : "+55" + pixKey.replace(/\D/g, "")) : pixKey.trim(),
           logo,
           cover,
           gallery,
@@ -456,6 +484,10 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
               </div>
             </div>
 
+            <label className="block text-sm font-medium">Telefone do espaço
+              <input value={phone} onChange={e => setPhone(e.target.value)} aria-label="Telefone do espaço" placeholder="(11) 99999-9999" className="w-full h-11 mt-1 rounded-xl border border-border px-3 text-sm bg-card" />
+            </label>
+
             <div className="pt-2 border-t border-border mt-2">
               <h3 className="text-sm font-semibold mb-3">Endereço</h3>
               <div className="grid sm:grid-cols-3 gap-4 mb-4">
@@ -501,7 +533,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
             <div className="grid sm:grid-cols-2 gap-4 pt-2 border-t border-border mt-2">
               <div>
                 <label className="text-sm font-medium block mb-1.5">Instagram</label>
-                <input placeholder="@seusalao" className="w-full h-11 rounded-xl border border-border px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-card" />
+                <input value={instagram} onChange={e => setInstagram(e.target.value)} placeholder="@seusalao" className="w-full h-11 rounded-xl border border-border px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-card" />
               </div>
               <div>
                 <label className="text-sm font-medium block mb-1.5">Categoria principal</label>
@@ -689,12 +721,13 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
                 <input value={newProSpec} onChange={e => setNewProSpec(e.target.value)} placeholder="Especialidade" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
               </div>
               <div className="grid sm:grid-cols-2 gap-3">
-                <input placeholder="Telefone / WhatsApp" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
+                <input value={newProPhone} onChange={e => setNewProPhone(e.target.value)} placeholder="Telefone / WhatsApp" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
                 <Button size="sm" className="h-10" onClick={() => {
                   if (newProName) {
-                    setPros(prev => [...prev, { name: newProName, specialty: newProSpec, active: true }]);
+                    setPros(prev => [...prev, { name: newProName, specialty: newProSpec, phone: newProPhone, active: true }]);
                     setNewProName("");
                     setNewProSpec("");
+                    setNewProPhone("");
                   }
                 }}>Adicionar</Button>
               </div>
@@ -752,7 +785,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
             <div>
               <label className="text-sm font-medium block mb-2">Tipo de chave PIX</label>
               <div className="grid grid-cols-4 gap-2">
-                {["CPF", "CNPJ", "E-mail", "Celular"].map(t => (
+                {["CPF", "CNPJ", "E-mail", "Celular", "Aleatória"].map(t => (
                   <button
                     key={t}
                     onClick={() => setPixType(t.toLowerCase())}
@@ -769,29 +802,36 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
               <input
                 value={pixKey}
                 onChange={e => setPixKey(e.target.value)}
-                placeholder={pixType === "cpf" ? "000.000.000-00" : pixType === "cnpj" ? "00.000.000/0000-00" : pixType === "e-mail" ? "seu@email.com" : "(11) 99999-0000"}
+                placeholder={pixType === "cpf" ? "000.000.000-00" : pixType === "cnpj" ? "00.000.000/0000-00" : pixType === "e-mail" ? "seu@email.com" : pixType === "aleatória" ? "Chave aleatória cadastrada no seu banco" : "(11) 99999-0000"}
                 className="w-full h-11 rounded-xl border border-border px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-card font-mono"
               />
             </div>
 
             <div>
               <label className="text-sm font-medium block mb-1.5">Nome do favorecido (como aparece no PIX)</label>
-              <input defaultValue={salonName} className="w-full h-11 rounded-xl border border-border px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-card" />
+              <input value={pixName} placeholder={salonName} onChange={e => setPixName(e.target.value)} aria-label="Nome do favorecido Pix" className="w-full h-11 rounded-xl border border-border px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-card" />
             </div>
 
             <div className="bg-secondary rounded-2xl p-4 space-y-3">
               <div className="font-medium text-sm">Configurar sinal de reserva</div>
+              <label className="block text-xs">Tipo do sinal
+                <select aria-label="Tipo do sinal" value={depositType} onChange={e => { setDepositType(e.target.value); setDepositValue(e.target.value === "percentage" ? "20" : "30"); }} className="w-full h-9 rounded-lg border border-border px-3 mt-1 bg-card">
+                  <option value="percentage">Percentual do serviço (%)</option>
+                  <option value="fixed">Valor fixo (R$)</option>
+                </select>
+              </label>
+              <p className="text-xs text-muted-foreground">O sinal é descontado do atendimento e nunca supera o preço do serviço. Você confere o recebimento no banco e confirma no painel.</p>
               <div className="flex items-center gap-3">
                 <div className="flex-1">
                   <div className="text-xs text-muted-foreground mb-1">Valor do sinal</div>
-                  <input defaultValue="R$ 30,00" className="w-full h-9 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
+                  <input value={depositValue} onChange={e => setDepositValue(e.target.value)} aria-label="Valor do sinal" inputMode="decimal" className="w-full h-9 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
                 </div>
                 <div className="flex-1">
                   <div className="text-xs text-muted-foreground mb-1">Exigir sinal?</div>
-                  <select className="w-full h-9 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card appearance-none">
-                    <option>Sim, obrigatório</option>
-                    <option>Opcional</option>
-                    <option>Não exigir</option>
+                  <select value={depositPolicy} onChange={e => setDepositPolicy(e.target.value)} aria-label="Exigir sinal" className="w-full h-9 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card appearance-none">
+                    <option value="required">Sim, obrigatório</option>
+                    <option value="optional">Opcional</option>
+                    <option value="none">Não exigir</option>
                   </select>
                 </div>
               </div>
@@ -826,20 +866,8 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
               </div>
             </div>
 
-            <div className="bg-secondary rounded-2xl p-4">
-              <div className="text-sm font-medium mb-2">Seu link de agendamento</div>
-              <div className="flex items-center gap-2 bg-card border border-border rounded-xl px-3 py-2">
-                <Globe className="w-4 h-4 text-primary shrink-0" />
-                <span className="text-sm font-mono text-muted-foreground flex-1 truncate">
-                  <span className="text-primary font-semibold">{window.location.origin}/agendar/{salonName.toLowerCase().replace(/\s/g, "-")}</span>
-                </span>
-                <button onClick={() => {
-                  const slug = salonName.toLowerCase().replace(/\s/g, "-");
-                  const link = `${window.location.origin}/agendar/${slug}`;
-                  navigator.clipboard.writeText(link);
-                  alert("Link copiado: " + link);
-                }} className="text-xs text-primary font-medium hover:underline shrink-0">Copiar</button>
-              </div>
+            <div className="bg-secondary rounded-2xl p-4 text-sm">
+              Seu link exclusivo será gerado ao concluir o cadastro. Depois, você poderá copiá-lo na página do salão.
             </div>
 
             <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 text-sm text-primary/80">
@@ -851,7 +879,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
 
         {/* Step 8: Assinatura */}
         {step === 8 && (() => {
-          const currentPlan = planCatalog.find(p => p.id === selectedPlanId || p.name.toLowerCase() === selectedPlanId) || planCatalog[1];
+          const currentPlan = planCatalog.find(p => p.id === selectedPlanId || p.name.toLowerCase() === selectedPlanId) || planCatalog[0];
           return (
             <div className="space-y-6">
               <div className="text-center mb-5">
@@ -860,7 +888,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
                 </div>
                 <h3 className="font-bold text-2xl tracking-tight text-foreground">Comece seus 14 dias grátis</h3>
                 <p className="text-muted-foreground text-xs sm:text-sm max-w-md mx-auto mt-1">
-                  Teste todas as funcionalidades sem compromisso. Cancele com 1 clique antes do 15º dia e nada será cobrado.
+                  Teste os recursos disponíveis no seu plano por 14 dias, sem cartão. Para continuar, solicite a assinatura e aguarde a conferência manual do pagamento.
                 </p>
               </div>
 
@@ -908,7 +936,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
                     🎁 14 Dias de Demonstração Gratuita Inclusos
                   </div>
                   <p className="text-[11px] text-muted-foreground mt-1.5">
-                    Cobrança no valor de {currentPlan.price} somente após 14 dias se você decidir continuar.
+                    Assinatura de {currentPlan.price} por mês, somente se você solicitar e o administrador confirmar o pagamento. Sem débito automático.
                   </p>
                 </div>
 
@@ -931,6 +959,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
           );
         })()}
 
+        {paymentError && step !== 8 && <p role="alert" className="mt-4 text-sm text-red-600">{paymentError}</p>}
         {/* Navigation */}
         <div className="flex items-center justify-between mt-8 pt-6 border-t border-border">
           {step === 1 ? (

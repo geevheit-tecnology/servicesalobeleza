@@ -40,7 +40,7 @@ export default function Contact() {
     e.preventDefault();
     setLoading(true);
 
-    // Simulate submission / feedback
+    // Prepara a mensagem localmente; o envio é feito pelo leitor de e-mail.
     setTimeout(() => {
       setLoading(false);
       setSubmitted(true);
@@ -172,10 +172,10 @@ export default function Contact() {
                   </div>
                   <div>
                     <h2 className="font-serif text-2xl font-medium text-foreground">
-                      Mensagem Recebida!
+                      Mensagem preparada
                     </h2>
                     <p className="text-muted-foreground text-sm max-w-md mx-auto mt-2 leading-relaxed">
-                      Obrigado por entrar em contato. Sua dúvida foi registrada e retornaremos diretamente para seu e-mail ou WhatsApp o mais breve possível.
+                      Sua mensagem ainda não foi enviada. Abra seu leitor de e-mail pelo botão abaixo e conclua o envio para nossa equipe.
                     </p>
                   </div>
 
@@ -185,7 +185,7 @@ export default function Contact() {
                       onClick={handleDirectEmail}
                       className="text-sm"
                     >
-                      <Mail className="w-4 h-4" /> Enviar cópia via e-mail direto
+                      <Mail className="w-4 h-4" /> Abrir e-mail para enviar
                     </Button>
                     <Button 
                       onClick={() => {
@@ -194,7 +194,7 @@ export default function Contact() {
                       }}
                       className="text-sm"
                     >
-                      Enviar outra mensagem
+                      Preparar outra mensagem
                     </Button>
                   </div>
                 </div>
@@ -207,7 +207,7 @@ export default function Contact() {
                     </h2>
                   </div>
                   <p className="text-xs text-muted-foreground mb-4">
-                    Preencha os campos abaixo. Retornaremos sua solicitação com prioridade.
+                    Preencha os campos para preparar um e-mail. Depois, abra seu leitor de e-mail e conclua o envio.
                   </p>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -286,7 +286,7 @@ export default function Contact() {
                     disabled={loading}
                   >
                     <Send className="w-4 h-4" />
-                    {loading ? "Enviando..." : "Enviar Mensagem"}
+                    {loading ? "Preparando..." : "Preparar mensagem"}
                   </Button>
                 </form>
               )}

@@ -38,6 +38,8 @@ export default function ClientView() {
 
   // Pagamento PIX
   const [pixCode, setPixCode] = useState<string | null>(null);
+  const [payDeposit, setPayDeposit] = useState(true);
+  const [reservedDeposit, setReservedDeposit] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copiedPix, setCopiedPix] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -258,7 +260,7 @@ export default function ClientView() {
           serviceId: selectedService.id,
           professionalId: selectedPro.id,
           date: timestamp,
-          value: parseFloat(selectedService.price || "0")
+          payDeposit
         })
       });
       const data = await res.json();
@@ -274,6 +276,7 @@ export default function ClientView() {
         alert(data.error || data.message || "Não foi possível concluir o agendamento.");
         return;
       }
+      setReservedDeposit(Number(data.deposit || 0));
       if (data.pixCode) {
         setPixCode(data.pixCode);
         setStep("pix");
@@ -294,8 +297,16 @@ export default function ClientView() {
     .filter((s: any) => serviceFilter === "Todos" || (s.cat || "Serviços") === serviceFilter)
     .filter((s: any) => searchQuery.trim() === "" || s.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
-  // Valor do sinal (20% do serviço)
-  const depositValue = ((parseFloat(selectedService?.price || "0")) * 0.2).toFixed(2).replace('.', ',');
+  const depositForPrice = (price: number) => {
+    if (!salonData.pixKey || salonData.depositPolicy === "none" || (salonData.depositPolicy === "optional" && !payDeposit)) return 0;
+    const value = Number(salonData.depositValue ?? 20);
+    return Math.round((salonData.depositType === "fixed" ? Math.min(price, value) : price * value / 100) * 100) / 100;
+  };
+  const amount = ((step === "pix" || step === "confirm") && reservedDeposit !== null) ? reservedDeposit : depositForPrice(Number(selectedService?.price || 0));
+  const depositValue = amount.toFixed(2).replace(".", ",");
+  const depositDescription = salonData.depositPolicy === "none" || !salonData.pixKey ? "Sem sinal antecipado" : salonData.depositType === "fixed" ? `Sinal de até R$ ${Number(salonData.depositValue).toFixed(2).replace(".", ",")}` : `Sinal de ${salonData.depositValue ?? 20}%`;
+  const address = salonData.address || {};
+  const addressText = [address.street, address.number, address.district, address.city, address.state].filter(Boolean).join(", ");
 
   // Compartilhar link da página
   const handleShareLink = () => {
@@ -388,7 +399,7 @@ export default function ClientView() {
                       <div className="flex items-center gap-2 text-xs text-white/90 mt-1">
                         <div className="flex items-center gap-1 bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded-md font-semibold text-[11px] border border-amber-500/30">
                           <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                          <span>5.0</span>
+                          <span>Agendamento online</span>
                         </div>
                         <span className="text-white/60">•</span>
                         <span className="text-emerald-400 font-medium flex items-center gap-1 text-[11px]">
@@ -520,7 +531,7 @@ export default function ClientView() {
                                 <Clock className="w-3 h-3 text-muted-foreground shrink-0" /> {s.duration} min
                                 <span className="mx-1">•</span>
                                 <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                                  Sinal PIX: R$ {(parseFloat(s.price || "0") * 0.2).toFixed(2).replace('.', ',')}
+                                  Sinal PIX: R$ {depositForPrice(Number(s.price || 0)).toFixed(2).replace('.', ',')}
                                 </span>
                               </p>
                               <div className="text-sm font-extrabold mt-1 text-foreground">
@@ -583,6 +594,9 @@ export default function ClientView() {
               {/* ABA: SOBRE & FOTOS */}
               {homeTab === "sobre" && (
                 <div className="p-5 space-y-4">
+                  {addressText && <p className="text-sm text-muted-foreground"><MapPin className="inline w-4 h-4 mr-1" />{addressText}</p>}
+                  {salonData.phone && <p className="text-sm">Contato: {salonData.phone}</p>}
+                  {salonData.instagram && <p className="text-sm">Instagram: @{salonData.instagram}</p>}
                   <h2 className="font-serif text-base font-bold text-foreground">
                     Ambiente & Trabalhos
                   </h2>
@@ -606,9 +620,8 @@ export default function ClientView() {
                       Regras & Política de Agendamento
                     </span>
                     <p className="text-muted-foreground leading-relaxed">
-                      • <strong>Sinal de 20%:</strong> Garante seu horário reservado e é descontado do valor total.<br />
-                      • <strong>Tolerância de atraso:</strong> Até 15 minutos.<br />
-                      • <strong>Cancelamento e reagendamento:</strong> Com até 2 horas de antecedência pelo WhatsApp do salão.
+                      • <strong>{depositDescription}:</strong> {salonData.depositPolicy === "none" || !salonData.pixKey ? "O pagamento é combinado com o salão." : "O sinal é descontado do total e conferido manualmente pelo salão."}<br />
+                      • <strong>Cancelamento, reagendamento e atrasos:</strong> Combine as condições diretamente com o salão.
                     </p>
                   </div>
                 </div>
@@ -893,7 +906,7 @@ export default function ClientView() {
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-emerald-600 dark:text-emerald-400 font-extrabold text-sm">
-                  <span>Sinal de garantia (PIX 20%):</span>
+                  <span>{depositDescription}:</span>
                   <span>R$ {depositValue}</span>
                 </div>
               </div>
@@ -904,7 +917,7 @@ export default function ClientView() {
                   Deseja confirmar este agendamento para seguir?
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
-                  O sinal de R$ {depositValue} garante seu horário exclusivo na agenda.
+                  {amount > 0 ? `O sinal de R$ ${depositValue} será conferido pelo salão antes da confirmação.` : "Sua reserva será confirmada pelo salão, sem sinal antecipado."}
                 </p>
               </div>
 
@@ -972,10 +985,16 @@ export default function ClientView() {
               <div className="p-4 bg-primary/5 border border-primary/20 rounded-2xl flex items-start gap-3">
                 <ShieldCheck className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                 <div className="text-xs text-muted-foreground leading-relaxed">
-                  Para garantir seu horário na agenda e evitar no-shows, solicitamos o pagamento do sinal de <strong>R$ {depositValue}</strong> via PIX. O restante do valor é pago no salão após o procedimento.
+                  {amount > 0 ? <>O sinal de <strong>R$ {depositValue}</strong> via Pix será conferido pelo salão. O restante é pago no atendimento.</> : "Esta reserva não exige sinal antecipado. Aguarde a confirmação do salão."}
                 </div>
               </div>
 
+              {salonData.depositPolicy === "optional" && salonData.pixKey && (
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={payDeposit} onChange={e => setPayDeposit(e.target.checked)} />
+                  Quero pagar o sinal opcional no Pix
+                </label>
+              )}
               {/* Formulário de Identificação */}
               <div className="bg-card border border-border rounded-2xl p-5 space-y-4 shadow-xs">
                 <h3 className="font-bold text-xs uppercase tracking-wider text-muted-foreground">
@@ -1020,7 +1039,7 @@ export default function ClientView() {
                 onClick={handleReserveAndGeneratePix}
                 className="w-full h-12 rounded-xl font-extrabold text-xs shadow-md cursor-pointer"
               >
-                {isSubmitting ? "Gerando reserva e PIX..." : `Gerar PIX do Sinal (R$ ${depositValue})`}
+                {isSubmitting ? "Registrando reserva..." : amount > 0 ? `Gerar PIX do Sinal (R$ ${depositValue})` : "Confirmar reserva sem sinal"}
               </Button>
             </footer>
           </div>
@@ -1099,7 +1118,7 @@ export default function ClientView() {
                 Reserva registrada!
               </h2>
               <p className="text-xs text-muted-foreground mt-1.5 max-w-xs mx-auto">
-                Sua reserva no <strong>{salonData.name}</strong> foi registrada. O salão confirmará o atendimento e o recebimento do sinal.
+                Sua reserva no <strong>{salonData.name}</strong> foi registrada. {amount > 0 ? "O salão confirmará o atendimento e o recebimento do sinal." : "Aguarde a confirmação do atendimento pelo salão."}
               </p>
             </div>
 
@@ -1121,7 +1140,7 @@ export default function ClientView() {
               </div>
               <div className="flex justify-between border-t border-border pt-2 text-emerald-600 dark:text-emerald-400 font-bold">
                 <span>Sinal PIX:</span>
-                <span>R$ {depositValue} (aguardando conferência)</span>
+                <span>{amount > 0 ? `R$ ${depositValue} (aguardando conferência)` : "Sem sinal antecipado"}</span>
               </div>
             </div>
 

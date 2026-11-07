@@ -10,12 +10,12 @@ import {
 import { Button, Badge } from "@/components/ui";
 import { formatCurrency } from "@/utils/formatters";
 
-// Notificações de Atividade em Tempo Real (Social Proof Dinâmico)
-const LIVE_NOTIFICATIONS = [
-  { name: "Mariana S.", action: "agendou Alongamento em Gel com Rafaela", time: "há 2 min", value: "Sinal de R$ 36 no Pix" },
-  { name: "Camila R.", action: "garantiu horário de Drenagem", time: "há 5 min", value: "Sinal de R$ 30 no Pix" },
-  { name: "Juliana M.", action: "marcou Bronzeamento com Fita", time: "há 8 min", value: "Sinal de R$ 24 no Pix" },
-  { name: "Studio Bella", action: "liberou 4 horários no Instagram", time: "há 11 min", value: "Link da bio ativo" }
+// Exemplos fictícios de uso, identificados como demonstração na interface
+const DEMO_NOTIFICATIONS = [
+  { name: "Mariana S.", action: "agendou Alongamento em Gel com Rafaela", time: "Exemplo fictício", value: "Sinal de R$ 36 no Pix" },
+  { name: "Camila R.", action: "garantiu horário de Drenagem", time: "Exemplo fictício", value: "Sinal de R$ 30 no Pix" },
+  { name: "Juliana M.", action: "marcou Bronzeamento com Fita", time: "Exemplo fictício", value: "Sinal de R$ 24 no Pix" },
+  { name: "Studio Bella", action: "liberou 4 horários no Instagram", time: "Exemplo fictício", value: "Link da bio ativo" }
 ];
 
 // Cenários da Demonstração Interativa do BelezaPura
@@ -67,9 +67,9 @@ const BOOKING_SCENARIOS: BookingScenario[] = [
 const CORE_BENEFITS = [
   {
     icon: ShieldCheck,
-    title: "Segurança para o seu studio e para o seu dia.",
+    title: "Faltou? Quem paga não é você.",
     subtitle: "Compromisso com o sinal",
-    desc: "Procedimentos como alongamento e drenagem ocupam horas de cadeira. Com a reserva confirmada no Pix, sua cliente se compromete com o horário e seu tempo é valorizado.",
+    desc: "Uma progressiva ou um alongamento ocupam horas de cadeira. Com o sinal no Pix, a cliente só segura o horário se realmente pretende vir.",
     highlight: "Sinal no Pix direto na sua conta",
     border: "border-[#E5E7EB] hover:border-[#E5A991]"
   },
@@ -111,7 +111,7 @@ const CORE_BENEFITS = [
 const FAQ_ITEMS = [
   {
     q: "Como funciona a demonstração gratuita de 14 dias?",
-    a: "Você tem acesso irrestrito a todas as ferramentas durante 14 dias completos para testar na prática com suas clientes. Você cadastra seus serviços, equipe e chave Pix. Sem cartão de crédito e sem taxas de adesão."
+    a: "Você tem 14 dias para testar os recursos disponíveis no período de avaliação com suas clientes. Você cadastra seus serviços, equipe e chave Pix. Sem cartão de crédito e sem taxas de adesão."
   },
   {
     q: "Para onde vai o dinheiro do sinal cobrado no Pix?",
@@ -151,7 +151,7 @@ export default function Marketing() {
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setLiveNotifIndex((prev) => (prev + 1) % LIVE_NOTIFICATIONS.length);
+      setLiveNotifIndex((prev) => (prev + 1) % DEMO_NOTIFICATIONS.length);
     }, 5500);
     return () => clearInterval(timer);
   }, []);
@@ -297,7 +297,7 @@ export default function Marketing() {
             </div>
 
             <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight text-[#111827] leading-[1.08] mb-6">
-              Sua agenda organizada e sem furos de última hora.
+              Cliente marcou, pagou o sinal, veio.
             </h1>
 
             <p className="text-[#4B5563] text-lg sm:text-xl leading-relaxed mb-8 max-w-2xl font-normal">
@@ -381,7 +381,7 @@ export default function Marketing() {
                     
                     <div className="text-center my-1">
                       <span className="bg-white/80 text-stone-600 text-[10px] px-2.5 py-1 rounded-md shadow-2xs font-medium">
-                        Agendamento VIP via BelezaPura
+                        Demonstração fictícia • sem automação WhatsApp
                       </span>
                     </div>
 
@@ -404,7 +404,7 @@ export default function Marketing() {
                         {/* Box do PIX */}
                         <div className="bg-white p-2.5 rounded-xl border border-emerald-300 text-[11px] space-y-2 shadow-2xs">
                           <div className="flex items-center justify-between text-emerald-800 font-bold">
-                            <span>Sinal para Reserva</span>
+                            <span>Pix de exemplo • não pague</span>
                             <Badge variant="success" className="text-[9px] px-1.5 py-0 bg-emerald-100 text-emerald-800 border-emerald-200">PIX Direto</Badge>
                           </div>
                           
@@ -416,7 +416,7 @@ export default function Marketing() {
                             onClick={handleCopyPix}
                             className="w-full py-1.5 px-2 rounded-lg bg-[#128C7E] hover:bg-[#0f7267] text-white font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                           >
-                            <Copy className="w-3 h-3" /> {copiedPix ? "Chave Copiada!" : "Copiar Código PIX"}
+                            <Copy className="w-3 h-3" /> {copiedPix ? "Exemplo copiado" : "Copiar exemplo fictício"}
                           </button>
                         </div>
 
@@ -427,7 +427,7 @@ export default function Marketing() {
                     {/* Confirmação pós-pagamento */}
                     <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-2.5 text-center shadow-2xs">
                       <span className="text-[11px] font-bold text-emerald-800">
-                        ✓ Horário confirmado na agenda da {activeScenario.professional}!
+                        Após conferência do salão: horário confirmado com {activeScenario.professional}.
                       </span>
                     </div>
 
@@ -550,7 +550,7 @@ export default function Marketing() {
               Simples para o seu negócio. <span className="brand-text-gradient">Prático para a cliente.</span>
             </h2>
             <p className="text-[#4B5563] text-base sm:text-lg">
-              Em menos de 1 minuto sua cliente escolhe o procedimento, agenda e paga o sinal.
+              Sua cliente escolhe o procedimento e reserva pelo link. Você confere o sinal no banco e confirma no painel.
             </p>
           </div>
 
@@ -701,7 +701,7 @@ export default function Marketing() {
 
               <div className="bg-emerald-950/60 border border-emerald-500/30 rounded-2xl p-4 text-center mb-6">
                 <div className="text-xs font-semibold text-emerald-300 uppercase tracking-wider">
-                  Lucro Líquido Preservado no seu Bolso:
+                  Economia estimada após o custo do plano:
                 </div>
                 <div className="text-2xl font-black text-emerald-400 mt-1">
                   {lucroLiquidoExtra >= 0 ? `+ ${formatCurrency(lucroLiquidoExtra)}` : formatCurrency(lucroLiquidoExtra)} / mês
@@ -874,7 +874,7 @@ export default function Marketing() {
         </div>
       </footer>
 
-      {/* Notificação Flutuante de Atividade em Tempo Real (Social Proof) */}
+      {/* Exemplo flutuante de uso */}
       {showLiveNotif && (
         <div className="fixed bottom-6 left-6 z-40 hidden sm:flex items-center gap-3 bg-white/95 border border-[#E5E7EB] p-3.5 rounded-2xl shadow-2xl backdrop-blur-md animate-fade-up max-w-sm transition-all duration-300 hover:scale-[1.02]">
           <div className="w-10 h-10 rounded-xl bg-[#E5A991]/20 text-[#9C5A42] flex items-center justify-center shrink-0">
@@ -882,17 +882,17 @@ export default function Marketing() {
           </div>
           <div className="flex-1 pr-2">
             <div className="text-xs font-bold text-[#111827] flex items-center gap-1.5">
-              <span>{LIVE_NOTIFICATIONS[liveNotifIndex].name}</span>
+              <span>{DEMO_NOTIFICATIONS[liveNotifIndex].name}</span>
               <span className="text-[10px] font-normal text-[#6B7280]">
-                • {LIVE_NOTIFICATIONS[liveNotifIndex].time}
+                • {DEMO_NOTIFICATIONS[liveNotifIndex].time}
               </span>
             </div>
             <div className="text-[11px] text-[#4B5563] truncate">
-              {LIVE_NOTIFICATIONS[liveNotifIndex].action}
+              {DEMO_NOTIFICATIONS[liveNotifIndex].action}
             </div>
             <div className="text-[10px] font-bold text-emerald-700 mt-0.5 flex items-center gap-1">
               <Check className="w-3 h-3 stroke-[3]" />
-              {LIVE_NOTIFICATIONS[liveNotifIndex].value}
+              {DEMO_NOTIFICATIONS[liveNotifIndex].value}
             </div>
           </div>
           <button 
