@@ -62,6 +62,7 @@ func ListAppointments(c *gin.Context) {
 func CreateService(c *gin.Context) {
 	salonID := c.GetString("salonId")
 	var body struct {
+		Category string  `json:"cat" binding:"max=100"`
 		Name     string  `json:"name" binding:"required"`
 		Price    float64 `json:"price" binding:"gte=0,lte=99999999"`
 		Duration int     `json:"duration" binding:"gte=1,lte=1440"`
@@ -72,6 +73,7 @@ func CreateService(c *gin.Context) {
 	}
 
 	svc := db.Service{
+		Category: body.Category,
 		SalonID:  salonID,
 		Name:     body.Name,
 		Price:    body.Price,
@@ -88,6 +90,7 @@ func CreateService(c *gin.Context) {
 func CreateProfessional(c *gin.Context) {
 	salonID := c.GetString("salonId")
 	var body struct {
+		Phone      *string  `json:"phone" binding:"omitempty,max=30"`
 		Name       string   `json:"name" binding:"required"`
 		Specialty  *string  `json:"specialty"`
 		Avatar     *string  `json:"avatar"`
@@ -104,6 +107,7 @@ func CreateProfessional(c *gin.Context) {
 	}
 
 	pro := db.Professional{
+		Phone:      body.Phone,
 		SalonID:    salonID,
 		Name:       body.Name,
 		Specialty:  body.Specialty,
@@ -136,6 +140,7 @@ func UpdateService(c *gin.Context) {
 	}
 
 	var body struct {
+		Category *string  `json:"cat" binding:"omitempty,max=100"`
 		Name     *string  `json:"name"`
 		Price    *float64 `json:"price" binding:"omitempty,gte=0,lte=99999999"`
 		Duration *int     `json:"duration" binding:"omitempty,gte=1,lte=1440"`
@@ -146,6 +151,9 @@ func UpdateService(c *gin.Context) {
 		return
 	}
 
+	if body.Category != nil {
+		svc.Category = *body.Category
+	}
 	if body.Name != nil && *body.Name != "" {
 		svc.Name = *body.Name
 	}
@@ -207,6 +215,7 @@ func UpdateProfessional(c *gin.Context) {
 	}
 
 	var body struct {
+		Phone      *string  `json:"phone" binding:"omitempty,max=30"`
 		Name       *string  `json:"name"`
 		Specialty  *string  `json:"specialty"`
 		Avatar     *string  `json:"avatar"`
@@ -218,6 +227,9 @@ func UpdateProfessional(c *gin.Context) {
 		return
 	}
 
+	if body.Phone != nil {
+		pro.Phone = body.Phone
+	}
 	if body.Name != nil && *body.Name != "" {
 		pro.Name = *body.Name
 	}

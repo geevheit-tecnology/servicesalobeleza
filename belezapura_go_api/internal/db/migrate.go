@@ -61,10 +61,10 @@ func Migrate() error {
 
 func CheckSchema() error {
 	var n int64
-	if err := DB.Raw("SELECT count(*) FROM schema_migrations WHERE version IN ('001_baseline','002_booking_integrity.sql','003_auth_provider.sql')").Scan(&n).Error; err != nil {
+	if err := DB.Raw("SELECT count(*) FROM schema_migrations WHERE version IN ('001_baseline','002_booking_integrity.sql','003_auth_provider.sql','004_onboarding_details.sql')").Scan(&n).Error; err != nil {
 		return err
 	}
-	if n != 3 {
+	if n != 4 {
 		return fmt.Errorf("schema desatualizado: execute go run ./cmd/migrate antes de iniciar a API")
 	}
 	return nil

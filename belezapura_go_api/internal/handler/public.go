@@ -4,7 +4,7 @@ import (
 	"belezapura_go_api/internal/db"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
-	"math"
+	"gorm.io/gorm/clause"
 	"net/http"
 	"strings"
 	"time"
@@ -32,7 +32,10 @@ func GetSalonBySlug(c *gin.Context) {
 	if !ok {
 		return
 	}
-	c.JSON(200, gin.H{"id": s.ID, "slug": s.Slug, "name": s.Name, "phone": s.Phone, "pixKey": s.PixKey, "logo": s.Logo, "cover": s.Cover, "gallery": s.Gallery, "mainColor": s.MainColor, "scheduleRaw": s.ScheduleRaw, "timezone": s.Timezone, "blockedDates": s.BlockedDates, "services": s.Services, "professionals": s.Professionals})
+	for i := range s.Professionals {
+		s.Professionals[i].Phone = nil
+	}
+	c.JSON(200, gin.H{"id": s.ID, "slug": s.Slug, "name": s.Name, "phone": s.Phone, "pixKey": s.PixKey, "logo": s.Logo, "cover": s.Cover, "gallery": s.Gallery, "mainColor": s.MainColor, "scheduleRaw": s.ScheduleRaw, "timezone": s.Timezone, "blockedDates": s.BlockedDates, "services": s.Services, "professionals": s.Professionals, "address": s.Address, "instagram": s.Instagram, "pixName": s.PixName, "depositPolicy": s.DepositPolicy, "depositType": s.DepositType, "depositValue": s.DepositValue})
 }
 func GetAvailability(c *gin.Context) {
 	if c.Query("salonId") == "" || c.Query("professionalId") == "" || c.Query("serviceId") == "" || c.Query("date") == "" {
@@ -104,6 +107,7 @@ func CreatePublicAppointment(c *gin.Context) {
 		ClientPhone    string  `json:"clientPhone" binding:"required,min=8,max=30"`
 		Date           string  `json:"date" binding:"required"`
 		PaymentMethod  *string `json:"paymentMethod"`
+		PayDeposit     *bool   `json:"payDeposit"`
 	}
 	if c.ShouldBindJSON(&body) != nil {
 		c.JSON(400, gin.H{"error": "Informe seus dados, serviço, profissional e horário."})
@@ -118,30 +122,38 @@ func CreatePublicAppointment(c *gin.Context) {
 		c.JSON(400, gin.H{"error": "Data inválida."})
 		return
 	}
-	var service db.Service
-	if db.DB.Where("id = ? AND salon_id = ? AND status = ?", body.ServiceID, s.ID, "active").First(&service).Error != nil {
-		c.JSON(404, gin.H{"error": "Serviço não encontrado."})
-		return
-	}
 	pix := ""
 	deposit := 0.0
-	if s.PixKey != nil && strings.TrimSpace(*s.PixKey) != "" && service.Price > 0 {
-		deposit = math.Round(service.Price*20) / 100
-		if deposit > 0 {
-			pix, err = generatePix(*s.PixKey, s.Name, deposit)
-		}
-		if err != nil {
-			c.JSON(409, gin.H{"error": "O salão precisa revisar a configuração Pix."})
-			return
-		}
-	}
 	appt := db.Appointment{SalonID: s.ID, ServiceID: body.ServiceID, ProfessionalID: body.ProfessionalID, Date: date, PaymentMethod: body.PaymentMethod}
 	err = db.DB.Transaction(func(tx *gorm.DB) error {
+		var current db.Salon
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&current, "id = ?", s.ID).Error; err != nil {
+			return err
+		}
+		var service db.Service
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ? AND salon_id = ? AND status = ?", body.ServiceID, s.ID, "active").First(&service).Error; err != nil {
+			return bookingError{404, "Serviço não encontrado."}
+		}
+		deposit = depositForService(current, service.Price, body.PayDeposit)
+		if deposit > 0 {
+			var pixErr error
+			pix, pixErr = generatePix(*current.PixKey, pixBeneficiary(current), deposit)
+			if pixErr != nil {
+				return bookingError{409, "O salão precisa revisar a configuração Pix."}
+			}
+		}
+		appt.Deposit = deposit
 		return reserve(tx, &appt, strings.TrimSpace(body.ClientName), strings.TrimSpace(body.ClientPhone))
 	})
 	if err != nil {
 		bookingFailure(c, err)
 		return
 	}
-	c.JSON(http.StatusCreated, gin.H{"appointment": gin.H{"id": appt.ID, "status": appt.Status, "date": appt.Date}, "pixCode": pix, "deposit": deposit, "paymentStatus": "pending_manual_review", "message": "Reserva registrada. A confirmação do sinal será feita pelo salão."})
+	paymentStatus := "pending_confirmation"
+	message := "Reserva registrada. Aguarde a confirmação do salão."
+	if deposit > 0 {
+		paymentStatus = "pending_manual_review"
+		message = "Reserva registrada. A confirmação do sinal será feita pelo salão."
+	}
+	c.JSON(http.StatusCreated, gin.H{"appointment": gin.H{"id": appt.ID, "status": appt.Status, "date": appt.Date}, "pixCode": pix, "deposit": deposit, "paymentStatus": paymentStatus, "message": message})
 }

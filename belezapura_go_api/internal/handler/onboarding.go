@@ -3,7 +3,9 @@ package handler
 import (
 	"encoding/json"
 	"github.com/google/uuid"
+	"math"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -19,14 +21,16 @@ import (
 )
 
 type serviceReq struct {
+	Category string `json:"cat" binding:"max=100"`
 	Name     string `json:"name"`
 	Duration string `json:"duration"` // e.g. "45 min"
 	Price    string `json:"price"`    // e.g. "R$ 50"
 }
 
 type professionalReq struct {
-	Name      string `json:"name"`
-	Specialty string `json:"specialty"`
+	Phone     *string `json:"phone" binding:"omitempty,max=30"`
+	Name      string  `json:"name"`
+	Specialty string  `json:"specialty"`
 }
 
 type scheduleReq struct {
@@ -37,6 +41,12 @@ type scheduleReq struct {
 }
 
 type onboardingRequest struct {
+	Address       db.Address        `json:"address"`
+	Instagram     string            `json:"instagram" binding:"max=100"`
+	PixName       string            `json:"pixName" binding:"max=120"`
+	DepositPolicy *string           `json:"depositPolicy"`
+	DepositType   *string           `json:"depositType"`
+	DepositValue  *float64          `json:"depositValue"`
 	SalonName     string            `json:"salonName" binding:"required"`
 	Email         string            `json:"email" binding:"required,email"`
 	Password      string            `json:"password" binding:"required,min=6"`
@@ -81,14 +91,24 @@ func parsePrice(p string) float64 {
 		p = strings.ReplaceAll(p, ".", "")
 		p = strings.ReplaceAll(p, ",", ".")
 	}
-	val, _ := strconv.ParseFloat(p, 64)
+	val, err := strconv.ParseFloat(p, 64)
+	if err != nil || math.IsNaN(val) || math.IsInf(val, 0) {
+		return -1
+	}
 	return val
 }
 
 func parseDuration(d string) int {
-	d = strings.ReplaceAll(d, "min", "")
-	d = strings.ReplaceAll(d, " ", "")
-	val, _ := strconv.Atoi(d)
+	d = strings.ToLower(strings.ReplaceAll(strings.TrimSpace(d), " ", ""))
+	if parts := regexp.MustCompile(`^(\d+)(?:h|:)(\d{1,2})?(?:min)?$`).FindStringSubmatch(d); parts != nil {
+		h, _ := strconv.Atoi(parts[1])
+		m, _ := strconv.Atoi(parts[2])
+		if m >= 60 {
+			return 0
+		}
+		return h*60 + m
+	}
+	val, _ := strconv.Atoi(strings.TrimSuffix(d, "min"))
 	return val
 }
 
@@ -104,6 +124,28 @@ func Onboarding(c *gin.Context) {
 	}
 
 	cleanEmail := strings.ToLower(strings.TrimSpace(req.Email))
+	policy, depositType, depositValue := "required", "percentage", 20.0
+	if req.DepositPolicy != nil {
+		policy = *req.DepositPolicy
+	}
+	if req.DepositType != nil {
+		depositType = *req.DepositType
+	}
+	if req.DepositValue != nil {
+		depositValue = *req.DepositValue
+	}
+	if err := validateDepositConfiguration(policy, depositType, depositValue); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	if req.PixKey != nil && strings.TrimSpace(*req.PixKey) != "" {
+		key := strings.TrimSpace(*req.PixKey)
+		if _, err := generatePix(key, req.PixName, 1); err != nil {
+			c.JSON(400, gin.H{"error": "Chave Pix inválida. Revise a chave antes de concluir."})
+			return
+		}
+		req.PixKey = &key
+	}
 
 	// 1. Anti-Cheat: Check duplicate email
 	var existing db.User
@@ -153,7 +195,7 @@ func Onboarding(c *gin.Context) {
 		return
 	}
 	for _, service := range req.Services {
-		if strings.TrimSpace(service.Name) == "" || parseDuration(service.Duration) <= 0 || parsePrice(service.Price) < 0 {
+		if strings.TrimSpace(service.Name) == "" || parseDuration(service.Duration) <= 0 || parseDuration(service.Duration) > 1440 || parsePrice(service.Price) < 0 || parsePrice(service.Price) > 99999999 {
 			c.JSON(400, gin.H{"error": "Serviço inválido."})
 			return
 		}
@@ -185,6 +227,10 @@ func Onboarding(c *gin.Context) {
 	}
 
 	salon := db.Salon{
+		Address:       req.Address,
+		Instagram:     strings.TrimPrefix(strings.TrimSpace(req.Instagram), "@"),
+		PixName:       strings.TrimSpace(req.PixName),
+		DepositPolicy: policy, DepositType: depositType, DepositValue: depositValue,
 		Name:        req.SalonName,
 		Slug:        slug,
 		Document:    req.Document,
@@ -233,6 +279,7 @@ func Onboarding(c *gin.Context) {
 	// Insert services
 	for _, s := range req.Services {
 		srv := db.Service{
+			Category: strings.TrimSpace(s.Category),
 			SalonID:  salon.ID,
 			Name:     s.Name,
 			Duration: parseDuration(s.Duration),
@@ -252,6 +299,7 @@ func Onboarding(c *gin.Context) {
 		}
 		specialty := p.Specialty
 		pro := db.Professional{
+			Phone:     p.Phone,
 			SalonID:   salon.ID,
 			Name:      p.Name,
 			Specialty: &specialty,

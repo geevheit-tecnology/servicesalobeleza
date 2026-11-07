@@ -38,7 +38,22 @@ func (u *User) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
+type Address struct {
+	ZipCode  string `json:"zipCode"`
+	Street   string `json:"street"`
+	Number   string `json:"number"`
+	District string `json:"district"`
+	City     string `json:"city"`
+	State    string `json:"state"`
+}
+
 type Salon struct {
+	Address       Address        `gorm:"embedded;embeddedPrefix:address_" json:"address"`
+	Instagram     string         `json:"instagram"`
+	PixName       string         `json:"pixName"`
+	DepositPolicy string         `gorm:"not null;default:required" json:"depositPolicy"`
+	DepositType   string         `gorm:"not null;default:percentage" json:"depositType"`
+	DepositValue  float64        `gorm:"type:decimal(10,2);not null;default:20" json:"depositValue"`
 	Timezone      string         `gorm:"not null;default:America/Sao_Paulo" json:"timezone"`
 	BlockedDates  string         `gorm:"type:text;not null;default:'[]'" json:"blockedDates"`
 	ID            string         `gorm:"primaryKey;type:uuid" json:"id"`
@@ -95,6 +110,7 @@ func (c *Client) BeforeCreate(tx *gorm.DB) error {
 }
 
 type Professional struct {
+	Phone        *string        `json:"phone,omitempty"`
 	ID           string         `gorm:"primaryKey;type:uuid" json:"id"`
 	SalonID      string         `gorm:"not null" json:"salonId"`
 	Salon        Salon          `gorm:"foreignKey:SalonID" json:"-"`
@@ -117,6 +133,7 @@ func (p *Professional) BeforeCreate(tx *gorm.DB) error {
 }
 
 type Service struct {
+	Category     string         `json:"cat"`
 	ID           string         `gorm:"primaryKey;type:uuid" json:"id"`
 	SalonID      string         `gorm:"not null" json:"salonId"`
 	Salon        Salon          `gorm:"foreignKey:SalonID" json:"-"`
@@ -138,6 +155,7 @@ func (s *Service) BeforeCreate(tx *gorm.DB) error {
 }
 
 type Appointment struct {
+	Deposit        float64        `gorm:"type:decimal(10,2);not null;default:0" json:"deposit"`
 	EndsAt         time.Time      `json:"endsAt"`
 	ID             string         `gorm:"primaryKey;type:uuid" json:"id"`
 	SalonID        string         `gorm:"not null" json:"salonId"`

@@ -88,6 +88,8 @@ func GetSalonDetails(c *gin.Context) {
 	}
 
 	resMap := gin.H{
+		"address": salon.Address, "instagram": salon.Instagram, "pixName": salon.PixName,
+		"depositPolicy": salon.DepositPolicy, "depositType": salon.DepositType, "depositValue": salon.DepositValue,
 		"id":             salon.ID,
 		"slug":           salon.Slug,
 		"name":           salon.Name,
@@ -115,21 +117,23 @@ func UpdateSalonDetails(c *gin.Context) {
 	salonID := c.GetString("salonId")
 
 	var salon db.Salon
-	if err := db.DB.First(&salon, "id = ?", salonID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Salão não encontrado."})
-		return
-	}
-
 	var body struct {
-		Name         *string `json:"name"`
-		PixKey       *string `json:"pixKey"`
-		Logo         *string `json:"logo"`
-		Cover        *string `json:"cover"`
-		Gallery      *string `json:"gallery"`
-		MainColor    *string `json:"mainColor"`
-		ScheduleRaw  *string `json:"scheduleRaw"`
-		Timezone     *string `json:"timezone"`
-		BlockedDates *string `json:"blockedDates"`
+		Address       *db.Address `json:"address"`
+		Phone         *string     `json:"phone" binding:"omitempty,max=30"`
+		Instagram     *string     `json:"instagram" binding:"omitempty,max=100"`
+		PixName       *string     `json:"pixName" binding:"omitempty,max=120"`
+		DepositPolicy *string     `json:"depositPolicy"`
+		DepositType   *string     `json:"depositType"`
+		DepositValue  *float64    `json:"depositValue"`
+		Name          *string     `json:"name"`
+		PixKey        *string     `json:"pixKey"`
+		Logo          *string     `json:"logo"`
+		Cover         *string     `json:"cover"`
+		Gallery       *string     `json:"gallery"`
+		MainColor     *string     `json:"mainColor"`
+		ScheduleRaw   *string     `json:"scheduleRaw"`
+		Timezone      *string     `json:"timezone"`
+		BlockedDates  *string     `json:"blockedDates"`
 	}
 
 	if err := c.ShouldBindJSON(&body); err != nil {
@@ -137,58 +141,88 @@ func UpdateSalonDetails(c *gin.Context) {
 		return
 	}
 
-	if body.Name != nil && *body.Name != "" {
-		salon.Name = *body.Name
-	}
-	if body.PixKey != nil {
-		salon.PixKey = body.PixKey
-	}
-	if body.Logo != nil {
-		salon.Logo = body.Logo
-	}
-	if body.Cover != nil {
-		salon.Cover = body.Cover
-	}
-	if body.Gallery != nil {
-		salon.Gallery = *body.Gallery
-	}
-	if body.MainColor != nil {
-		salon.MainColor = body.MainColor
-	}
-	if body.ScheduleRaw != nil {
-		if err := validateSchedule(*body.ScheduleRaw); err != nil {
-			c.JSON(400, gin.H{"error": err.Error()})
-			return
+	err := db.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&salon, "id = ?", salonID).Error; err != nil {
+			return bookingError{404, "Salão não encontrado."}
 		}
-		salon.ScheduleRaw = *body.ScheduleRaw
-	}
-
-	if body.Timezone != nil {
-		if _, err := time.LoadLocation(*body.Timezone); err != nil {
-			c.JSON(400, gin.H{"error": "Fuso inválido."})
-			return
+		if body.Name != nil && *body.Name != "" {
+			salon.Name = *body.Name
 		}
-		salon.Timezone = *body.Timezone
-	}
-	if body.BlockedDates != nil {
-		var dates []string
-		if json.Unmarshal([]byte(*body.BlockedDates), &dates) != nil {
-			c.JSON(400, gin.H{"error": "Datas inválidas."})
-			return
+		if body.Address != nil {
+			salon.Address = *body.Address
 		}
-		for _, d := range dates {
-			if _, err := time.Parse("2006-01-02", d); err != nil {
-				c.JSON(400, gin.H{"error": "Data inválida."})
-				return
+		if body.Phone != nil {
+			salon.Phone = body.Phone
+		}
+		if body.Instagram != nil {
+			salon.Instagram = strings.TrimPrefix(strings.TrimSpace(*body.Instagram), "@")
+		}
+		if body.PixName != nil {
+			salon.PixName = strings.TrimSpace(*body.PixName)
+		}
+		if body.DepositPolicy != nil {
+			salon.DepositPolicy = *body.DepositPolicy
+		}
+		if body.DepositType != nil {
+			salon.DepositType = *body.DepositType
+		}
+		if body.DepositValue != nil {
+			salon.DepositValue = *body.DepositValue
+		}
+		if err := validateDepositConfiguration(salon.DepositPolicy, salon.DepositType, salon.DepositValue); err != nil {
+			return bookingError{400, err.Error()}
+		}
+		if body.PixKey != nil {
+			if strings.TrimSpace(*body.PixKey) != "" {
+				if _, err := generatePix(*body.PixKey, pixBeneficiary(salon), 1); err != nil {
+					return bookingError{400, "Chave Pix inválida."}
+				}
 			}
+			salon.PixKey = body.PixKey
 		}
-		salon.BlockedDates = *body.BlockedDates
-	}
-	if err := db.DB.Save(&salon).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao atualizar dados do salão."})
+		if body.Logo != nil {
+			salon.Logo = body.Logo
+		}
+		if body.Cover != nil {
+			salon.Cover = body.Cover
+		}
+		if body.Gallery != nil {
+			salon.Gallery = *body.Gallery
+		}
+		if body.MainColor != nil {
+			salon.MainColor = body.MainColor
+		}
+		if body.ScheduleRaw != nil {
+			if err := validateSchedule(*body.ScheduleRaw); err != nil {
+				return bookingError{400, err.Error()}
+			}
+			salon.ScheduleRaw = *body.ScheduleRaw
+		}
+
+		if body.Timezone != nil {
+			if _, err := time.LoadLocation(*body.Timezone); err != nil {
+				return bookingError{400, "Fuso inválido."}
+			}
+			salon.Timezone = *body.Timezone
+		}
+		if body.BlockedDates != nil {
+			var dates []string
+			if json.Unmarshal([]byte(*body.BlockedDates), &dates) != nil {
+				return bookingError{400, "Datas inválidas."}
+			}
+			for _, d := range dates {
+				if _, err := time.Parse("2006-01-02", d); err != nil {
+					return bookingError{400, "Data inválida."}
+				}
+			}
+			salon.BlockedDates = *body.BlockedDates
+		}
+		return tx.Save(&salon).Error
+	})
+	if err != nil {
+		bookingFailure(c, err)
 		return
 	}
-
 	c.JSON(http.StatusOK, salon)
 }
 
