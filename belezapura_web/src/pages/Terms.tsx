@@ -26,7 +26,7 @@ export default function Terms() {
       content: (
         <>
           <p className="text-muted-foreground leading-relaxed">
-            A plataforma <strong>GeevheitHair</strong> (desenvolvida e operada por <em>Geevheit Technology</em>) é um software como serviço (SaaS) especializado na gestão operacional, controle de horários, catálogo de serviços e agendamento online inteligente para salões de beleza, barbearias, esmalterias, clínicas de estética e profissionais autônomos.
+            A plataforma <strong>GeevheitHair</strong> (desenvolvida e operada por <em>Geevheit Technology</em>) é um software como serviço (SaaS) especializado na gestão operacional, controle de horários, catálogo de serviços e agendamento online inteligente para clínicas de estética, studios de bronzeamento, esmalterias, nail designers, salões de beleza e profissionais autônomas.
           </p>
           <p className="text-muted-foreground leading-relaxed mt-3">
             O GeevheitHair atua como facilitador tecnológico e ponte de comunicação entre os estabelecimentos de beleza (Contratantes/Lojistas) e seus respectivos clientes finais (Usuários Agendadores). O serviço abrange painel administrativo, link público de agendamento personalizado (<code className="text-xs bg-muted px-1.5 py-0.5 rounded text-foreground">/agendar/:slug</code>), gestão de profissionais e regras automáticas de confirmação e lembretes.
@@ -222,7 +222,7 @@ export default function Terms() {
           <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
             <span>Última atualização: Outubro de 2026</span>
             <span>•</span>
-            <span>Aplicável a: Salões, Barbearias, Clínicas e Clientes</span>
+            <span>Aplicável a: Clínicas de Estética, Studios de Bronzeamento, Nail Designers, Salões e Clientes</span>
           </div>
         </div>
 
