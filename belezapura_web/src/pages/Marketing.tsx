@@ -793,7 +793,7 @@ export default function Marketing() {
                 rel="noopener noreferrer" 
                 className="text-[#E5A991] hover:underline font-medium"
               >
-                Geevheit Software Solutions
+                Geevheith Software Solutions
               </a>
               {" "}• Nosso contato:{" "}
               <a 

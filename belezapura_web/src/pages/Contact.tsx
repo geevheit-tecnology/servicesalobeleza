@@ -81,7 +81,7 @@ export default function Contact() {
           </div>
 
           <Badge variant="outline" className="border-primary/20 text-xs text-muted-foreground">
-            Geevheit Technology
+            Geevheith Technology
           </Badge>
         </div>
       </header>

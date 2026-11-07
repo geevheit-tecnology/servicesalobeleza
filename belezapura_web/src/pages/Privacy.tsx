@@ -27,7 +27,7 @@ export default function Privacy() {
       content: (
         <>
           <p className="text-muted-foreground leading-relaxed">
-            A <strong>Geevheit Technology</strong>, desenvolvedora e mantenedora da plataforma <strong>BelezaPura</strong>, tem como pilar inegociável a segurança da informação, a confidencialidade e a privacidade dos dados de todos os usuários que interagem com o nosso ecossistema.
+            A <strong>Geevheith Technology</strong>, desenvolvedora e mantenedora da plataforma <strong>BelezaPura</strong>, tem como pilar inegociável a segurança da informação, a confidencialidade e a privacidade dos dados de todos os usuários que interagem com o nosso ecossistema.
           </p>
           <p className="text-muted-foreground leading-relaxed mt-3">
             Esta Política de Privacidade foi elaborada em estrita conformidade com a <strong>Lei Geral de Proteção de Dados Pessoais (LGPD - Lei Federal nº 13.709/2018)</strong>, com o <strong>Marco Civil da Internet (Lei Federal nº 12.965/2014)</strong> e com as melhores práticas internacionais de segurança da informação.
@@ -231,7 +231,7 @@ export default function Privacy() {
                 Canal Oficial de Privacidade e DPO
               </span>
               <span className="text-xs text-muted-foreground">
-                Geevheit Technology • Encarregado de Dados
+                Geevheith Technology • Encarregado de Dados
               </span>
             </div>
             <a 
