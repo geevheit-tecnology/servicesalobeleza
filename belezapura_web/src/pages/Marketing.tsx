@@ -275,7 +275,7 @@ export default function Marketing() {
             </div>
 
             <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight text-[#111827] leading-[1.08] mb-6">
-              Cliente marcou, pagou o sinal, veio.
+              Sua agenda organizada e sem furos de última hora.
             </h1>
 
             <p className="text-[#4B5563] text-lg sm:text-xl leading-relaxed mb-8 max-w-2xl font-normal">
