@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Lock, Mail, Loader2, ShieldCheck } from "lucide-react";
+import { ArrowRight, ArrowLeft, Lock, Mail, Loader2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui";
 
 export default function SuperAdminLogin() {
@@ -88,6 +88,15 @@ export default function SuperAdminLogin() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#FAF8F5] p-4 text-stone-800">
       <div className="w-full max-w-md">
+        <div className="mb-4">
+          <button 
+            onClick={() => navigate("/")} 
+            className="inline-flex items-center gap-1.5 text-xs text-stone-500 hover:text-stone-900 font-semibold py-1.5 px-3 rounded-xl hover:bg-white border border-transparent hover:border-stone-200 transition-all cursor-pointer shadow-2xs"
+          >
+            <ArrowLeft className="w-4 h-4 text-[#992E46]" /> Voltar ao site
+          </button>
+        </div>
+
         <div className="flex flex-col items-center mb-8">
           <div
             className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#992E46] to-[#B83E58] flex items-center justify-center shadow-lg shadow-[#B83E58]/20 mb-4 cursor-pointer hover:scale-105 transition-transform"
