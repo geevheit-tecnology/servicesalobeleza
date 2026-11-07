@@ -59,9 +59,9 @@ const BOOKING_SCENARIOS: BookingScenario[] = [
 const CORE_BENEFITS = [
   {
     icon: ShieldCheck,
-    title: "Faltou? Quem paga não é você.",
+    title: "Segurança para o seu studio e para o seu dia.",
     subtitle: "Compromisso com o sinal",
-    desc: "Uma progressiva ou um alongamento ocupam horas de cadeira. Com o sinal no Pix, a cliente só segura o horário se realmente pretende vir.",
+    desc: "Procedimentos como alongamento e drenagem ocupam horas de cadeira. Com a reserva confirmada no Pix, sua cliente se compromete com o horário e seu tempo é valorizado.",
     highlight: "Sinal no Pix direto na sua conta",
     border: "border-[#E5E7EB] hover:border-[#E5A991]"
   },
