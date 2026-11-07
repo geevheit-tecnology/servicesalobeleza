@@ -1,0 +1,85 @@
+services:
+  # ─── API Go BelezaPura ──────────────────────────────────────────────────
+  api:
+    build:
+      context: ./belezapura_go_api
+      dockerfile: Dockerfile
+    container_name: belezapura_api
+    restart: unless-stopped
+    ports:
+      - "3050:3050"
+    environment:
+      # Conexão com o banco centralizado no Supabase (porta 6543 pooler ou 5432 direta com sslmode=require)
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - PORT=3050
+      - GIN_MODE=release
+      # Permitir origens da Vercel e domínio de produção
+      - CORS_ORIGINS=${CORS_ORIGINS:-https://belezapura.com.br,https://geevheithair-web.vercel.app}
+      - APP_REVISION=${APP_REVISION:-production-v1}
+      # Integração Supabase Auth (opcional para contas federadas)
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_PUBLISHABLE_KEY=${SUPABASE_PUBLISHABLE_KEY}
+      # Integração com o container do WhatsApp
+      - WHATSAPP_API_URL=http://whatsapp:8080
+      - WHATSAPP_API_KEY=${WHATSAPP_API_KEY:-belezapura_secret_token_2026}
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3050/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - belezapura_net
+    depends_on:
+      - redis
+
+  # ─── Gateway WhatsApp (Evolution API v2) ──────────────────────────────
+  whatsapp:
+    image: evoapicloud/evolution-api:v2.1.1
+    container_name: belezapura_whatsapp
+    restart: unless-stopped
+    ports:
+      - "8084:8080"
+    environment:
+      - SERVER_URL=${WHATSAPP_SERVER_URL:-http://localhost:8084}
+      - AUTHENTICATION_API_KEY=${WHATSAPP_API_KEY:-belezapura_secret_token_2026}
+      - AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES=true
+      - DATABASE_ENABLED=true
+      - DATABASE_PROVIDER=postgresql
+      - DATABASE_CONNECTION_URI=${DATABASE_URL}&schema=evolution
+      - DATABASE_CONNECTION_CLIENT_NAME=evolution_whatsapp
+      - CACHE_REDIS_ENABLED=true
+      - CACHE_REDIS_URI=redis://redis:6379
+      - CACHE_REDIS_PREFIX_KEY=evolution
+      - CACHE_REDIS_TTL=604800
+      - DEL_INSTANCE=false
+      - WEBHOOK_GLOBAL_ENABLED=true
+      - WEBHOOK_GLOBAL_URL=http://api:3050/api/public/whatsapp-webhook
+      - WEBHOOK_GLOBAL_WEBHOOK_BY_EVENTS=true
+    volumes:
+      - whatsapp_instances:/evolution/instances
+    networks:
+      - belezapura_net
+    depends_on:
+      - redis
+
+  # ─── Redis para Sessões e Fila do WhatsApp ─────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: belezapura_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-belezapura_redis_secret}
+    volumes:
+      - redis_data:/data
+    networks:
+      - belezapura_net
+
+networks:
+  belezapura_net:
+    driver: bridge
+
+volumes:
+  whatsapp_instances:
+  redis_data:
+

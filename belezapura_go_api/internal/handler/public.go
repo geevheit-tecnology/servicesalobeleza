@@ -1,13 +1,16 @@
 package handler
 
 import (
-	"belezapura_go_api/internal/db"
-	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+
+	"belezapura_go_api/internal/db"
+	"belezapura_go_api/internal/whatsapp"
 )
 
 func publicSalon(c *gin.Context, id string) (db.Salon, bool) {
@@ -154,6 +157,24 @@ func CreatePublicAppointment(c *gin.Context) {
 	if deposit > 0 {
 		paymentStatus = "pending_manual_review"
 		message = "Reserva registrada. A confirmação do sinal será feita pelo salão."
+	}
+
+	var svc db.Service
+	_ = db.DB.Select("name").First(&svc, "id = ?", body.ServiceID)
+	var pro db.Professional
+	_ = db.DB.Select("name").First(&pro, "id = ?", body.ProfessionalID)
+
+	if consumeWhatsAppQuota(s.ID) {
+		whatsapp.DispatchBookingNotification(
+			body.ClientPhone,
+			body.ClientName,
+			s.Name,
+			svc.Name,
+			pro.Name,
+			date.Format("02/01/2006 15:04"),
+			pix,
+			deposit,
+		)
 	}
 	c.JSON(http.StatusCreated, gin.H{"appointment": gin.H{"id": appt.ID, "status": appt.Status, "date": appt.Date}, "pixCode": pix, "deposit": deposit, "paymentStatus": paymentStatus, "message": message})
 }

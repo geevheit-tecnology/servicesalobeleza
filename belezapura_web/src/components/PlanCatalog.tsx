@@ -59,14 +59,40 @@ const FALLBACK_PLANS: PlanItem[] = [
   }
 ];
 
-export function planFeatures(plan: { maxProfessionals: number }) { 
+export function planFeatures(plan: { name?: string; price?: number; maxProfessionals: number; features?: string[] }) {
+  if (Array.isArray(plan.features) && plan.features.length > 0) {
+    return plan.features;
+  }
+  const nameLower = (plan.name || "").toLowerCase();
+  if (nameLower.includes("elite") || plan.maxProfessionals === 0 || (plan.price && plan.price >= 200)) {
+    return [
+      "Tudo do plano Studio incluso",
+      plan.maxProfessionals > 0 ? `Até ${plan.maxProfessionals} profissionais ativos` : "Profissionais ilimitados",
+      "Automação WhatsApp & Bot IA 24h (confirmações e lembretes)",
+      "Controle de estoque completo com alerta de reposição",
+      "Relatórios avançados de faturamento, retenção e ticket médio",
+      "Múltiplos acessos por perfil (Recepção e Profissionais)",
+      "Suporte prioritário VIP"
+    ];
+  }
+  if (nameLower.includes("studio") || plan.maxProfessionals > 1 || (plan.price && plan.price >= 100)) {
+    return [
+      "Tudo do plano Essencial incluso",
+      `Até ${plan.maxProfessionals || 5} profissionais na equipe`,
+      "Gestão de comissões e rateio automático por profissional",
+      "Painel financeiro completo (fluxo de caixa e receitas)",
+      "Agenda multi-profissional com bloqueio de horários",
+      "Relatórios gerenciais de desempenho",
+      "Controle de estoque de produtos do salão"
+    ];
+  }
   return [
-    plan.maxProfessionals > 0 ? `Até ${plan.maxProfessionals} profissional(is)` : "Profissionais ilimitados", 
-    "Página exclusiva e agendamento online", 
-    "Pix com conferência manual pelo salão", 
-    "Gestão de clientes e atendimentos", 
-    "Estoque por salão e painel financeiro"
-  ]; 
+    plan.maxProfessionals > 1 ? `Até ${plan.maxProfessionals} profissionais` : "Até 1 profissional (autônoma)",
+    "Página exclusiva na Bio e agendamento online 24h",
+    "Gestão de agenda, clientes e catálogo de serviços",
+    "Sinal antecipado via Pix com conferência no painel",
+    "Mural de avaliações de clientes na página pública"
+  ];
 }
 
 export function PlanCatalog() {
@@ -81,7 +107,16 @@ export function PlanCatalog() {
         if (!Array.isArray(data) || data.length === 0) throw new Error("Nenhum plano disponível.");
         setPlans(data.map(plan => {
           const presentation = FALLBACK_PLANS.find(p => p.name.toLowerCase() === plan.name?.toLowerCase());
-          return { id: plan.id, name: plan.name, price: Number(plan.price), desc: presentation?.desc || "Assinatura mensal com conferência manual", highlight: plan.name?.toLowerCase() === "studio", features: planFeatures(plan) };
+          const isHighlight = Boolean(plan.highlight) || plan.name?.toLowerCase() === "studio";
+          return {
+            id: plan.id,
+            name: plan.name,
+            price: Number(plan.price),
+            desc: presentation?.desc || plan.category || "Assinatura mensal com conferência manual",
+            highlight: isHighlight,
+            badge: isHighlight ? "MAIS ESCOLHIDO" : (plan.category || undefined),
+            features: planFeatures(plan),
+          };
         }));
       })
       .catch(() => {

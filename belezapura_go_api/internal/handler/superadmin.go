@@ -3,17 +3,17 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"strings"
-
-	"belezapura_go_api/internal/db"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
-	"math"
-	"time"
+
+	"belezapura_go_api/internal/db"
 )
 
 // ─── Super Admin ─────────────────────────────────────────────────────────────
@@ -92,6 +92,16 @@ func GetOverview(c *gin.Context) {
 		mrrValue += s.Price
 	}
 
+	var lateCount, trialCount int64
+	db.DB.Model(&db.Subscription{}).Where("status IN ?", []string{"LATE", "BLOCKED"}).Count(&lateCount)
+	db.DB.Model(&db.Subscription{}).Where("status = ?", "TRIAL").Count(&trialCount)
+
+	var totalPaymentsReceived float64
+	db.DB.Model(&db.Payment{}).Select("COALESCE(SUM(amount), 0)").Scan(&totalPaymentsReceived)
+
+	var pendingRevenue float64
+	db.DB.Model(&db.Subscription{}).Where("pending_plan_id IS NOT NULL").Select("COALESCE(SUM(requested_price), 0)").Scan(&pendingRevenue)
+
 	mrrData := []gin.H{
 		{"name": "Jul", "value": 0},
 		{"name": "Ago", "value": 0},
@@ -100,11 +110,16 @@ func GetOverview(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"totalSalons":       totalSalons,
-		"totalAppointments": totalAppointments,
-		"totalClients":      totalClients,
-		"mrrData":           mrrData,
-		"mrrValue":          mrrValue,
+		"totalSalons":          totalSalons,
+		"activeSubscriptions":  len(activeSubs),
+		"trialSubscriptions":   trialCount,
+		"lateSubscriptions":    lateCount,
+		"totalAppointments":    totalAppointments,
+		"totalClients":         totalClients,
+		"mrrData":              mrrData,
+		"mrrValue":             mrrValue,
+		"totalRevenueReceived": totalPaymentsReceived,
+		"pendingRevenue":       pendingRevenue,
 	})
 }
 
@@ -140,16 +155,22 @@ func GetSalons(c *gin.Context) {
 			}
 		}
 
+		wa := getWhatsAppStatus(s)
 		result = append(result, gin.H{
-			"id":           s.ID,
-			"name":         s.Name,
-			"owner":        owner,
-			"units":        1,
-			"plan":         plan,
-			"status":       status,
-			"since":        s.CreatedAt.Format("02/01/2006"),
-			"appointments": apptCount,
-			"lastAccess":   s.UpdatedAt.Format("02/01/2006"),
+			"id":                   s.ID,
+			"name":                 s.Name,
+			"owner":                owner,
+			"units":                1,
+			"plan":                 plan,
+			"status":               status,
+			"since":                s.CreatedAt.Format("02/01/2006"),
+			"appointments":         apptCount,
+			"lastAccess":           s.UpdatedAt.Format("02/01/2006"),
+			"whatsappEnabled":      s.WhatsAppEnabled,
+			"whatsappMonthlyLimit": s.WhatsAppMonthlyLimit,
+			"whatsappLimit":        wa.Limit,
+			"whatsappPlanLimit":    wa.PlanLimit,
+			"whatsappUsed":         wa.Used,
 		})
 	}
 
@@ -201,20 +222,29 @@ func UpdateSalon(c *gin.Context) {
 	}
 
 	var body struct {
-		Name  *string `json:"name"`
-		Owner *string `json:"owner"`
-		Plan  *string `json:"plan"`
+		Name                 *string `json:"name"`
+		Owner                *string `json:"owner"`
+		Plan                 *string `json:"plan"`
+		Status               *string `json:"status"`
+		WhatsAppEnabled      *bool   `json:"whatsappEnabled"`
+		WhatsAppMonthlyLimit *int    `json:"whatsappMonthlyLimit"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados inválidos."})
 		return
 	}
 
-	if body.Plan != nil && *body.Plan != "" {
-		c.JSON(400, gin.H{"error": "Alterações de plano exigem solicitação e conferência na aba Assinaturas."})
-		return
-	}
 	if err := db.DB.Transaction(func(tx *gorm.DB) error {
+		if body.WhatsAppEnabled != nil {
+			if err := tx.Model(&salon).Update("whatsapp_enabled", *body.WhatsAppEnabled).Error; err != nil {
+				return err
+			}
+		}
+		if body.WhatsAppMonthlyLimit != nil && *body.WhatsAppMonthlyLimit >= 0 {
+			if err := tx.Model(&salon).Update("whatsapp_monthly_limit", *body.WhatsAppMonthlyLimit).Error; err != nil {
+				return err
+			}
+		}
 		if body.Name != nil && strings.TrimSpace(*body.Name) != "" {
 			if err := tx.Model(&salon).Update("name", strings.TrimSpace(*body.Name)).Error; err != nil {
 				return err
@@ -223,6 +253,35 @@ func UpdateSalon(c *gin.Context) {
 		if body.Owner != nil && strings.TrimSpace(*body.Owner) != "" {
 			if err := tx.Model(&db.User{}).Where("salon_id = ? AND role = ?", salon.ID, "owner").Update("name", strings.TrimSpace(*body.Owner)).Error; err != nil {
 				return err
+			}
+		}
+		if (body.Plan != nil && strings.TrimSpace(*body.Plan) != "") || (body.Status != nil && strings.TrimSpace(*body.Status) != "") {
+			var sub db.Subscription
+			if err := tx.Where("salon_id = ?", salon.ID).Order("created_at desc").First(&sub).Error; err == nil {
+				subUpdates := map[string]interface{}{}
+				if body.Plan != nil && strings.TrimSpace(*body.Plan) != "" {
+					planInput := strings.TrimSpace(*body.Plan)
+					var targetPlan db.Plan
+					if err := tx.Where("LOWER(name) = LOWER(?) OR id = ?", planInput, planInput).First(&targetPlan).Error; err == nil {
+						subUpdates["plan_id"] = targetPlan.ID
+						subUpdates["price"] = targetPlan.Price
+					}
+				}
+				if body.Status != nil && strings.TrimSpace(*body.Status) != "" {
+					norm := normalizeSubscriptionStatus(*body.Status)
+					if norm != "" {
+						subUpdates["status"] = norm
+						if norm == "ACTIVE" {
+							end := time.Now().AddDate(0, 1, 0)
+							subUpdates["current_period_end"] = end
+						}
+					}
+				}
+				if len(subUpdates) > 0 {
+					if err := tx.Model(&sub).Updates(subUpdates).Error; err != nil {
+						return err
+					}
+				}
 			}
 		}
 		return nil
@@ -326,16 +385,20 @@ func GetSubscriptions(c *gin.Context) {
 			effectiveStatus = "EXPIRED"
 		}
 		result = append(result, gin.H{
-			"pendingPlanName": pendingName,
-			"id":              s.ID,
-			"salon":           salonName,
-			"salonId":         s.SalonID,
-			"document":        document,
-			"plan":            planName,
-			"value":           "R$ " + formatMoney(s.Price),
-			"status":          effectiveStatus,
-			"next":            next,
-			"pendingPlanId":   s.PendingPlanID, "requestedPrice": s.RequestedPrice, "currentPeriodEnd": s.CurrentPeriodEnd,
+			"pendingPlanName":  pendingName,
+			"id":               s.ID,
+			"salon":            salonName,
+			"salonId":          s.SalonID,
+			"document":         document,
+			"plan":             planName,
+			"planId":           s.PlanID,
+			"priceNumeric":     s.Price,
+			"value":            "R$ " + formatMoney(s.Price),
+			"status":           effectiveStatus,
+			"next":             next,
+			"pendingPlanId":    s.PendingPlanID,
+			"requestedPrice":   s.RequestedPrice,
+			"currentPeriodEnd": s.CurrentPeriodEnd,
 		})
 	}
 
@@ -347,6 +410,7 @@ func UpdateSubscriptionStatus(c *gin.Context) {
 		Status           string  `json:"status" binding:"required"`
 		PaymentReference string  `json:"paymentReference"`
 		Amount           float64 `json:"amount"`
+		PlanID           string  `json:"planId"`
 	}
 	if c.ShouldBindJSON(&body) != nil {
 		c.JSON(400, gin.H{"error": "Dados inválidos."})
@@ -365,18 +429,35 @@ func UpdateSubscriptionStatus(c *gin.Context) {
 		updates := map[string]interface{}{"status": status}
 		if status == "ACTIVE" {
 			ref := strings.TrimSpace(body.PaymentReference)
-			if len(ref) < 6 || len(ref) > 160 || sub.PendingPlanID == nil || sub.RequestedPrice == nil {
-				return bookingError{400, "Selecione uma solicitação pendente e informe a referência bancária do pagamento."}
+			if len(ref) < 6 || len(ref) > 160 {
+				return bookingError{400, "Informe a referência bancária do pagamento (mínimo 6 caracteres)."}
 			}
-			if *sub.RequestedPrice <= 0 {
-				return bookingError{400, "Valor de assinatura inválido."}
+			targetPlanID := sub.PlanID
+			expectedPrice := sub.Price
+			if sub.PendingPlanID != nil && *sub.PendingPlanID != "" {
+				targetPlanID = *sub.PendingPlanID
 			}
-			if math.Abs(body.Amount-*sub.RequestedPrice) > 0.005 {
-				return bookingError{400, "O valor recebido deve corresponder ao valor solicitado."}
+			if strings.TrimSpace(body.PlanID) != "" {
+				targetPlanID = strings.TrimSpace(body.PlanID)
 			}
 			var plan db.Plan
-			if err := tx.First(&plan, "id = ?", *sub.PendingPlanID).Error; err != nil {
+			if err := tx.First(&plan, "id = ?", targetPlanID).Error; err != nil {
 				return bookingError{409, "Plano solicitado indisponível."}
+			}
+			if sub.RequestedPrice != nil && *sub.RequestedPrice > 0 && (body.PlanID == "" || (sub.PendingPlanID != nil && body.PlanID == *sub.PendingPlanID)) {
+				expectedPrice = *sub.RequestedPrice
+			} else {
+				expectedPrice = plan.Price
+			}
+			finalPrice := body.Amount
+			if finalPrice <= 0 {
+				finalPrice = expectedPrice
+			}
+			if finalPrice <= 0 {
+				return bookingError{400, "Valor de assinatura inválido."}
+			}
+			if sub.PendingPlanID != nil && sub.RequestedPrice != nil && math.Abs(finalPrice-*sub.RequestedPrice) > 0.005 && body.PlanID == "" {
+				return bookingError{400, "O valor recebido deve corresponder ao valor solicitado."}
 			}
 			if plan.MaxSubscriptions > 0 {
 				var n int64
@@ -399,7 +480,7 @@ func UpdateSubscriptionStatus(c *gin.Context) {
 					return bookingError{409, "Reduza a equipe ativa antes de aprovar este plano."}
 				}
 			}
-			payment := db.Payment{SubscriptionID: sub.ID, Reference: ref, Amount: body.Amount, ApprovedBy: c.GetString("userId")}
+			payment := db.Payment{SubscriptionID: sub.ID, Reference: ref, Amount: finalPrice, ApprovedBy: c.GetString("userId")}
 			if err := tx.Create(&payment).Error; err != nil {
 				return err
 			}
@@ -409,7 +490,7 @@ func UpdateSubscriptionStatus(c *gin.Context) {
 			}
 			end := start.AddDate(0, 1, 0)
 			updates["plan_id"] = plan.ID
-			updates["price"] = *sub.RequestedPrice
+			updates["price"] = finalPrice
 			updates["current_period_end"] = end
 			updates["trial_ends"] = nil
 			updates["pending_plan_id"] = nil
@@ -582,6 +663,7 @@ func DeleteUser(c *gin.Context) {
 type planResponse struct {
 	ID               string   `json:"id"`
 	Name             string   `json:"name"`
+	Category         string   `json:"category"`
 	Price            float64  `json:"price"`
 	Period           string   `json:"period"`
 	Highlight        bool     `json:"highlight"`
@@ -590,22 +672,121 @@ type planResponse struct {
 	Color            string   `json:"color"`
 }
 
+func inferPlanCategory(p db.Plan) string {
+	nameLower := strings.ToLower(strings.TrimSpace(p.Name))
+	switch {
+	case strings.Contains(nameLower, "elite") || strings.Contains(nameLower, "vip") || strings.Contains(nameLower, "premium") || p.MaxProfessionals == 0 || p.Price >= 200:
+		return "Completo / VIP"
+	case strings.Contains(nameLower, "studio") || strings.Contains(nameLower, "equipe") || strings.Contains(nameLower, "pro") || p.MaxProfessionals > 1 || p.Price >= 100:
+		return "Intermediário / Equipe"
+	default:
+		return "Inicial / Autônoma"
+	}
+}
+
+func defaultTierFeatures(p db.Plan) []string {
+	cat := inferPlanCategory(p)
+	switch cat {
+	case "Completo / VIP":
+		proLabel := "Profissionais ilimitados"
+		if p.MaxProfessionals > 0 {
+			proLabel = fmt.Sprintf("Até %d profissionais ativos", p.MaxProfessionals)
+		}
+		return []string{
+			"Tudo do plano Studio incluso",
+			proLabel,
+			"Automação WhatsApp & Bot IA 24h (franquia de até 1.000 disparos/mês)",
+			"Controle de estoque completo com alerta de reposição",
+			"Relatórios avançados de faturamento, retenção e ticket médio",
+			"Múltiplos acessos por perfil (Recepção e Profissionais)",
+			"Suporte prioritário VIP",
+		}
+	case "Intermediário / Equipe":
+		proLabel := "Até 5 profissionais na equipe"
+		if p.MaxProfessionals > 0 {
+			proLabel = fmt.Sprintf("Até %d profissionais na equipe", p.MaxProfessionals)
+		} else {
+			proLabel = "Profissionais ilimitados"
+		}
+		return []string{
+			"Tudo do plano Essencial incluso",
+			proLabel,
+			"Avisos automáticos no WhatsApp sob demanda (franquia de até 150 disparos/mês)",
+			"Gestão de comissões e rateio automático por profissional",
+			"Painel financeiro completo (fluxo de caixa e receitas)",
+			"Agenda multi-profissional com bloqueio de horários",
+			"Relatórios gerenciais de desempenho",
+			"Controle de estoque de produtos do salão",
+		}
+	default:
+		proLabel := "Até 1 profissional (autônoma)"
+		if p.MaxProfessionals > 1 {
+			proLabel = fmt.Sprintf("Até %d profissionais", p.MaxProfessionals)
+		} else if p.MaxProfessionals == 0 {
+			proLabel = "Profissionais ilimitados"
+		}
+		return []string{
+			proLabel,
+			"Página exclusiva na Bio e agendamento online 24h",
+			"Gestão de agenda, clientes e catálogo de serviços",
+			"Sinal antecipado via Pix com conferência no painel",
+			"Aviso de WhatsApp com 1 clique na agenda (envio manual sem custo extra)",
+			"Mural de avaliações de clientes na página pública",
+		}
+	}
+}
+
+func isLegacyGenericFeatures(features []string) bool {
+	if len(features) == 0 {
+		return true
+	}
+	joined := strings.Join(features, "|")
+	// Detect the old generic 4-item seed that was identical across all plans
+	if strings.Contains(joined, "Página exclusiva e agendamento online") &&
+		strings.Contains(joined, "Estoque por salão e painel financeiro") &&
+		len(features) <= 5 {
+		return true
+	}
+	return false
+}
+
 func planToResponse(p db.Plan) planResponse {
-	features := []string{"Página exclusiva e agendamento online", "Pix com conferência manual pelo salão", "Gestão de clientes e atendimentos", "Estoque por salão e painel financeiro"}
-	if p.MaxProfessionals > 0 {
-		features = append([]string{fmt.Sprintf("Até %d profissional(is)", p.MaxProfessionals)}, features...)
-	} else {
-		features = append([]string{"Profissionais ilimitados"}, features...)
+	var parsed []string
+	if strings.TrimSpace(p.Features) != "" {
+		_ = json.Unmarshal([]byte(p.Features), &parsed)
+	}
+	// Clean empty strings
+	clean := make([]string, 0, len(parsed))
+	for _, f := range parsed {
+		if t := strings.TrimSpace(f); t != "" {
+			clean = append(clean, t)
+		}
+	}
+	if isLegacyGenericFeatures(clean) {
+		clean = defaultTierFeatures(p)
+		// Persist upgraded tiered features in DB asynchronously so DB stays in sync
+		if b, err := json.Marshal(clean); err == nil {
+			db.DB.Model(&db.Plan{}).Where("id = ?", p.ID).Update("features", string(b))
+		}
+	}
+	period := p.Period
+	if strings.TrimSpace(period) == "" {
+		period = "/mês"
+	}
+	color := p.Color
+	if strings.TrimSpace(color) == "" {
+		color = "#B8614A"
 	}
 	return planResponse{
 		ID:               p.ID,
 		Name:             p.Name,
+		Category:         inferPlanCategory(p),
 		Price:            p.Price,
-		Period:           p.Period,
+		Period:           period,
 		Highlight:        p.Highlight,
-		Features:         features,
+		Features:         clean,
 		MaxProfessionals: p.MaxProfessionals,
-		Color:            p.Color,
+		Color:            color,
 	}
 }
 
@@ -641,23 +822,40 @@ func CreatePlan(c *gin.Context) {
 		c.JSON(400, gin.H{"error": "Nome, preço e limite do plano inválidos."})
 		return
 	}
-	featuresJSON, _ := json.Marshal(req.Features)
-	plan := db.Plan{
-		Name:             req.Name,
-		Price:            req.Price,
-		Period:           req.Period,
-		Highlight:        req.Highlight,
-		Features:         string(featuresJSON),
-		MaxProfessionals: req.MaxProfessionals,
-		Color:            req.Color,
+	period := strings.TrimSpace(req.Period)
+	if period == "" {
+		period = "/mês"
 	}
+	color := strings.TrimSpace(req.Color)
+	if color == "" {
+		color = "#B8614A"
+	}
+	tempPlan := db.Plan{
+		Name:             strings.TrimSpace(req.Name),
+		Price:            req.Price,
+		Period:           period,
+		Highlight:        req.Highlight,
+		MaxProfessionals: req.MaxProfessionals,
+		Color:            color,
+	}
+	features := make([]string, 0, len(req.Features))
+	for _, f := range req.Features {
+		if t := strings.TrimSpace(f); t != "" {
+			features = append(features, t)
+		}
+	}
+	if len(features) == 0 {
+		features = defaultTierFeatures(tempPlan)
+	}
+	featuresJSON, _ := json.Marshal(features)
+	tempPlan.Features = string(featuresJSON)
 
-	if err := db.DB.Create(&plan).Error; err != nil {
+	if err := db.DB.Create(&tempPlan).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	writeAuditLog(c, "PLAN_CREATED", plan.Name, "Plano criado pelo superadmin.", "success")
-	c.JSON(http.StatusCreated, planToResponse(plan))
+	writeAuditLog(c, "PLAN_CREATED", tempPlan.Name, "Plano criado pelo superadmin.", "success")
+	c.JSON(http.StatusCreated, planToResponse(tempPlan))
 }
 
 func UpdatePlan(c *gin.Context) {
@@ -670,7 +868,7 @@ func UpdatePlan(c *gin.Context) {
 
 	var plan db.Plan
 	if err := db.DB.First(&plan, "id = ?", id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Plan not found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "Plano não encontrado."})
 		return
 	}
 
@@ -678,16 +876,49 @@ func UpdatePlan(c *gin.Context) {
 		c.JSON(400, gin.H{"error": "Nome, preço e limite do plano inválidos."})
 		return
 	}
-	featuresJSON, _ := json.Marshal(req.Features)
-	db.DB.Model(&plan).Updates(db.Plan{
-		Name:             req.Name,
-		Price:            req.Price,
-		Period:           req.Period,
-		Highlight:        req.Highlight,
-		Features:         string(featuresJSON),
-		MaxProfessionals: req.MaxProfessionals,
-		Color:            req.Color,
-	})
+	period := strings.TrimSpace(req.Period)
+	if period == "" {
+		period = plan.Period
+		if period == "" {
+			period = "/mês"
+		}
+	}
+	color := strings.TrimSpace(req.Color)
+	if color == "" {
+		color = plan.Color
+		if color == "" {
+			color = "#B8614A"
+		}
+	}
+
+	features := make([]string, 0, len(req.Features))
+	for _, f := range req.Features {
+		if t := strings.TrimSpace(f); t != "" {
+			features = append(features, t)
+		}
+	}
+	if len(features) == 0 {
+		features = defaultTierFeatures(db.Plan{
+			Name:             strings.TrimSpace(req.Name),
+			Price:            req.Price,
+			MaxProfessionals: req.MaxProfessionals,
+		})
+	}
+	featuresJSON, _ := json.Marshal(features)
+
+	updates := map[string]interface{}{
+		"name":              strings.TrimSpace(req.Name),
+		"price":             req.Price,
+		"period":            period,
+		"highlight":         req.Highlight,
+		"features":          string(featuresJSON),
+		"max_professionals": req.MaxProfessionals,
+		"color":             color,
+	}
+	if err := db.DB.Model(&plan).Updates(updates).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
 	db.DB.First(&plan, "id = ?", id)
 	writeAuditLog(c, "PLAN_UPDATE", plan.Name, "Plano atualizado pelo superadmin.", "info")
@@ -744,8 +975,56 @@ func GetPayments(c *gin.Context) {
 		bookingFailure(c, err)
 		return
 	}
-	if payments == nil {
-		payments = []db.Payment{}
+
+	var subs []db.Subscription
+	db.DB.Find(&subs)
+	subMap := make(map[string]db.Subscription, len(subs))
+	for _, s := range subs {
+		subMap[s.ID] = s
 	}
-	c.JSON(200, payments)
+
+	var salons []db.Salon
+	db.DB.Find(&salons)
+	salonNameByID := make(map[string]string, len(salons))
+	for _, s := range salons {
+		salonNameByID[s.ID] = s.Name
+	}
+
+	var plans []db.Plan
+	db.DB.Find(&plans)
+	planNameByID := make(map[string]string, len(plans))
+	for _, p := range plans {
+		planNameByID[p.ID] = p.Name
+	}
+
+	result := make([]gin.H, 0, len(payments))
+	for _, p := range payments {
+		salonName := "Salão"
+		planName := "-"
+		if sub, ok := subMap[p.SubscriptionID]; ok {
+			if name := salonNameByID[sub.SalonID]; name != "" {
+				salonName = name
+			}
+			if sub.PlanID != "" {
+				if pn := planNameByID[sub.PlanID]; pn != "" {
+					planName = pn
+				}
+			}
+			if planName == "-" && sub.PendingPlanID != nil && *sub.PendingPlanID != "" {
+				if pn := planNameByID[*sub.PendingPlanID]; pn != "" {
+					planName = pn
+				}
+			}
+		}
+		result = append(result, gin.H{
+			"id":             p.ID,
+			"subscriptionId": p.SubscriptionID,
+			"salon":          salonName,
+			"plan":           planName,
+			"reference":      p.Reference,
+			"amount":         p.Amount,
+			"createdAt":      p.CreatedAt,
+		})
+	}
+	c.JSON(200, result)
 }

@@ -26,7 +26,7 @@ function PageLoader() {
 }
 
 export default function App() {
-  // Silent API warm-up to prevent cold-start delay on cloud servers (e.g. Render)
+  // Verificação inicial de conectividade da API
   useEffect(() => {
     const api = import.meta.env.VITE_API_URL || "http://localhost:3050";
     try {

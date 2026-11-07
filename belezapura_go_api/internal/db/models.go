@@ -56,6 +56,9 @@ type Salon struct {
 	DepositValue  float64        `gorm:"type:decimal(10,2);not null;default:20" json:"depositValue"`
 	Timezone      string         `gorm:"not null;default:America/Sao_Paulo" json:"timezone"`
 	BlockedDates  string         `gorm:"type:text;not null;default:'[]'" json:"blockedDates"`
+	// WhatsApp sob demanda: só dispara quando o Super Admin ativa para o salão.
+	WhatsAppEnabled      bool `gorm:"column:whatsapp_enabled;not null;default:false" json:"whatsappEnabled"`
+	WhatsAppMonthlyLimit int  `gorm:"column:whatsapp_monthly_limit;not null;default:0" json:"whatsappMonthlyLimit"` // 0 = usa o padrão do plano
 	ID            string         `gorm:"primaryKey;type:uuid" json:"id"`
 	Slug          string         `gorm:"uniqueIndex;not null" json:"slug"`
 	Name          string         `gorm:"not null" json:"name"`

@@ -122,7 +122,54 @@ export default function SalonDashboard() {
   useEffect(() => { fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3050"}/api/public/plans`).then(res => { if (!res.ok) throw new Error("Falha ao carregar planos."); return res.json(); }).then(setAvailablePlans).catch(error => setUpgradeError(error.message)); }, []);
   if (!token) return <Navigate to="/login" replace />;
 
+  const currentPlanTier = useMemo(() => {
+    const lower = planName.toLowerCase();
+    if (lower.includes("elite") || lower.includes("vip") || role === "superadmin") return 3;
+    if (lower.includes("studio") || lower.includes("trial") || isTrial) return 2;
+    if (lower.includes("essencial") || lower.includes("básico") || lower.includes("basico")) return 1;
+    return 2;
+  }, [planName, isTrial, role]);
+
+  const requiredTierForSection = (sectionId: string): { tier: number; planLabel: string; reason: string } | null => {
+    if (["comissoes", "estoque", "relatorios", "financeiro"].includes(sectionId)) {
+      return {
+        tier: 2,
+        planLabel: "Studio (Intermediário / Equipe)",
+        reason: "Gestão financeira completa, rateio de comissões, controle de estoque e relatórios gerenciais fazem parte dos planos Studio e Elite.",
+      };
+    }
+    if (sectionId === "chatbot") {
+      return {
+        tier: 3,
+        planLabel: "Elite (Completo / VIP)",
+        reason: "A Automação de WhatsApp & Bot IA 24h com confirmações e lembretes automáticos é exclusiva da categoria Elite.",
+      };
+    }
+    return null;
+  };
+
   const renderContent = () => {
+    const reqTier = requiredTierForSection(activeSection);
+    if (reqTier && currentPlanTier < reqTier.tier) {
+      return (
+        <div className="p-6 max-w-xl mx-auto mt-10">
+          <div className="bg-card border border-border rounded-3xl p-8 text-center space-y-4 shadow-sm">
+            <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto">
+              <Lock className="w-6 h-6" />
+            </div>
+            <Badge variant="purple">Recurso exclusivo — {reqTier.planLabel}</Badge>
+            <h2 className="font-serif text-2xl font-semibold">Faça upgrade para liberar este módulo</h2>
+            <p className="text-sm text-muted-foreground">{reqTier.reason}</p>
+            <div className="pt-2">
+              <Button onClick={() => setShowUpgradeModal(true)}>
+                Ver planos e fazer upgrade
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     switch (activeSection) {
       case "dashboard": return <DashboardView onNewAppointment={() => setShowModal(true)} />;
       case "agenda": return <AgendaView onNewAppointment={() => setShowModal(true)} />;
@@ -426,13 +473,57 @@ export default function SalonDashboard() {
         </nav>
       </div>
 
-      {(trialExpired || showUpgradeModal) && <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"><div className="bg-card border rounded-2xl p-5 w-full max-w-3xl max-h-[90vh] overflow-y-auto space-y-4">
-        <div className="flex justify-between gap-3"><h2 className="font-serif text-xl">{trialExpired ? "Regularizar assinatura" : "Adesão ou renovação"}</h2><Button variant="ghost" onClick={() => setShowUpgradeModal(false)} disabled={trialExpired}>Fechar</Button></div>
-        <p className="text-sm text-muted-foreground">A cobrança é manual. Escolha o plano e combine o pagamento com o administrador. O acesso será liberado após a conferência do recebimento, por um mês.</p>
-        {upgradeError && <p role="alert" className="text-red-600">{upgradeError}</p>}
-        <div className="grid sm:grid-cols-3 gap-3">{availablePlans.map(p => <div key={p.id} className="p-4 border rounded-xl space-y-3"><h3 className="font-semibold">{p.name}</h3><p>R$ {Number(p.price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}/mês</p><p className="text-sm">{p.maxProfessionals > 0 ? `Até ${p.maxProfessionals} profissionais` : "Profissionais ilimitados"}</p><Button disabled={upgradingPlan !== null} onClick={() => handleUpgrade(p.name)}>Solicitar {p.name}</Button></div>)}</div>
-        {trialExpired && <Button variant="outline" onClick={() => { localStorage.removeItem("token"); window.location.assign("/login"); }}>Encerrar sessão</Button>}
-      </div></div>}
+      {(trialExpired || showUpgradeModal) && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto space-y-5 shadow-2xl">
+            <div className="flex justify-between items-center gap-3">
+              <div>
+                <h2 className="font-serif text-xl font-semibold">{trialExpired ? "Regularizar assinatura" : "Escolha o plano ideal para o seu espaço"}</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Quanto maior a categoria do plano, mais módulos e benefícios do sistema são liberados.
+                </p>
+              </div>
+              <Button variant="ghost" onClick={() => setShowUpgradeModal(false)} disabled={trialExpired}>Fechar</Button>
+            </div>
+            {upgradeError && <p role="alert" className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl p-3">{upgradeError}</p>}
+            <div className="grid sm:grid-cols-3 gap-4">
+              {availablePlans.map(p => (
+                <div key={p.id} className={`p-5 border rounded-2xl flex flex-col justify-between space-y-4 ${p.highlight ? "border-2 border-primary shadow-md" : "border-border"}`}>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <Badge variant="outline" className="text-[10px]">{p.category || "Plano Mensal"}</Badge>
+                      {p.highlight && <Badge variant="success" className="text-[10px]">★ Mais Escolhido</Badge>}
+                    </div>
+                    <h3 className="font-serif text-lg font-bold">{p.name}</h3>
+                    <div>
+                      <span className="font-serif text-2xl font-bold">
+                        R$ {Number(p.price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </span>
+                      <span className="text-xs text-muted-foreground">/mês</span>
+                    </div>
+                    <ul className="text-xs space-y-2 pt-2 border-t border-border">
+                      {(Array.isArray(p.features) ? p.features : []).map((f: string, idx: number) => (
+                        <li key={idx} className="flex items-start gap-2">
+                          <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                          <span>{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <Button className="w-full" disabled={upgradingPlan !== null} onClick={() => handleUpgrade(p.name)}>
+                    {upgradingPlan === p.name ? "Solicitando..." : `Solicitar ${p.name}`}
+                  </Button>
+                </div>
+              ))}
+            </div>
+            {trialExpired && (
+              <Button variant="outline" onClick={() => { localStorage.removeItem("token"); window.location.assign("/login"); }}>
+                Encerrar sessão
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -98,37 +98,71 @@ const statusBadge = (status?: string) => {
 };
 
 function OverviewView({ overviewData }: { overviewData: any }) {
-  if (!overviewData) return <div>Carregando...</div>;
+  if (!overviewData) return <div className="p-6 text-sm text-muted-foreground">Carregando indicadores...</div>;
   if (overviewData.error) return <div className="p-6 text-red-500 font-medium">Erro ao carregar os dados: {overviewData.error}. Verifique o banco de dados.</div>;
   
-  const { totalSalons, totalAppointments, totalClients, mrrData, mrrValue } = overviewData;
+  const {
+    totalSalons,
+    activeSubscriptions,
+    trialSubscriptions,
+    lateSubscriptions,
+    totalAppointments,
+    totalClients,
+    mrrData,
+    mrrValue,
+    totalRevenueReceived,
+    pendingRevenue,
+  } = overviewData;
+
+  const exportCohortCsv = () => {
+    const csv = "Mes,Saloes,Mes1,Mes2,Mes3,Mes4,Mes5,Mes6\nJan 2026,120,100%,95%,90%,85%,80%,78%\nFev 2026,145,100%,96%,92%,88%,85%,-\n";
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "retencao-belezapura.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="p-3 sm:p-6 space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-serif text-2xl font-medium">Visão geral da plataforma</h1>
-          <p className="text-muted-foreground text-sm">Atualizado agora</p>
+          <h1 className="font-serif text-2xl font-medium">Visão geral da plataforma & Finanças</h1>
+          <p className="text-muted-foreground text-sm">Controle central do Super Admin atualizado em tempo real</p>
         </div>
-        <Badge variant="success" className="text-sm px-3 py-1">✓ Plataforma operacional</Badge>
+        <Badge variant="success" className="text-sm px-3 py-1">✓ Poder Supremo & Finanças Alinhadas</Badge>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <StatCard label="Salões ativos" value={String(totalSalons ?? 0)} icon={Store} trend={21} color="primary" />
         <StatCard 
-          label="MRR" 
+          label="MRR (Receita Recorrente)" 
           value={`R$ ${(Number(mrrValue ?? 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
-          sub="Receita recorrente" 
+          sub="Assinaturas ativas no mês" 
           icon={TrendingUp} 
           trend={9} 
           color="emerald" 
         />
-        <StatCard label="Assinaturas ativas" value={String(totalSalons ?? 0)} icon={CreditCard} trend={8} color="purple" />
-        <StatCard label="Inadimplentes" value="0" icon={AlertCircle} trend={0} color="rose" />
-        <StatCard label="Agendamentos" value={String(totalAppointments ?? 0)} icon={Sparkles} trend={14} color="sky" />
-        <StatCard label="Clientes" value={String(totalClients ?? 0)} icon={Users} trend={18} color="amber" />
-        <StatCard label="Novos salões" value="0" icon={Plus} trend={15} color="primary" />
-        <StatCard label="Tickets abertos" value="0" icon={HeadphonesIcon} trend={-5} color="rose" />
+        <StatCard 
+          label="Caixa Total Recebido" 
+          value={`R$ ${(Number(totalRevenueReceived ?? 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
+          sub="Pagamentos Pix confirmados" 
+          icon={CreditCard} 
+          color="purple" 
+        />
+        <StatCard 
+          label="A Receber (Em análise)" 
+          value={`R$ ${(Number(pendingRevenue ?? 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
+          sub="Solicitações aguardando conferência" 
+          icon={Clock} 
+          color="amber" 
+        />
+        <StatCard label="Salões cadastrados" value={String(totalSalons ?? 0)} sub={`${activeSubscriptions ?? 0} ativos · ${trialSubscriptions ?? 0} em trial`} icon={Store} trend={21} color="primary" />
+        <StatCard label="Assinaturas ativas" value={String(activeSubscriptions ?? 0)} icon={CheckCircle} trend={8} color="emerald" />
+        <StatCard label="Inadimplentes / Bloq." value={String(lateSubscriptions ?? 0)} icon={AlertCircle} trend={0} color="rose" />
+        <StatCard label="Agendamentos totais" value={String(totalAppointments ?? 0)} icon={Sparkles} trend={14} color="sky" />
+        <StatCard label="Clientes finais atendidos" value={String(totalClients ?? 0)} icon={Users} trend={18} color="amber" />
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
@@ -252,27 +286,37 @@ function SaloesView({ salonsData }: { salonsData: any }) {
     setLocalSalons(Array.isArray(salonsData) ? salonsData : []);
   }, [salonsData]);
 
-  if (salonsData && salonsData.error) {
-    return <div className="p-6 text-red-500 font-medium">Erro ao carregar salões: {salonsData.error}. Verifique o banco de dados.</div>;
-  }
-  
-  const [editSalonForm, setEditSalonForm] = useState({ id: '', name: '', owner: '', plan: 'Básico' });
+  const [editSalonForm, setEditSalonForm] = useState({
+    id: '', name: '', owner: '', plan: 'Studio', status: 'TRIAL',
+    whatsappEnabled: false, whatsappMonthlyLimit: '0', whatsappUsed: 0, whatsappPlanLimit: 0,
+  });
   const [savingSalon, setSavingSalon] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3050';
 
   const handleAction = async (salon: any, action: string) => {
     setOpenMenu(null);
     if (action === 'block') {
       const confirm = window.confirm(`Tem certeza que deseja bloquear o salão ${salon.name}?`);
       if (confirm) {
-        await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/superadmin/salons/${salon.id}/block`, {
+        await fetch(`${API_BASE}/api/superadmin/salons/${salon.id}/block`, {
           method: 'PUT',
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
         setLocalSalons(prev => prev.map(s => s.id === salon.id ? { ...s, status: 'BLOCKED' } : s));
       }
+    } else if (action === 'unblock') {
+      const res = await fetch(`${API_BASE}/api/superadmin/salons/${salon.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+        body: JSON.stringify({ status: 'ACTIVE' })
+      });
+      if (res.ok) setLocalSalons(prev => prev.map(s => s.id === salon.id ? { ...s, status: 'ACTIVE' } : s));
+      else alert("Não foi possível desbloquear o salão.");
     } else if (action === 'delete') {
       if (window.confirm(`Tem certeza que deseja excluir permanentemente o salão ${salon.name}?`)) {
-        await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/superadmin/salons/${salon.id}`, {
+        await fetch(`${API_BASE}/api/superadmin/salons/${salon.id}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
@@ -283,7 +327,12 @@ function SaloesView({ salonsData }: { salonsData: any }) {
         id: salon.id,
         name: salon.name,
         owner: salon.owner || '',
-        plan: salon.plan || 'Básico'
+        plan: salon.plan || 'Studio',
+        status: String(salon.status || 'TRIAL').toUpperCase(),
+        whatsappEnabled: Boolean(salon.whatsappEnabled),
+        whatsappMonthlyLimit: String(salon.whatsappMonthlyLimit ?? 0),
+        whatsappUsed: Number(salon.whatsappUsed ?? 0),
+        whatsappPlanLimit: Number(salon.whatsappPlanLimit ?? 0),
       });
       setDrawerInfo({ salonName: salon.name, type: 'edit' });
     } else if (action === 'history') {
@@ -298,7 +347,8 @@ function SaloesView({ salonsData }: { salonsData: any }) {
     }
     setSavingSalon(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/superadmin/salons/${editSalonForm.id}`, {
+      const customLimit = Math.max(0, parseInt(editSalonForm.whatsappMonthlyLimit, 10) || 0);
+      const res = await fetch(`${API_BASE}/api/superadmin/salons/${editSalonForm.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -306,7 +356,11 @@ function SaloesView({ salonsData }: { salonsData: any }) {
         },
         body: JSON.stringify({
           name: editSalonForm.name,
-          owner: editSalonForm.owner
+          owner: editSalonForm.owner,
+          plan: editSalonForm.plan,
+          status: editSalonForm.status,
+          whatsappEnabled: editSalonForm.whatsappEnabled,
+          whatsappMonthlyLimit: customLimit,
         })
       });
       if (!res.ok) throw new Error("Erro ao salvar alterações");
@@ -315,7 +369,11 @@ function SaloesView({ salonsData }: { salonsData: any }) {
         ...s,
         name: editSalonForm.name,
         owner: editSalonForm.owner,
-        plan: editSalonForm.plan
+        plan: editSalonForm.plan,
+        status: editSalonForm.status,
+        whatsappEnabled: editSalonForm.whatsappEnabled,
+        whatsappMonthlyLimit: customLimit,
+        whatsappLimit: customLimit > 0 ? customLimit : s.whatsappPlanLimit,
       } : s));
       setDrawerInfo(null);
     } catch (e: any) {
@@ -325,16 +383,37 @@ function SaloesView({ salonsData }: { salonsData: any }) {
     }
   };
 
-  const dataToUse = filter === "Todos" 
-    ? localSalons 
-    : localSalons.filter((s: any) => {
-        const status = normalizeStatus(s.status);
-        if (filter === "Ativos") return status === "active";
-        if (filter === "Trial") return status === "trial";
-        if (filter === "Inadimplentes") return status === "late";
-        if (filter === "Bloqueados") return status === "blocked";
-        return true;
-      });
+  const term = search.trim().toLowerCase();
+  const dataToUse = localSalons.filter((s: any) => {
+    if (term && !`${s.name} ${s.owner} ${s.plan}`.toLowerCase().includes(term)) return false;
+    if (filter === "Todos") return true;
+    const status = normalizeStatus(s.status);
+    if (filter === "Ativos") return status === "active";
+    if (filter === "Trial") return status === "trial";
+    if (filter === "Inadimplentes") return status === "late";
+    if (filter === "Bloqueados") return status === "blocked";
+    if (filter === "WhatsApp ativo") return Boolean(s.whatsappEnabled);
+    return true;
+  });
+
+  const exportCsv = () => {
+    const header = "Salao,Responsavel,Plano,Status,WhatsApp,Disparos no mes,Franquia\n";
+    const rows = dataToUse.map((s: any) =>
+      [s.name, s.owner, s.plan, s.status, s.whatsappEnabled ? "Ativo" : "Desativado", s.whatsappUsed ?? 0, s.whatsappLimit ?? 0]
+        .map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")
+    ).join("\n");
+    const blob = new Blob([header + rows], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "saloes-belezapura.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  if (salonsData && (salonsData as any).error) {
+    return <div className="p-6 text-red-500 font-medium">Erro ao carregar salões: {(salonsData as any).error}. Verifique o banco de dados.</div>;
+  }
 
   return (
     <div className="p-3 sm:p-6 space-y-4">
@@ -343,15 +422,14 @@ function SaloesView({ salonsData }: { salonsData: any }) {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 bg-card border border-border rounded-lg px-3 h-9 text-sm text-muted-foreground">
             <Search className="w-4 h-4" />
-            <input placeholder="Buscar salão..." className="bg-transparent outline-none placeholder:text-muted-foreground" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar salão, dono ou plano..." className="bg-transparent outline-none placeholder:text-muted-foreground" />
           </div>
-          <Button variant="outline" size="sm"><Filter className="w-4 h-4 mr-2" /> Filtrar</Button>
-          <Button variant="outline" size="sm"><Download className="w-4 h-4 mr-2" /> Exportar CSV</Button>
+          <Button variant="outline" size="sm" onClick={exportCsv}><Download className="w-4 h-4 mr-2" /> Exportar CSV</Button>
         </div>
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-1">
-        {["Todos", "Ativos", "Trial", "Inadimplentes", "Bloqueados"].map(f => (
+        {["Todos", "Ativos", "Trial", "Inadimplentes", "Bloqueados", "WhatsApp ativo"].map(f => (
           <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${filter === f ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"}`}>
             {f}
           </button>
@@ -362,7 +440,7 @@ function SaloesView({ salonsData }: { salonsData: any }) {
         <table className="w-full min-w-[680px]">
           <thead>
             <tr className="border-b border-border bg-muted/40">
-              {["Salão", "Responsável", "Unidades", "Plano", "Status", "Desde", "Agendamentos", "Último acesso", ""].map(h => (
+              {["Salão", "Responsável", "Plano", "Status", "WhatsApp (mês)", "Desde", "Agendamentos", "Último acesso", ""].map(h => (
                 <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{h}</th>
               ))}
             </tr>
@@ -377,10 +455,16 @@ function SaloesView({ salonsData }: { salonsData: any }) {
                   </div>
                 </td>
                 <td className="px-4 py-3 text-sm text-muted-foreground">{s.owner}</td>
-                <td className="px-4 py-3 text-sm text-center">{s.units}</td>
                 <td className="px-4 py-3"><Badge variant="outline" className="text-xs">{s.plan}</Badge></td>
                 <td className="px-4 py-3">
                   <Badge variant={statusBadge(s.status).variant}>{statusBadge(s.status).label}</Badge>
+                </td>
+                <td className="px-4 py-3 text-xs whitespace-nowrap">
+                  {s.whatsappEnabled ? (
+                    <span className="text-emerald-700 font-medium">● {Number(s.whatsappUsed ?? 0)} / {Number(s.whatsappLimit ?? 0)}</span>
+                  ) : (
+                    <span className="text-muted-foreground">Desativado</span>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-sm text-muted-foreground">{s.since}</td>
                 <td className="px-4 py-3 text-sm font-medium">{s.appointments?.toLocaleString("pt-BR")}</td>
@@ -390,8 +474,12 @@ function SaloesView({ salonsData }: { salonsData: any }) {
                   {openMenu === s.name && (
                     <div className="absolute right-8 top-10 w-44 bg-card border border-border rounded-xl shadow-lg py-1 z-50 text-left">
                       <button onClick={() => handleAction(s, 'history')} className="w-full text-left px-4 py-2 text-xs hover:bg-muted text-foreground">Ver histórico</button>
-                      <button onClick={() => handleAction(s, 'edit')} className="w-full text-left px-4 py-2 text-xs hover:bg-muted text-foreground">Editar dados</button>
-                      <button onClick={() => handleAction(s, 'block')} className="w-full text-left px-4 py-2 text-xs hover:bg-muted text-amber-600">Bloquear</button>
+                      <button onClick={() => handleAction(s, 'edit')} className="w-full text-left px-4 py-2 text-xs hover:bg-muted text-foreground">Editar dados / Plano / WhatsApp</button>
+                      {['blocked', 'late', 'canceled', 'cancelled'].includes(normalizeStatus(s.status)) ? (
+                        <button onClick={() => handleAction(s, 'unblock')} className="w-full text-left px-4 py-2 text-xs hover:bg-muted text-emerald-600">Desbloquear / Ativar</button>
+                      ) : (
+                        <button onClick={() => handleAction(s, 'block')} className="w-full text-left px-4 py-2 text-xs hover:bg-muted text-amber-600">Bloquear</button>
+                      )}
                       <div className="border-t border-border my-1" />
                       <button onClick={() => handleAction(s, 'delete')} className="w-full text-left px-4 py-2 text-xs hover:bg-muted text-red-600">Excluir salão</button>
                     </div>
@@ -458,9 +546,69 @@ function SaloesView({ salonsData }: { salonsData: any }) {
                       className="w-full h-10 rounded-lg border border-border px-3 text-sm bg-background outline-none focus:border-primary transition-colors"
                     />
                   </div>
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground block mb-1">Plano Atual</label>
-                    <p className="text-sm">{editSalonForm.plan}</p><p className="text-xs text-muted-foreground mt-2">Adesões e alterações de plano são conferidas na aba Assinaturas.</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground block mb-1">Plano</label>
+                      <select
+                        value={editSalonForm.plan}
+                        onChange={e => setEditSalonForm({ ...editSalonForm, plan: e.target.value })}
+                        className="w-full h-10 rounded-lg border border-border px-3 text-sm bg-background outline-none focus:border-primary"
+                      >
+                        {Array.from(new Set(["Essencial", "Studio", "Elite", editSalonForm.plan].filter(Boolean))).map(p => (
+                          <option key={p} value={p}>{p}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground block mb-1">Status da assinatura</label>
+                      <select
+                        value={editSalonForm.status}
+                        onChange={e => setEditSalonForm({ ...editSalonForm, status: e.target.value })}
+                        className="w-full h-10 rounded-lg border border-border px-3 text-sm bg-background outline-none focus:border-primary"
+                      >
+                        <option value="ACTIVE">Ativo (libera 30 dias)</option>
+                        <option value="TRIAL">Trial</option>
+                        <option value="LATE">Inadimplente</option>
+                        <option value="BLOCKED">Bloqueado</option>
+                        <option value="CANCELED">Cancelado</option>
+                      </select>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground -mt-2">
+                    Poder supremo: a troca de plano/status é aplicada na hora, sem passar pela conferência de Pix. Para registrar recebimento no caixa, use a aba Assinaturas.
+                  </p>
+
+                  <div className="border border-border rounded-xl p-4 space-y-3 bg-muted/20">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-sm font-semibold">WhatsApp automático (sob demanda)</div>
+                        <div className="text-[11px] text-muted-foreground">Só dispara mensagens quando ativado aqui.</div>
+                      </div>
+                      <label className="inline-flex items-center gap-2 text-xs cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={editSalonForm.whatsappEnabled}
+                          onChange={e => setEditSalonForm({ ...editSalonForm, whatsappEnabled: e.target.checked })}
+                          className="w-4 h-4"
+                        />
+                        {editSalonForm.whatsappEnabled ? "Ativo" : "Desativado"}
+                      </label>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground block mb-1">
+                        Franquia mensal personalizada (0 = padrão do plano: {editSalonForm.whatsappPlanLimit} disparos)
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={editSalonForm.whatsappMonthlyLimit}
+                        onChange={e => setEditSalonForm({ ...editSalonForm, whatsappMonthlyLimit: e.target.value })}
+                        className="w-full h-10 rounded-lg border border-border px-3 text-sm bg-background outline-none focus:border-primary"
+                      />
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Usado neste mês: <strong className="text-foreground">{editSalonForm.whatsappUsed}</strong> disparos
+                    </div>
                   </div>
                   <Button className="w-full mt-4" onClick={handleSaveSalonEdit} disabled={savingSalon}>
                     {savingSalon ? "Salvando..." : "Salvar Alterações"}
@@ -476,54 +624,726 @@ function SaloesView({ salonsData }: { salonsData: any }) {
 }
 
 function AssinaturasView() {
-  const [subs, setSubs] = useState<any[]>([]); const [error, setError] = useState(""); const [busy, setBusy] = useState(false);
-  const [selected, setSelected] = useState<any>(null); const [reference, setReference] = useState(""); const [amount, setAmount] = useState("");
-  const load = () => api<any[]>("/superadmin/subscriptions").then(setSubs);
-  useEffect(() => { load().catch(error => setError(error.message)); }, []);
+  const [subs, setSubs] = useState<any[]>([]);
+  const [plans, setPlans] = useState<any[]>([]);
+  const [error, setError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [selected, setSelected] = useState<any>(null);
+  const [selectedPlanId, setSelectedPlanId] = useState("");
+  const [reference, setReference] = useState("");
+  const [amount, setAmount] = useState("");
+
+  const load = () =>
+    Promise.all([
+      api<any[]>("/superadmin/subscriptions").then(setSubs),
+      api<any[]>("/superadmin/plans").then(setPlans).catch(() => {}),
+    ]);
+
+  useEffect(() => {
+    load().catch(err => setError(err.message));
+  }, []);
+
   const update = async (sub: any, status: string) => {
-    if (busy) return; setBusy(true); setError("");
-    try { await api(`/superadmin/subscriptions/${sub.id}/status`, { method: "PUT", body: JSON.stringify({ status, paymentReference: reference, amount: Number(amount.replace(",", ".")) }) }); await load(); setSelected(null); setReference(""); }
-    catch (error) { setError((error as Error).message); } finally { setBusy(false); }
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    setSuccessMsg("");
+    try {
+      await api(`/superadmin/subscriptions/${sub.id}/status`, {
+        method: "PUT",
+        body: JSON.stringify({
+          status,
+          planId: selectedPlanId || sub.pendingPlanId || sub.planId || "",
+          paymentReference: reference,
+          amount: Number(String(amount).replace(",", ".")),
+        }),
+      });
+      await load();
+      setSelected(null);
+      setReference("");
+      setSuccessMsg(`Assinatura do salão "${sub.salon}" atualizada para ${status}.`);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
   };
-  return <div className="p-4 sm:p-6 space-y-4"><h1 className="font-serif text-2xl">Assinaturas e conferência de recebimentos</h1>
-    <p className="text-sm text-muted-foreground">Confira o crédito no banco antes de aprovar. Cada referência de recebimento pode ser usada uma única vez. A aprovação libera um mês; a renovação de uma assinatura vigente adiciona um mês ao vencimento atual.</p>
-    {error && <p role="alert" className="text-red-600">{error}</p>}
-    <div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr>{["Salão", "Plano atual", "Estado", "Vencimento", "Solicitação", "Ações"].map(h => <th key={h} className="p-3 text-left">{h}</th>)}</tr></thead><tbody>{subs.map(sub => <tr key={sub.id} data-subscription-id={sub.id} className="border-t"><td className="p-3">{sub.salon}</td><td className="p-3">{sub.plan}</td><td className="p-3"><Badge variant={statusBadge(sub.status).variant}>{sub.status}</Badge></td><td className="p-3">{sub.next}</td><td className="p-3">{sub.pendingPlanId ? `${sub.pendingPlanName || "Plano solicitado"} — R$ ${Number(sub.requestedPrice).toFixed(2)}` : "Sem solicitação"}</td><td className="p-3"><div className="flex flex-wrap gap-2">
-      <Button size="sm" disabled={busy || !sub.pendingPlanId} onClick={() => { setSelected(sub); setAmount(Number(sub.requestedPrice).toFixed(2)); setReference(""); }}>Conferir pagamento</Button>
-      <Button size="sm" variant="outline" disabled={busy} onClick={() => { if (confirm(`Bloquear ${sub.salon}?`)) update(sub, "BLOCKED"); }}>Bloquear</Button>
-      <Button size="sm" variant="outline" disabled={busy} onClick={() => { if (confirm(`Cancelar ${sub.salon}?`)) update(sub, "CANCELED"); }}>Cancelar</Button>
-    </div></td></tr>)}</tbody></table></div>
-    {selected && <form onSubmit={event => { event.preventDefault(); update(selected, "ACTIVE"); }} className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"><div className="bg-card border rounded-2xl p-5 max-w-lg w-full space-y-4">
-      <h2 className="font-semibold text-lg">Conferir recebimento — {selected.salon}</h2><p className="text-sm">Plano: {selected.pendingPlanName}. Confirme o crédito na conta da plataforma.</p>
-      <label className="block text-sm">Referência bancária do pagamento<input required minLength={6} maxLength={160} value={reference} onChange={e => setReference(e.target.value)} className="block border rounded-lg p-2 w-full bg-background mt-1" /></label>
-      <label className="block text-sm">Valor recebido (R$)<input required type="number" step="0.01" min="0.01" value={amount} onChange={e => setAmount(e.target.value)} className="block border rounded-lg p-2 w-full bg-background mt-1" /></label>
-      {error && <p role="alert" className="text-red-600">{error}</p>}
-      <div className="flex gap-2"><Button type="submit" disabled={busy}>Confirmar recebimento e ativar</Button><Button type="button" variant="outline" disabled={busy} onClick={() => setSelected(null)}>Voltar</Button></div>
-    </div></form>}
-  </div>;
+
+  return (
+    <div className="p-4 sm:p-6 space-y-4">
+      <h1 className="font-serif text-2xl font-medium">Assinaturas e conferência de recebimentos</h1>
+      <p className="text-sm text-muted-foreground">
+        Confira o crédito no banco antes de aprovar. A aprovação ativa o plano escolhido por 30 dias; a renovação de uma assinatura vigente soma 30 dias ao vencimento atual.
+      </p>
+      {error && <p role="alert" className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl p-3">{error}</p>}
+      {successMsg && <p className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl p-3">{successMsg}</p>}
+      <div className="bg-card border border-border rounded-2xl overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border bg-muted/40">
+              {["Salão", "Plano atual", "Valor", "Estado", "Vencimento", "Solicitação pendente", "Ações"].map(h => (
+                <th key={h} className="p-3 text-left text-xs font-semibold text-muted-foreground">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {subs.map(sub => (
+              <tr key={sub.id} data-subscription-id={sub.id} className="border-t border-border hover:bg-muted/20">
+                <td className="p-3 font-medium">{sub.salon}</td>
+                <td className="p-3"><Badge variant="outline">{sub.plan}</Badge></td>
+                <td className="p-3 text-muted-foreground">{sub.value}</td>
+                <td className="p-3"><Badge variant={statusBadge(sub.status).variant}>{statusBadge(sub.status).label}</Badge></td>
+                <td className="p-3">{sub.next}</td>
+                <td className="p-3">
+                  {sub.pendingPlanId ? (
+                    <Badge variant="warning">{sub.pendingPlanName || "Plano solicitado"} — R$ {Number(sub.requestedPrice).toFixed(2)}</Badge>
+                  ) : (
+                    <span className="text-muted-foreground text-xs">Sem solicitação</span>
+                  )}
+                </td>
+                <td className="p-3">
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      disabled={busy}
+                      onClick={() => {
+                        setSelected(sub);
+                        const initialPlanId = sub.pendingPlanId || sub.planId || (plans[0]?.id ?? "");
+                        setSelectedPlanId(initialPlanId);
+                        const matchedPlan = plans.find(p => p.id === initialPlanId);
+                        const initialPrice = sub.requestedPrice || matchedPlan?.price || sub.priceNumeric || 119.9;
+                        setAmount(Number(initialPrice).toFixed(2));
+                        setReference("");
+                        setError("");
+                      }}
+                    >
+                      {sub.pendingPlanId ? "Conferir pagamento" : "Ativar / Renovar"}
+                    </Button>
+                    <Button size="sm" variant="outline" disabled={busy} onClick={() => { if (confirm(`Bloquear ${sub.salon}?`)) update(sub, "BLOCKED"); }}>
+                      Bloquear
+                    </Button>
+                    <Button size="sm" variant="outline" disabled={busy} onClick={() => { if (confirm(`Cancelar ${sub.salon}?`)) update(sub, "CANCELED"); }}>
+                      Cancelar
+                    </Button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {subs.length === 0 && (
+              <tr>
+                <td colSpan={7} className="p-8 text-center text-muted-foreground">Nenhuma assinatura encontrada.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+      {selected && (
+        <form
+          onSubmit={event => {
+            event.preventDefault();
+            update(selected, "ACTIVE");
+          }}
+          className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+        >
+          <div className="bg-card border border-border rounded-2xl p-6 max-w-lg w-full space-y-4 shadow-2xl">
+            <h2 className="font-semibold text-lg">Conferir recebimento — {selected.salon}</h2>
+            <p className="text-xs text-muted-foreground">
+              Selecione o plano e registre a referência do comprovante/Pix para liberar 30 dias de acesso.
+            </p>
+            <label className="block text-sm font-medium">
+              Plano a ativar
+              <select
+                value={selectedPlanId}
+                onChange={e => {
+                  const pid = e.target.value;
+                  setSelectedPlanId(pid);
+                  const found = plans.find(p => p.id === pid);
+                  if (found) setAmount(Number(found.price).toFixed(2));
+                }}
+                className="block border border-border rounded-lg p-2.5 w-full bg-background mt-1 text-sm"
+              >
+                {plans.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.category || "Mensal"}) — R$ {Number(p.price).toFixed(2)}/mês
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block text-sm font-medium">
+              Referência bancária / ID da transação Pix
+              <input
+                required
+                minLength={6}
+                maxLength={160}
+                placeholder="Ex: E18236120202611071830..."
+                value={reference}
+                onChange={e => setReference(e.target.value)}
+                className="block border border-border rounded-lg p-2.5 w-full bg-background mt-1 text-sm"
+              />
+            </label>
+            <label className="block text-sm font-medium">
+              Valor recebido (R$)
+              <input
+                required
+                type="number"
+                step="0.01"
+                min="0.01"
+                value={amount}
+                onChange={e => setAmount(e.target.value)}
+                className="block border border-border rounded-lg p-2.5 w-full bg-background mt-1 text-sm"
+              />
+            </label>
+            {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+            <div className="flex gap-2 pt-2">
+              <Button type="submit" disabled={busy}>Confirmar recebimento e ativar</Button>
+              <Button type="button" variant="outline" disabled={busy} onClick={() => setSelected(null)}>Voltar</Button>
+            </div>
+          </div>
+        </form>
+      )}
+    </div>
+  );
 }
 
+const CATALOG_BENEFITS_BY_TIER: Record<string, { label: string; badge: string; defaultMaxPros: string; color: string; benefits: string[] }> = {
+  "Inicial / Autônoma": {
+    label: "Categoria 1 — Inicial / Autônoma (Entrada)",
+    badge: "Inicial / Autônoma",
+    defaultMaxPros: "1",
+    color: "#B8614A",
+    benefits: [
+      "Até 1 profissional (autônoma)",
+      "Página exclusiva na Bio e agendamento online 24h",
+      "Gestão de agenda, clientes e catálogo de serviços",
+      "Sinal antecipado via Pix com conferência no painel",
+      "Aviso de WhatsApp com 1 clique na agenda (envio manual sem custo extra)",
+      "Mural de avaliações de clientes na página pública",
+    ],
+  },
+  "Intermediário / Equipe": {
+    label: "Categoria 2 — Intermediário / Equipe (Crescimento)",
+    badge: "Intermediário / Equipe",
+    defaultMaxPros: "5",
+    color: "#E11D48",
+    benefits: [
+      "Tudo do plano Essencial incluso",
+
+      "Avisos automáticos no WhatsApp sob demanda (franquia de até 150 disparos/mês)",
+      "Até 5 profissionais na equipe",
+      "Gestão de comissões e rateio automático por profissional",
+      "Painel financeiro completo (fluxo de caixa e receitas)",
+      "Agenda multi-profissional com bloqueio de horários",
+      "Relatórios gerenciais de desempenho",
+      "Controle de estoque de produtos do salão",
+    ],
+  },
+  "Completo / VIP": {
+    label: "Categoria 3 — Completo / VIP (Máximo de Benefícios)",
+    badge: "Completo / VIP",
+    defaultMaxPros: "0",
+    color: "#8B5CF6",
+    benefits: [
+      "Tudo do plano Studio incluso",
+      "Profissionais ilimitados",
+      "Automação WhatsApp & Bot IA 24h (franquia de até 1.000 disparos/mês)",
+      "Controle de estoque completo com alerta de reposição",
+      "Relatórios avançados de faturamento, retenção e ticket médio",
+      "Múltiplos acessos por perfil (Recepção e Profissionais)",
+      "Suporte prioritário VIP",
+    ],
+  },
+};
+
+const ALL_SYSTEM_BENEFITS = [
+  { group: "Essencial (Base do Sistema)", items: [
+    "Página exclusiva na Bio e agendamento online 24h",
+    "Gestão de agenda, clientes e catálogo de serviços",
+    "Sinal antecipado via Pix com conferência no painel",
+    "Aviso de WhatsApp com 1 clique na agenda (envio manual sem custo extra)",
+    "Mural de avaliações de clientes na página pública",
+  ]},
+  { group: "Intermediário (Gestão de Equipe & Financeiro)", items: [
+    "Tudo do plano Essencial incluso",
+
+    "Avisos automáticos no WhatsApp sob demanda (franquia de até 150 disparos/mês)",
+    "Gestão de comissões e rateio automático por profissional",
+    "Painel financeiro completo (fluxo de caixa e receitas)",
+    "Agenda multi-profissional com bloqueio de horários",
+    "Relatórios gerenciais de desempenho",
+    "Controle de estoque de produtos do salão",
+  ]},
+  { group: "Elite / VIP (Automação IA & Escala)", items: [
+    "Tudo do plano Studio incluso",
+    "Automação WhatsApp & Bot IA 24h (franquia de até 1.000 disparos/mês)",
+    "Controle de estoque completo com alerta de reposição",
+    "Relatórios avançados de faturamento, retenção e ticket médio",
+    "Múltiplos acessos por perfil (Recepção e Profissionais)",
+    "Suporte prioritário VIP",
+  ]},
+];
+
 function PlanosView() {
-  const [plansList, setPlansList] = useState<any[]>([]); const [error, setError] = useState(""); const [busy, setBusy] = useState(false);
+  const [plansList, setPlansList] = useState<any[]>([]);
+  const [error, setError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+  const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: "", price: "", maxProfessionals: "1" });
+  const [customFeature, setCustomFeature] = useState("");
+  const [form, setForm] = useState<{
+    name: string;
+    category: string;
+    price: string;
+    maxProfessionals: string;
+    highlight: boolean;
+    color: string;
+    features: string[];
+  }>({
+    name: "",
+    category: "Inicial / Autônoma",
+    price: "",
+    maxProfessionals: "1",
+    highlight: false,
+    color: "#B8614A",
+    features: [...CATALOG_BENEFITS_BY_TIER["Inicial / Autônoma"].benefits],
+  });
+
   const load = () => api<any[]>("/superadmin/plans").then(setPlansList);
-  useEffect(() => { load().catch(error => setError(error.message)); }, []);
-  const save = async (event: React.FormEvent) => {
-    event.preventDefault(); if (busy) return; setBusy(true); setError("");
-    try { await api(`/superadmin/plans${editing ? `/${editing}` : ""}`, { method: editing ? "PUT" : "POST", body: JSON.stringify({ name: form.name.trim(), price: Number(form.price), period: "/mês", maxProfessionals: Number(form.maxProfessionals), features: [] }) }); await load(); setEditing(null); setForm({ name: "", price: "", maxProfessionals: "1" }); }
-    catch (error) { setError((error as Error).message); } finally { setBusy(false); }
+  useEffect(() => {
+    load().catch(err => setError(err.message));
+  }, []);
+
+  const detectCategory = (plan: any): string => {
+    if (plan.category && CATALOG_BENEFITS_BY_TIER[plan.category]) return plan.category;
+    const n = String(plan.name || "").toLowerCase();
+    if (n.includes("elite") || n.includes("vip") || Number(plan.maxProfessionals) === 0 || Number(plan.price) >= 200) {
+      return "Completo / VIP";
+    }
+    if (n.includes("studio") || n.includes("equipe") || Number(plan.maxProfessionals) > 1 || Number(plan.price) >= 100) {
+      return "Intermediário / Equipe";
+    }
+    return "Inicial / Autônoma";
   };
-  return <div className="p-4 sm:p-6 space-y-5"><h1 className="font-serif text-2xl">Planos</h1><p className="text-sm text-muted-foreground">Os valores são mensais. Alterações não modificam períodos já pagos. Recursos disponíveis: agendamento, clientes, equipe, estoque, receitas e Pix com conferência manual.</p>
-    {error && <p role="alert" className="text-red-600">{error}</p>}
-    <form onSubmit={save} className="p-4 rounded-2xl border bg-card grid sm:grid-cols-3 gap-4">
-      <label className="text-sm">Nome<input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="block w-full min-w-0 border rounded-lg p-2 mt-1 bg-background" /></label>
-      <label className="text-sm">Preço mensal (R$)<input required type="number" min="0.01" step="0.01" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} className="block w-full min-w-0 border rounded-lg p-2 mt-1 bg-background" /></label>
-      <label className="text-sm">Profissionais ativos (0 = ilimitado)<input required type="number" min="0" step="1" value={form.maxProfessionals} onChange={e => setForm({ ...form, maxProfessionals: e.target.value })} className="block w-full min-w-0 border rounded-lg p-2 mt-1 bg-background" /></label>
-      <Button type="submit" disabled={busy}>{editing ? "Salvar plano" : "Cadastrar plano"}</Button>{editing && <Button type="button" variant="outline" onClick={() => { setEditing(null); setForm({ name: "", price: "", maxProfessionals: "1" }); }}>Cancelar edição</Button>}
-    </form>
-    <div className="grid md:grid-cols-3 gap-4">{plansList.map(plan => <article key={plan.id} className="border rounded-2xl bg-card p-4 space-y-3"><h2 className="font-semibold">{plan.name}</h2><p className="text-2xl">R$ {Number(plan.price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}/mês</p><ul className="text-sm space-y-2">{plan.features.map((feature: string) => <li key={feature}>{feature}</li>)}</ul><Button variant="outline" onClick={() => { setEditing(plan.id); setForm({ name: plan.name, price: String(plan.price), maxProfessionals: String(plan.maxProfessionals) }); }}>Editar plano</Button></article>)}</div>
-  </div>;
+
+  const handleSelectEdit = (plan: any) => {
+    const cat = detectCategory(plan);
+    setEditing(plan.id);
+    setError("");
+    setSuccessMsg("");
+    setForm({
+      name: plan.name || "",
+      category: cat,
+      price: String(plan.price ?? ""),
+      maxProfessionals: String(plan.maxProfessionals ?? 1),
+      highlight: Boolean(plan.highlight),
+      color: plan.color || CATALOG_BENEFITS_BY_TIER[cat]?.color || "#B8614A",
+      features: Array.isArray(plan.features) && plan.features.length > 0
+        ? [...plan.features]
+        : [...(CATALOG_BENEFITS_BY_TIER[cat]?.benefits || [])],
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const resetForm = () => {
+    setEditing(null);
+    setCustomFeature("");
+    setForm({
+      name: "",
+      category: "Inicial / Autônoma",
+      price: "",
+      maxProfessionals: "1",
+      highlight: false,
+      color: "#B8614A",
+      features: [...CATALOG_BENEFITS_BY_TIER["Inicial / Autônoma"].benefits],
+    });
+  };
+
+  const applyTierPreset = (tierKey: string) => {
+    const preset = CATALOG_BENEFITS_BY_TIER[tierKey];
+    if (!preset) return;
+    setForm(prev => ({
+      ...prev,
+      category: tierKey,
+      maxProfessionals: prev.name ? prev.maxProfessionals : preset.defaultMaxPros,
+      color: preset.color,
+      highlight: tierKey === "Intermediário / Equipe",
+      features: [...preset.benefits],
+    }));
+  };
+
+  const toggleFeature = (item: string) => {
+    setForm(prev => {
+      const exists = prev.features.includes(item);
+      return {
+        ...prev,
+        features: exists ? prev.features.filter(f => f !== item) : [...prev.features, item],
+      };
+    });
+  };
+
+  const addCustomFeature = () => {
+    const trimmed = customFeature.trim();
+    if (!trimmed) return;
+    if (!form.features.includes(trimmed)) {
+      setForm(prev => ({ ...prev, features: [...prev.features, trimmed] }));
+    }
+    setCustomFeature("");
+  };
+
+  const save = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (busy) return;
+    const numericPrice = Number(String(form.price).replace(",", "."));
+    const numericPros = Number(form.maxProfessionals);
+    if (!form.name.trim() || isNaN(numericPrice) || numericPrice <= 0 || isNaN(numericPros) || numericPros < 0) {
+      setError("Informe um nome válido, preço maior que zero e limite de profissionais (0 para ilimitado).");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    setSuccessMsg("");
+
+    const proHeadline = numericPros > 0
+      ? (numericPros === 1 ? "Até 1 profissional (autônoma)" : `Até ${numericPros} profissionais na equipe`)
+      : "Profissionais ilimitados";
+
+    const filteredFeatures = form.features.filter(
+      f => !f.toLowerCase().startsWith("até ") && !f.toLowerCase().includes("profissionais ilimitados")
+    );
+    const finalFeatures = [proHeadline, ...filteredFeatures];
+
+    try {
+      await api(`/superadmin/plans${editing ? `/${editing}` : ""}`, {
+        method: editing ? "PUT" : "POST",
+        body: JSON.stringify({
+          name: form.name.trim(),
+          price: numericPrice,
+          period: "/mês",
+          highlight: form.highlight,
+          color: form.color || "#B8614A",
+          maxProfessionals: numericPros,
+          features: finalFeatures,
+        }),
+      });
+      await load();
+      setSuccessMsg(editing ? `Plano "${form.name.trim()}" atualizado com sucesso!` : `Plano "${form.name.trim()}" criado com sucesso!`);
+      resetForm();
+    } catch (err) {
+      setError((err as Error).message || "Erro ao salvar plano.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDeletePlan = async (plan: any) => {
+    if (!window.confirm(`Tem certeza que deseja excluir o plano "${plan.name}"?`)) return;
+    setBusy(true);
+    setError("");
+    setSuccessMsg("");
+    try {
+      await api(`/superadmin/plans/${plan.id}`, { method: "DELETE" });
+      await load();
+      if (editing === plan.id) resetForm();
+      setSuccessMsg(`Plano "${plan.name}" removido.`);
+    } catch (err) {
+      setError((err as Error).message || "Não foi possível excluir o plano.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="p-4 sm:p-6 space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="font-serif text-2xl font-medium">Planos por Categoria e Benefícios</h1>
+          <p className="text-sm text-muted-foreground">
+            Divisão progressiva por categoria e valor: quanto maior o plano, mais módulos e benefícios do sistema são liberados.
+          </p>
+        </div>
+      </div>
+
+      {error && (
+        <div role="alert" className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl p-3 flex items-center justify-between">
+          <span>{error}</span>
+          <button onClick={() => setError("")} className="text-xs underline ml-3">Fechar</button>
+        </div>
+      )}
+      {successMsg && (
+        <div className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center justify-between">
+          <span className="font-medium">✓ {successMsg}</span>
+          <button onClick={() => setSuccessMsg("")} className="text-xs underline ml-3">Fechar</button>
+        </div>
+      )}
+
+      {/* Cards dos Planos Atuais */}
+      <div className="grid md:grid-cols-3 gap-5">
+        {plansList.map(plan => {
+          const cat = detectCategory(plan);
+          const isEditingThis = editing === plan.id;
+          return (
+            <article
+              key={plan.id}
+              className={`border rounded-2xl bg-card p-5 flex flex-col justify-between transition-all relative ${
+                isEditingThis
+                  ? "ring-2 ring-primary border-primary shadow-lg"
+                  : plan.highlight
+                  ? "border-2 border-primary/60 shadow-md"
+                  : "border-border"
+              }`}
+            >
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <Badge variant={cat === "Completo / VIP" ? "purple" : cat === "Intermediário / Equipe" ? "info" : "outline"}>
+                    {cat}
+                  </Badge>
+                  {plan.highlight && (
+                    <Badge variant="success" className="text-[11px]">★ Mais Escolhido</Badge>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: plan.color || "#B8614A" }} />
+                  <h2 className="font-serif text-xl font-semibold">{plan.name}</h2>
+                </div>
+
+                <div className="mt-3 pb-4 border-b border-border">
+                  <span className="font-serif text-3xl font-bold">
+                    R$ {Number(plan.price).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                  <span className="text-xs text-muted-foreground">{plan.period || "/mês"}</span>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Limite de equipe:{" "}
+                    <strong className="text-foreground">
+                      {Number(plan.maxProfessionals) > 0 ? `Até ${plan.maxProfessionals} profissional(is)` : "Profissionais ilimitados"}
+                    </strong>
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2.5">
+                    Benefícios e opcionais inclusos ({(plan.features || []).length})
+                  </div>
+                  <ul className="text-sm space-y-2 mb-5">
+                    {(plan.features || []).map((feature: string, idx: number) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <span className="text-xs sm:text-sm text-foreground/90">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-3 border-t border-border">
+                <Button
+                  variant={isEditingThis ? "primary" : "outline"}
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => handleSelectEdit(plan)}
+                >
+                  {isEditingThis ? "Editando abaixo..." : "Editar plano"}
+                </Button>
+                {plansList.length > 1 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDeletePlan(plan)}
+                    disabled={busy}
+                    className="text-red-600 hover:bg-red-50"
+                  >
+                    Excluir
+                  </Button>
+                )}
+              </div>
+            </article>
+          );
+        })}
+      </div>
+
+      {/* Formulário Completo de Criação / Edição de Plano */}
+      <form onSubmit={save} className="p-5 sm:p-6 rounded-2xl border border-border bg-card space-y-5 shadow-xs">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
+          <div>
+            <h2 className="font-serif text-lg font-semibold">
+              {editing ? `Editando Plano: ${form.name}` : "Cadastrar Novo Plano"}
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Configure categoria, preço mensal, limite de profissionais e marque os benefícios liberados neste nível.
+            </p>
+          </div>
+          {editing && (
+            <Button type="button" variant="outline" size="sm" onClick={resetForm}>
+              Cancelar edição
+            </Button>
+          )}
+        </div>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <label className="text-xs font-medium text-muted-foreground">
+            Nome do Plano
+            <input
+              required
+              placeholder="Ex: Essencial, Studio, Elite"
+              value={form.name}
+              onChange={e => setForm({ ...form, name: e.target.value })}
+              className="block w-full border border-border rounded-lg p-2.5 mt-1 bg-background text-sm text-foreground outline-none focus:border-primary"
+            />
+          </label>
+
+          <label className="text-xs font-medium text-muted-foreground">
+            Categoria / Nível do Sistema
+            <select
+              value={form.category}
+              onChange={e => applyTierPreset(e.target.value)}
+              className="block w-full border border-border rounded-lg p-2.5 mt-1 bg-background text-sm text-foreground outline-none focus:border-primary"
+            >
+              {Object.keys(CATALOG_BENEFITS_BY_TIER).map(catKey => (
+                <option key={catKey} value={catKey}>{catKey}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="text-xs font-medium text-muted-foreground">
+            Preço mensal (R$)
+            <input
+              required
+              type="number"
+              min="0.01"
+              step="0.01"
+              placeholder="Ex: 119.90"
+              value={form.price}
+              onChange={e => setForm({ ...form, price: e.target.value })}
+              className="block w-full border border-border rounded-lg p-2.5 mt-1 bg-background text-sm text-foreground outline-none focus:border-primary"
+            />
+          </label>
+
+          <label className="text-xs font-medium text-muted-foreground">
+            Profissionais ativos (0 = ilimitado)
+            <input
+              required
+              type="number"
+              min="0"
+              step="1"
+              value={form.maxProfessionals}
+              onChange={e => setForm({ ...form, maxProfessionals: e.target.value })}
+              className="block w-full border border-border rounded-lg p-2.5 mt-1 bg-background text-sm text-foreground outline-none focus:border-primary"
+            />
+          </label>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-6 pt-1">
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.highlight}
+              onChange={e => setForm({ ...form, highlight: e.target.checked })}
+              className="rounded border-border text-primary focus:ring-primary"
+            />
+            <span>Destacar este plano como <strong>"Mais Escolhido"</strong> na página pública</span>
+          </label>
+
+          <label className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span>Cor do plano:</span>
+            <input
+              type="color"
+              value={form.color}
+              onChange={e => setForm({ ...form, color: e.target.value })}
+              className="w-8 h-8 rounded cursor-pointer border border-border bg-transparent"
+            />
+          </label>
+
+          <button
+            type="button"
+            onClick={() => applyTierPreset(form.category)}
+            className="text-xs text-primary underline font-medium hover:opacity-80 cursor-pointer"
+          >
+            Restaurar opcionais recomendados para "{form.category}"
+          </button>
+        </div>
+
+        {/* Checklist de Benefícios por Categoria */}
+        <div className="space-y-4 pt-2">
+          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Selecione os benefícios e módulos inclusos neste plano
+          </div>
+          <div className="grid md:grid-cols-3 gap-4">
+            {ALL_SYSTEM_BENEFITS.map(section => (
+              <div key={section.group} className="border border-border rounded-xl p-3.5 bg-muted/20 space-y-2.5">
+                <div className="text-xs font-semibold text-foreground border-b border-border pb-1.5">
+                  {section.group}
+                </div>
+                {section.items.map(item => {
+                  const checked = form.features.includes(item);
+                  return (
+                    <label key={item} className="flex items-start gap-2 text-xs cursor-pointer hover:text-primary transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleFeature(item)}
+                        className="mt-0.5 rounded border-border text-primary focus:ring-primary"
+                      />
+                      <span>{item}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+
+          {/* Adicionar benefício personalizado */}
+          <div className="flex flex-wrap gap-2 items-center pt-2">
+            <input
+              value={customFeature}
+              onChange={e => setCustomFeature(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addCustomFeature();
+                }
+              }}
+              placeholder="Adicionar benefício extra personalizado..."
+              className="border border-border rounded-lg px-3 py-2 text-xs bg-background flex-1 min-w-[220px] outline-none focus:border-primary"
+            />
+            <Button type="button" variant="outline" size="sm" onClick={addCustomFeature}>
+              + Adicionar benefício
+            </Button>
+          </div>
+
+          {/* Tags dos benefícios selecionados */}
+          <div className="flex flex-wrap gap-2 pt-1">
+            {form.features.map(f => (
+              <span
+                key={f}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs bg-primary/10 text-primary border border-primary/20"
+              >
+                {f}
+                <button
+                  type="button"
+                  onClick={() => toggleFeature(f)}
+                  className="hover:text-red-600 font-bold"
+                  title="Remover benefício"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-3 pt-3 border-t border-border">
+          <Button type="submit" disabled={busy}>
+            {busy ? "Salvando..." : editing ? "Salvar alterações do plano" : "Cadastrar novo plano"}
+          </Button>
+          {editing && (
+            <Button type="button" variant="outline" onClick={resetForm}>
+              Cancelar edição
+            </Button>
+          )}
+        </div>
+      </form>
+    </div>
+  );
 }
 
 function SuporteView() {
@@ -736,9 +1556,61 @@ function UnidadesView() {
 }
 
 function PagamentosView() {
- const [payments, setPayments] = useState<any[]>([]); const [error, setError] = useState("");
- useEffect(() => { api<any[]>("/superadmin/payments").then(setPayments).catch(error => setError(error.message)); }, []);
- return <div className="p-4 sm:p-6 space-y-4"><h1 className="font-serif text-2xl">Recebimentos conferidos</h1><p className="text-sm text-muted-foreground">Histórico das confirmações manuais registradas pelo administrador.</p>{error && <p role="alert">{error}</p>}<div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr>{["Data", "Assinatura", "Referência", "Valor"].map(h => <th key={h} className="p-3 text-left">{h}</th>)}</tr></thead><tbody>{payments.map(p => <tr key={p.id} className="border-t"><td className="p-3">{new Date(p.createdAt).toLocaleString("pt-BR")}</td><td className="p-3">{p.subscriptionId}</td><td className="p-3">{p.reference}</td><td className="p-3">R$ {Number(p.amount).toFixed(2)}</td></tr>)}</tbody></table></div></div>;
+  const [payments, setPayments] = useState<any[]>([]);
+  const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  useEffect(() => { api<any[]>("/superadmin/payments").then(d => setPayments(Array.isArray(d) ? d : [])).catch(err => setError(err.message)); }, []);
+
+  const fmt = (v: number) => `R$ ${Number(v || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const term = search.trim().toLowerCase();
+  const filtered = payments.filter(p => !term || `${p.salon} ${p.plan} ${p.reference}`.toLowerCase().includes(term));
+  const total = payments.reduce((acc, p) => acc + Number(p.amount || 0), 0);
+  const now = new Date();
+  const monthTotal = payments
+    .filter(p => { const d = new Date(p.createdAt); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); })
+    .reduce((acc, p) => acc + Number(p.amount || 0), 0);
+
+  return (
+    <div className="p-4 sm:p-6 space-y-4">
+      <div>
+        <h1 className="font-serif text-2xl font-medium">Recebimentos conferidos (Caixa)</h1>
+        <p className="text-sm text-muted-foreground">Histórico das confirmações de Pix registradas pelo administrador na aba Assinaturas.</p>
+      </div>
+      {error && <p role="alert" className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl p-3">{error}</p>}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <StatCard label="Total recebido (histórico)" value={fmt(total)} icon={CreditCard} color="emerald" />
+        <StatCard label="Recebido neste mês" value={fmt(monthTotal)} icon={TrendingUp} color="purple" />
+        <StatCard label="Pagamentos registrados" value={String(payments.length)} icon={CheckCircle} color="sky" />
+      </div>
+      <div className="flex items-center gap-2 bg-card border border-border rounded-lg px-3 h-9 text-sm text-muted-foreground max-w-sm">
+        <Search className="w-4 h-4" />
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar salão, plano ou referência..." className="bg-transparent outline-none w-full" />
+      </div>
+      <div className="bg-card border border-border rounded-2xl overflow-x-auto">
+        <table className="w-full text-sm min-w-[640px]">
+          <thead>
+            <tr className="border-b border-border bg-muted/40">
+              {["Data", "Salão", "Plano", "Referência Pix", "Valor"].map(h => <th key={h} className="p-3 text-left text-xs font-semibold text-muted-foreground">{h}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map(p => (
+              <tr key={p.id} className="border-t border-border hover:bg-muted/20">
+                <td className="p-3 whitespace-nowrap">{new Date(p.createdAt).toLocaleString("pt-BR")}</td>
+                <td className="p-3 font-medium">{p.salon}</td>
+                <td className="p-3"><Badge variant="outline">{p.plan}</Badge></td>
+                <td className="p-3 font-mono text-xs text-muted-foreground">{p.reference}</td>
+                <td className="p-3 font-semibold text-emerald-700">{fmt(p.amount)}</td>
+              </tr>
+            ))}
+            {filtered.length === 0 && (
+              <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">Nenhum pagamento registrado ainda.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 }
 
 const adminUsers: any[] = [];

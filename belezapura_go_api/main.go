@@ -10,13 +10,13 @@ import (
 	"syscall"
 	"time"
 
-	"belezapura_go_api/internal/db"
-	"belezapura_go_api/internal/handler"
-	"belezapura_go_api/internal/middleware"
-
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+
+	"belezapura_go_api/internal/db"
+	"belezapura_go_api/internal/handler"
+	"belezapura_go_api/internal/middleware"
 )
 
 func main() {
@@ -61,7 +61,7 @@ func NewRouter() *gin.Engine {
 	r := gin.Default()
 	_ = r.SetTrustedProxies(nil)
 	r.Use(func(c *gin.Context) { c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 8<<20); c.Next() })
-	r.GET("/health", func(c *gin.Context) {
+	healthHandler := func(c *gin.Context) {
 		sqlDB, err := db.DB.DB()
 		if err != nil {
 			c.JSON(503, gin.H{"status": "unavailable"})
@@ -74,14 +74,31 @@ func NewRouter() *gin.Engine {
 			return
 		}
 		c.JSON(200, gin.H{"status": "ok", "revision": os.Getenv("APP_REVISION")})
-	})
+	}
+	r.GET("/health", healthHandler)
+	r.HEAD("/health", healthHandler)
 
 	// Security Headers (Anti-XSS, anti-sniff, clickjacking protection)
 	r.Use(middleware.SecurityHeaders())
 
-	// CORS — allow the Vite dev server and any origin in dev
+	// CORS — allow the Vite dev server, Vercel deployments, and configured origins
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     allowedOrigins(),
+		AllowOriginFunc: func(origin string) bool {
+			origin = strings.TrimSpace(origin)
+			if strings.HasPrefix(origin, "http://localhost:") ||
+				strings.HasPrefix(origin, "http://127.0.0.1:") ||
+				origin == "http://localhost" ||
+				origin == "http://127.0.0.1" ||
+				strings.HasSuffix(origin, ".vercel.app") {
+				return true
+			}
+			for _, o := range allowedOrigins() {
+				if strings.TrimSpace(o) == origin {
+					return true
+				}
+			}
+			return false
+		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -97,6 +114,7 @@ func NewRouter() *gin.Engine {
 		api.POST("/public/appointments", middleware.RateLimiter(30, time.Minute), handler.CreatePublicAppointment)
 		api.GET("/public/availability", handler.GetAvailability)
 		api.GET("/public/plans", handler.GetPlans)
+		api.POST("/public/whatsapp-webhook", handler.WhatsAppWebhookHandler)
 
 		// ── Protected routes ────────────────────────────────────────
 		auth := api.Group("/")
@@ -116,6 +134,7 @@ func NewRouter() *gin.Engine {
 			salon.GET("/salon/details", handler.GetSalonDetails)
 			salon.PUT("/salon/details", handler.UpdateSalonDetails)
 			salon.POST("/salon/upgrade-plan", handler.UpgradePlan)
+			salon.GET("/salon/whatsapp-usage", handler.GetSalonWhatsAppUsage)
 			salon.GET("/salon/clients", handler.GetSalonClients)
 			salon.POST("/salon/clients", handler.CreateSalonClient)
 			salon.PUT("/salon/clients/:id", handler.UpdateSalonClient)
