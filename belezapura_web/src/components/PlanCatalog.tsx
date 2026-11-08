@@ -52,6 +52,8 @@ const FALLBACK_PLANS: PlanItem[] = [
     features: [
       "Tudo do Studio",
       "Profissionais ilimitados",
+      "Automação WhatsApp & Bot IA 24h",
+      "Assessoria VIP: Google Meu Negócio & Botão no Google Maps",
       "Controle de estoque com alerta de reposição",
       "Relatórios detalhados de faturamento",
       "Suporte prioritário VIP"
@@ -68,7 +70,8 @@ export function planFeatures(plan: { name?: string; price?: number; maxProfessio
     return [
       "Tudo do plano Studio incluso",
       plan.maxProfessionals > 0 ? `Até ${plan.maxProfessionals} profissionais ativos` : "Profissionais ilimitados",
-      "Automação WhatsApp & Bot IA 24h (confirmações e lembretes)",
+      "Automação WhatsApp & Bot IA 24h (franquia de até 1.000 disparos/mês)",
+      "Assessoria VIP: Google Meu Negócio otimizado com botão no Google Maps",
       "Controle de estoque completo com alerta de reposição",
       "Relatórios avançados de faturamento, retenção e ticket médio",
       "Múltiplos acessos por perfil (Recepção e Profissionais)",

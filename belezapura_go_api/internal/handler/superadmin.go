@@ -696,6 +696,7 @@ func defaultTierFeatures(p db.Plan) []string {
 			"Tudo do plano Studio incluso",
 			proLabel,
 			"Automação WhatsApp & Bot IA 24h (franquia de até 1.000 disparos/mês)",
+			"Assessoria VIP: Google Meu Negócio otimizado com botão no Google Maps",
 			"Controle de estoque completo com alerta de reposição",
 			"Relatórios avançados de faturamento, retenção e ticket médio",
 			"Múltiplos acessos por perfil (Recepção e Profissionais)",

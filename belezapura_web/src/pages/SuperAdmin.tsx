@@ -847,6 +847,7 @@ const CATALOG_BENEFITS_BY_TIER: Record<string, { label: string; badge: string; d
       "Tudo do plano Studio incluso",
       "Profissionais ilimitados",
       "Automação WhatsApp & Bot IA 24h (franquia de até 1.000 disparos/mês)",
+      "Assessoria VIP: Google Meu Negócio otimizado com botão no Google Maps",
       "Controle de estoque completo com alerta de reposição",
       "Relatórios avançados de faturamento, retenção e ticket médio",
       "Múltiplos acessos por perfil (Recepção e Profissionais)",
@@ -876,6 +877,7 @@ const ALL_SYSTEM_BENEFITS = [
   { group: "Elite / VIP (Automação IA & Escala)", items: [
     "Tudo do plano Studio incluso",
     "Automação WhatsApp & Bot IA 24h (franquia de até 1.000 disparos/mês)",
+    "Assessoria VIP: Google Meu Negócio otimizado com botão no Google Maps",
     "Controle de estoque completo com alerta de reposição",
     "Relatórios avançados de faturamento, retenção e ticket médio",
     "Múltiplos acessos por perfil (Recepção e Profissionais)",

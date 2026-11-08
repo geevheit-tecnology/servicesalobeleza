@@ -89,6 +89,61 @@ export default function ClientView() {
       .finally(() => setLoading(false));
   }, [slug]);
 
+  // SEO Local Google Maps & Rich Snippets (Schema.org / BeautySalon)
+  useEffect(() => {
+    if (!salonData) return;
+    document.title = `${salonData.name} · Agendamento Online | BelezaPura`;
+    const addr = salonData.address || {};
+    const fullAddr = [addr.street, addr.number, addr.district, addr.city, addr.state].filter(Boolean).join(", ");
+    const scriptId = "schema-belezapura-salon";
+    let el = document.getElementById(scriptId) as HTMLScriptElement | null;
+    if (!el) {
+      el = document.createElement("script");
+      el.id = scriptId;
+      el.type = "application/ld+json";
+      document.head.appendChild(el);
+    }
+    const schema: Record<string, any> = {
+      "@context": "https://schema.org",
+      "@type": "BeautySalon",
+      "name": salonData.name,
+      "url": window.location.href,
+      "telephone": salonData.phone || undefined,
+      "image": salonData.cover || salonData.logo || undefined,
+      "potentialAction": {
+        "@type": "ReserveAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": window.location.href,
+          "inLanguage": "pt-BR",
+          "actionPlatform": [
+            "http://schema.org/DesktopWebPlatform",
+            "http://schema.org/MobileWebPlatform"
+          ]
+        },
+        "result": {
+          "@type": "Reservation",
+          "name": `Reserva Online - ${salonData.name}`
+        }
+      }
+    };
+    if (fullAddr) {
+      schema.address = {
+        "@type": "PostalAddress",
+        "streetAddress": `${addr.street || ""} ${addr.number || ""}`.trim(),
+        "addressLocality": addr.city,
+        "addressRegion": addr.state,
+        "postalCode": addr.zipCode,
+        "addressCountry": "BR"
+      };
+    }
+    el.text = JSON.stringify(schema);
+    return () => {
+      const existing = document.getElementById(scriptId);
+      if (existing) existing.remove();
+    };
+  }, [salonData]);
+
   // Horários de funcionamento do salão
   const salonSchedule = useMemo(() => {
     if (!salonData?.scheduleRaw) return [];
