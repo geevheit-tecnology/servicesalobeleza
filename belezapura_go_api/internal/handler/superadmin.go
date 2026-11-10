@@ -138,6 +138,7 @@ func GetSalons(c *gin.Context) {
 		}
 		plan := "Studio"
 		status := "TRIAL"
+		trialEnds := ""
 		if len(s.Subscriptions) > 0 {
 			lastSub := s.Subscriptions[len(s.Subscriptions)-1]
 			if lastSub.Plan != nil && lastSub.Plan.Name != "" {
@@ -153,6 +154,9 @@ func GetSalons(c *gin.Context) {
 			if lastSub.Status != "" {
 				status = lastSub.Status
 			}
+			if lastSub.TrialEnds != nil {
+				trialEnds = lastSub.TrialEnds.Format("2006-01-02")
+			}
 		}
 
 		wa := getWhatsAppStatus(s)
@@ -163,6 +167,7 @@ func GetSalons(c *gin.Context) {
 			"units":                1,
 			"plan":                 plan,
 			"status":               status,
+			"trialEnds":            trialEnds,
 			"since":                s.CreatedAt.Format("02/01/2006"),
 			"appointments":         apptCount,
 			"lastAccess":           s.UpdatedAt.Format("02/01/2006"),
@@ -226,6 +231,7 @@ func UpdateSalon(c *gin.Context) {
 		Owner                *string `json:"owner"`
 		Plan                 *string `json:"plan"`
 		Status               *string `json:"status"`
+		TrialEnds            *string `json:"trialEnds"`
 		WhatsAppEnabled      *bool   `json:"whatsappEnabled"`
 		WhatsAppMonthlyLimit *int    `json:"whatsappMonthlyLimit"`
 	}
@@ -255,7 +261,7 @@ func UpdateSalon(c *gin.Context) {
 				return err
 			}
 		}
-		if (body.Plan != nil && strings.TrimSpace(*body.Plan) != "") || (body.Status != nil && strings.TrimSpace(*body.Status) != "") {
+		if (body.Plan != nil && strings.TrimSpace(*body.Plan) != "") || (body.Status != nil && strings.TrimSpace(*body.Status) != "") || (body.TrialEnds != nil && strings.TrimSpace(*body.TrialEnds) != "") {
 			var sub db.Subscription
 			if err := tx.Where("salon_id = ?", salon.ID).Order("created_at desc").First(&sub).Error; err == nil {
 				subUpdates := map[string]interface{}{}
@@ -275,6 +281,12 @@ func UpdateSalon(c *gin.Context) {
 							end := time.Now().AddDate(0, 1, 0)
 							subUpdates["current_period_end"] = end
 						}
+					}
+				}
+				if body.TrialEnds != nil && strings.TrimSpace(*body.TrialEnds) != "" {
+					if parsedDate, err := time.Parse("2006-01-02", strings.TrimSpace(*body.TrialEnds)); err == nil {
+						endOfDay := time.Date(parsedDate.Year(), parsedDate.Month(), parsedDate.Day(), 23, 59, 59, 0, time.UTC)
+						subUpdates["trial_ends"] = endOfDay
 					}
 				}
 				if len(subUpdates) > 0 {

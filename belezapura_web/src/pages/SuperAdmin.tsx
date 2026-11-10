@@ -287,7 +287,7 @@ function SaloesView({ salonsData }: { salonsData: any }) {
   }, [salonsData]);
 
   const [editSalonForm, setEditSalonForm] = useState({
-    id: '', name: '', owner: '', plan: 'Studio', status: 'TRIAL',
+    id: '', name: '', owner: '', plan: 'Studio', status: 'TRIAL', trialEnds: '',
     whatsappEnabled: false, whatsappMonthlyLimit: '0', whatsappUsed: 0, whatsappPlanLimit: 0,
   });
   const [savingSalon, setSavingSalon] = useState(false);
@@ -329,6 +329,7 @@ function SaloesView({ salonsData }: { salonsData: any }) {
         owner: salon.owner || '',
         plan: salon.plan || 'Studio',
         status: String(salon.status || 'TRIAL').toUpperCase(),
+        trialEnds: salon.trialEnds || '',
         whatsappEnabled: Boolean(salon.whatsappEnabled),
         whatsappMonthlyLimit: String(salon.whatsappMonthlyLimit ?? 0),
         whatsappUsed: Number(salon.whatsappUsed ?? 0),
@@ -359,6 +360,7 @@ function SaloesView({ salonsData }: { salonsData: any }) {
           owner: editSalonForm.owner,
           plan: editSalonForm.plan,
           status: editSalonForm.status,
+          trialEnds: editSalonForm.trialEnds,
           whatsappEnabled: editSalonForm.whatsappEnabled,
           whatsappMonthlyLimit: customLimit,
         })
@@ -371,6 +373,7 @@ function SaloesView({ salonsData }: { salonsData: any }) {
         owner: editSalonForm.owner,
         plan: editSalonForm.plan,
         status: editSalonForm.status,
+        trialEnds: editSalonForm.trialEnds,
         whatsappEnabled: editSalonForm.whatsappEnabled,
         whatsappMonthlyLimit: customLimit,
         whatsappLimit: customLimit > 0 ? customLimit : s.whatsappPlanLimit,
@@ -457,7 +460,14 @@ function SaloesView({ salonsData }: { salonsData: any }) {
                 <td className="px-4 py-3 text-sm text-muted-foreground">{s.owner}</td>
                 <td className="px-4 py-3"><Badge variant="outline" className="text-xs">{s.plan}</Badge></td>
                 <td className="px-4 py-3">
-                  <Badge variant={statusBadge(s.status).variant}>{statusBadge(s.status).label}</Badge>
+                  <div className="flex flex-col items-start gap-0.5">
+                    <Badge variant={statusBadge(s.status).variant}>{statusBadge(s.status).label}</Badge>
+                    {normalizeStatus(s.status) === "trial" && s.trialEnds && (
+                      <span className="text-[10px] text-muted-foreground">
+                        Até {s.trialEnds.split("-").reverse().join("/")}
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-xs whitespace-nowrap">
                   {s.whatsappEnabled ? (
@@ -577,6 +587,53 @@ function SaloesView({ salonsData }: { salonsData: any }) {
                   <p className="text-[11px] text-muted-foreground -mt-2">
                     Poder supremo: a troca de plano/status é aplicada na hora, sem passar pela conferência de Pix. Para registrar recebimento no caixa, use a aba Assinaturas.
                   </p>
+
+                  {/* Controle de Data do Teste Grátis (Trial) */}
+                  <div className="border border-border rounded-xl p-4 space-y-2.5 bg-muted/20">
+                    <div>
+                      <div className="text-sm font-semibold">Vencimento do Teste Grátis (Trial)</div>
+                      <div className="text-[11px] text-muted-foreground">Defina até qual dia o salão poderá usar gratuitamente.</div>
+                    </div>
+                    <input
+                      type="date"
+                      value={editSalonForm.trialEnds}
+                      onChange={e => setEditSalonForm({ ...editSalonForm, trialEnds: e.target.value, status: 'TRIAL' })}
+                      className="w-full h-10 rounded-lg border border-border px-3 text-sm bg-background outline-none focus:border-primary"
+                    />
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {[
+                        { label: "+7 dias", days: 7 },
+                        { label: "+14 dias", days: 14 },
+                        { label: "+30 dias", days: 30 },
+                      ].map(btn => (
+                        <button
+                          key={btn.days}
+                          type="button"
+                          onClick={() => {
+                            const d = new Date();
+                            d.setDate(d.getDate() + btn.days);
+                            const iso = d.toISOString().split("T")[0];
+                            setEditSalonForm({ ...editSalonForm, trialEnds: iso, status: 'TRIAL' });
+                          }}
+                          className="px-2.5 py-1 rounded-md text-xs font-medium bg-secondary hover:bg-primary hover:text-primary-foreground transition-colors cursor-pointer"
+                        >
+                          {btn.label}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const d = new Date();
+                          d.setDate(d.getDate() - 1);
+                          const iso = d.toISOString().split("T")[0];
+                          setEditSalonForm({ ...editSalonForm, trialEnds: iso, status: 'LATE' });
+                        }}
+                        className="px-2.5 py-1 rounded-md text-xs font-medium bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white transition-colors cursor-pointer"
+                      >
+                        Encerrar trial agora
+                      </button>
+                    </div>
+                  </div>
 
                   <div className="border border-border rounded-xl p-4 space-y-3 bg-muted/20">
                     <div className="flex items-center justify-between">
