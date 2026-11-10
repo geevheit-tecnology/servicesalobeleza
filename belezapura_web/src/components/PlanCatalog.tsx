@@ -52,7 +52,7 @@ const FALLBACK_PLANS: PlanItem[] = [
     features: [
       "Tudo do Studio",
       "Profissionais ilimitados",
-      "Automação WhatsApp & Bot IA 24h",
+      "Automação WhatsApp & Bot IA 24h (mediante ativação técnica; até 1.000 disparos/mês)",
       "Assessoria VIP: Google Meu Negócio & Botão no Google Maps",
       "Controle de estoque com alerta de reposição",
       "Relatórios detalhados de faturamento",
@@ -70,7 +70,7 @@ export function planFeatures(plan: { name?: string; price?: number; maxProfessio
     return [
       "Tudo do plano Studio incluso",
       plan.maxProfessionals > 0 ? `Até ${plan.maxProfessionals} profissionais ativos` : "Profissionais ilimitados",
-      "Automação WhatsApp & Bot IA 24h (franquia de até 1.000 disparos/mês)",
+      "Automação WhatsApp & Bot IA 24h (mediante ativação técnica; franquia de até 1.000 disparos/mês)",
       "Assessoria VIP: Google Meu Negócio otimizado com botão no Google Maps",
       "Controle de estoque completo com alerta de reposição",
       "Relatórios avançados de faturamento, retenção e ticket médio",
@@ -85,12 +85,13 @@ export function planFeatures(plan: { name?: string; price?: number; maxProfessio
       "Gestão de comissões e rateio automático por profissional",
       "Painel financeiro completo (fluxo de caixa e receitas)",
       "Agenda multi-profissional com bloqueio de horários",
+      "Aviso de WhatsApp com 1 clique pela agenda (manual sem custo extra)",
       "Relatórios gerenciais de desempenho",
       "Controle de estoque de produtos do salão"
     ];
   }
   return [
-    plan.maxProfessionals > 1 ? `Até ${plan.maxProfessionals} profissionais` : "Até 1 profissional (autônoma)",
+    plan.maxProfessionals > 1 ? `Até ${plan.maxProfessionals} profissional(is)` : "Até 1 profissional (autônoma)",
     "Página exclusiva na Bio e agendamento online 24h",
     "Gestão de agenda, clientes e catálogo de serviços",
     "Sinal antecipado via Pix com conferência no painel",
@@ -205,7 +206,7 @@ export function PlanCatalog() {
         </div>
 
         <p className="text-xs text-center text-[#6B7280]">
-          Integração automática com WhatsApp, repasses bancários e multiunidades não estão incluídos nesta versão.
+          Automação de WhatsApp e Bot IA dependem de plano compatível, ativação técnica prévia com o suporte e estão sujeitos à franquia contratada. Repasses bancários automatizados e multiunidades não estão incluídos nesta versão.
         </p>
       </div>
     </section>

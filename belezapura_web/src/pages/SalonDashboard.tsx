@@ -142,7 +142,7 @@ export default function SalonDashboard() {
       return {
         tier: 3,
         planLabel: "Elite (Completo / VIP)",
-        reason: "A Automação de WhatsApp & Bot IA 24h com confirmações e lembretes automáticos é exclusiva da categoria Elite.",
+        reason: "A Automação de WhatsApp & Bot IA 24h (com ativação técnica e franquia mensal) é exclusiva da categoria Elite. Nos demais planos, os lembretes são enviados com 1 clique pela agenda.",
       };
     }
     return null;

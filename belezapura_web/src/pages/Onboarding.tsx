@@ -1,3 +1,5 @@
+import { CurrencyInput, DurationInput } from "@/components/FormattedInputs";
+import { formatCurrency, parseCurrency, parseDuration, formatDurationDisplay } from "@/utils/formatters";
 import { planFeatures } from "@/components/PlanCatalog";
 import { api } from "@/lib/api";
 import { useState, useEffect } from "react";
@@ -269,7 +271,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
     if (step === 3 && !services.some(s => s.active)) { setPaymentError("Adicione ao menos um serviço ativo."); return; }
     if (step === 4 && pros.length === 0) { setPaymentError("Adicione ao menos uma profissional."); return; }
     if (step === 5 && !schedule.some(s => s.open)) { setPaymentError("Abra ao menos um dia de atendimento."); return; }
-    if (step === 6 && depositPolicy !== "none" && (!pixKey.trim() || !Number.isFinite(Number(depositValue.replace(",", "."))) || Number(depositValue.replace(",", ".")) <= 0 || (depositType === "percentage" && Number(depositValue.replace(",", ".")) > 100))) {
+    if (step === 6 && depositPolicy !== "none" && (!pixKey.trim() || !Number.isFinite(parseCurrency(depositValue)) || parseCurrency(depositValue) <= 0 || (depositType === "percentage" && parseCurrency(depositValue) > 100))) {
       setPaymentError("Informe a chave Pix e um sinal positivo. O percentual deve ser de até 100%."); return;
     }
     if (step < 8) {
@@ -289,7 +291,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
           pixName: pixName.trim() || salonName,
           depositPolicy,
           depositType,
-          depositValue: Number(depositValue.replace(",", ".")),
+          depositValue: parseCurrency(depositValue),
           services: services.filter(s => s.active),
           professionals: pros,
           schedule: schedule,
@@ -663,9 +665,9 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
                   </button>
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-sm">{s.name}</div>
-                    <div className="text-xs text-muted-foreground">{s.cat} · {s.duration}</div>
+                    <div className="text-xs text-muted-foreground">{s.cat} · {formatDurationDisplay(s.duration)}</div>
                   </div>
-                  <span className="text-primary font-semibold text-sm">{s.price}</span>
+                  <span className="text-primary font-semibold text-sm">{formatCurrency(s.price)}</span>
                   <button onClick={() => setServices(prev => prev.filter((_, j) => j !== i))} className="p-1 rounded hover:bg-muted"><X className="w-4 h-4 text-muted-foreground" /></button>
                 </div>
               ))}
@@ -679,12 +681,12 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
                   {serviceCategories.map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
-              <div className="grid grid-cols-3 gap-3">
-                <input value={newServiceDur} onChange={e => setNewServiceDur(e.target.value)} placeholder="Duração" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
-                <input value={newServicePrice} onChange={e => setNewServicePrice(e.target.value)} placeholder="Preço" className="h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                <label className="text-xs font-medium space-y-1"><span>Duração (horas:minutos)</span><DurationInput value={newServiceDur} onValueChange={setNewServiceDur} aria-label="Duração do serviço" className="h-10 rounded-lg border border-border px-3 text-sm bg-card" /></label>
+                <label className="text-xs font-medium space-y-1"><span>Preço do serviço</span><CurrencyInput value={newServicePrice} onValueChange={setNewServicePrice} aria-label="Preço do serviço" placeholder="0,00" className="h-10 rounded-lg border border-border px-3 text-sm bg-card" /></label>
                 <Button size="sm" className="h-10" onClick={() => {
-                  if (newServiceName && newServicePrice) {
-                    setServices(prev => [...prev, { name: newServiceName, cat: newServiceCat, duration: newServiceDur || "60 min", price: newServicePrice, active: true }]);
+                  if (newServiceName.trim() && parseCurrency(newServicePrice) > 0 && parseDuration(newServiceDur) > 0 && newServiceDur) {
+                    setServices(prev => [...prev, { name: newServiceName, cat: newServiceCat, duration: newServiceDur, price: parseCurrency(newServicePrice).toFixed(2).replace(".", ","), active: true }]);
                     setNewServiceName("");
                     setNewServiceDur("");
                     setNewServicePrice("");
@@ -740,23 +742,19 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground mb-4">Configure os horários de funcionamento do seu salão.</p>
             {schedule.map((s, i) => (
-              <div key={s.day} className="flex items-center gap-3 p-3 bg-card border border-border rounded-xl">
+              <div key={s.day} className="flex flex-wrap items-center gap-3 p-3 bg-card border border-border rounded-xl">
                 <button
                   onClick={() => setSchedule(prev => prev.map((d, j) => j === i ? { ...d, open: !d.open } : d))}
-                  className={`w-10 h-5 rounded-full transition-all relative ${s.open ? "bg-primary" : "bg-muted"}`}
+                  className={`shrink-0 w-10 h-5 rounded-full transition-all relative ${s.open ? "bg-primary" : "bg-muted"}`}
                 >
                   <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${s.open ? "left-5" : "left-0.5"}`} />
                 </button>
                 <span className={`text-sm font-medium w-20 ${s.open ? "text-foreground" : "text-muted-foreground"}`}>{s.day}</span>
                 {s.open ? (
-                  <div className="flex items-center gap-2 ml-auto">
-                    <select defaultValue={s.start} className="h-8 px-2 rounded-lg border border-border text-sm outline-none focus:border-primary bg-card appearance-none">
-                      {["07:00", "08:00", "09:00", "10:00"].map(t => <option key={t}>{t}</option>)}
-                    </select>
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 w-full sm:w-auto sm:ml-auto">
+                    <input type="time" aria-label={`Abertura ${s.day}`} value={s.start} onChange={e => setSchedule(prev => prev.map((d, j) => j === i ? { ...d, start: e.target.value } : d))} className="w-full min-w-0 h-10 px-2 rounded-lg border border-border text-sm bg-card" />
                     <span className="text-muted-foreground text-sm">até</span>
-                    <select defaultValue={s.end} className="h-8 px-2 rounded-lg border border-border text-sm outline-none focus:border-primary bg-card appearance-none">
-                      {["17:00", "18:00", "19:00", "20:00", "21:00"].map(t => <option key={t}>{t}</option>)}
-                    </select>
+                    <input type="time" aria-label={`Fechamento ${s.day}`} value={s.end} onChange={e => setSchedule(prev => prev.map((d, j) => j === i ? { ...d, end: e.target.value } : d))} className="w-full min-w-0 h-10 px-2 rounded-lg border border-border text-sm bg-card" />
                   </div>
                 ) : (
                   <span className="ml-auto text-xs text-muted-foreground">Fechado</span>
@@ -764,12 +762,8 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
               </div>
             ))}
             <div className="mt-4 p-3 bg-secondary rounded-xl text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">Intervalo de agendamento:</span>{" "}
-              <select className="bg-transparent border-b border-border outline-none ml-1 text-foreground cursor-pointer">
-                <option>30 minutos</option>
-                <option>15 minutos</option>
-                <option>60 minutos</option>
-              </select>
+              <span className="font-medium text-foreground">Consulta de horários:</span>{" "}
+              <span>30 minutos, respeitando a duração do serviço e o expediente.</span>
             </div>
           </div>
         )}
@@ -824,7 +818,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
               <div className="flex items-center gap-3">
                 <div className="flex-1">
                   <div className="text-xs text-muted-foreground mb-1">Valor do sinal</div>
-                  <input value={depositValue} onChange={e => setDepositValue(e.target.value)} aria-label="Valor do sinal" inputMode="decimal" className="w-full h-9 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />
+                  {depositType === "fixed" ? <CurrencyInput aria-label="Valor do sinal" required value={depositValue} onValueChange={setDepositValue} className="h-10 rounded-lg border border-border px-3 text-sm bg-card" /> : <input type="number" min="0.01" max="100" step="0.01" value={depositValue} onChange={e => setDepositValue(e.target.value)} aria-label="Valor do sinal" inputMode="decimal" className="w-full h-9 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-card" />}
                 </div>
                 <div className="flex-1">
                   <div className="text-xs text-muted-foreground mb-1">Exigir sinal?</div>

@@ -28,7 +28,7 @@ export function AvaliacoesView() {
           setReviews([]);
         }
       })
-      .catch(() => {});
+      .catch(error => setMsg(error.message || "Não foi possível carregar os depoimentos."));
   }, []);
 
   const persistReviews = async (nextReviews: ReviewItem[]) => {
@@ -41,8 +41,10 @@ export function AvaliacoesView() {
       });
       setReviews(nextReviews);
       setMsg("Mural de avaliações atualizado na página pública!");
+      return true;
     } catch (e) {
       setMsg((e as Error).message || "Erro ao salvar avaliação.");
+      return false;
     } finally {
       setSaving(false);
     }
@@ -58,12 +60,13 @@ export function AvaliacoesView() {
       comment: form.comment.trim(),
       date: new Date().toLocaleDateString("pt-BR"),
     };
-    await persistReviews([item, ...reviews]);
+    if (!await persistReviews([item, ...reviews])) return;
     setForm({ name: "", rating: 5, comment: "" });
     setShowForm(false);
   };
 
   const handleDelete = async (id: string) => {
+    if (!confirm("Remover este depoimento da página pública?")) return;
     const next = reviews.filter(r => r.id !== id && r.name !== id);
     await persistReviews(next);
   };
@@ -74,7 +77,7 @@ export function AvaliacoesView() {
       : "—";
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="p-4 sm:p-6 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-serif text-2xl font-medium">Mural de Avaliações</h1>
@@ -87,7 +90,7 @@ export function AvaliacoesView() {
         </Button>
       </div>
 
-      {msg && <div className="p-3 rounded-xl bg-secondary text-sm">{msg}</div>}
+      {msg && <div role="status" className="p-3 rounded-xl bg-secondary text-sm">{msg}</div>}
 
       {showForm && (
         <form onSubmit={handleAdd} className="bg-card border border-border rounded-2xl p-4 space-y-3">

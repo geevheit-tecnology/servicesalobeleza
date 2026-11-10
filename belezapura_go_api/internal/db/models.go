@@ -48,6 +48,7 @@ type Address struct {
 }
 
 type Salon struct {
+	ReviewsRaw    string         `gorm:"type:text;not null;default:'[]'" json:"reviewsRaw"`
 	Address       Address        `gorm:"embedded;embeddedPrefix:address_" json:"address"`
 	Instagram     string         `json:"instagram"`
 	PixName       string         `json:"pixName"`

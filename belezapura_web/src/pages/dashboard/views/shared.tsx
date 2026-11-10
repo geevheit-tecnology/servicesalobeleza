@@ -25,6 +25,7 @@ const NAV = [
   { id: "financeiro", label: "Financeiro", icon: DollarSign },
   { id: "comissoes", label: "Comissões", icon: Percent },
   { id: "estoque", label: "Estoque", icon: Package },
+  { id: "avaliacoes", label: "Avaliações", icon: Star },
   { id: "pagina", label: "Página do Salão", icon: Globe },
   { id: "chatbot", label: "WhatsApp & Bot", icon: MessageCircle, badge: "Novo" },
   { id: "relatorios", label: "Relatórios", icon: BarChart3 },

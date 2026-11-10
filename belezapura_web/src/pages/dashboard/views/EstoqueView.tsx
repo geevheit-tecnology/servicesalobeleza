@@ -1,3 +1,4 @@
+import { CurrencyInput } from "@/components/FormattedInputs";
 import { useState, useEffect } from "react";
 import {
   Package, Plus, AlertTriangle, MoreHorizontal, Download, Trash2, ArrowUpRight, ArrowDownRight, Edit3, X, Check
@@ -328,24 +329,7 @@ export function EstoqueView() {
                       </span>
                     )}
                   </div>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground select-none">
-                      R$
-                    </span>
-                    <input
-                      aria-label="Custo unitário"
-                      value={formData.valor}
-                      onChange={e => setFormData({ ...formData, valor: e.target.value })}
-                      onBlur={() => {
-                        const num = parseCurrency(formData.valor);
-                        if (num > 0) {
-                          setFormData({ ...formData, valor: num.toFixed(2).replace(".", ",") });
-                        }
-                      }}
-                      placeholder="Ex: 45 ou 45,00"
-                      className="w-full h-10 rounded-xl border border-border pl-10 pr-3 text-sm bg-background outline-none focus:border-primary"
-                    />
-                  </div>
+                  <CurrencyInput aria-label="Custo unitário" value={formData.valor} onValueChange={valor => setFormData({ ...formData, valor })} placeholder="0,00" className="h-10 rounded-xl border border-border px-3 text-sm bg-background" />
                 </div>
               </div>
 

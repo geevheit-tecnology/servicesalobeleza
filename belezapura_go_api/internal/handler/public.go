@@ -38,7 +38,7 @@ func GetSalonBySlug(c *gin.Context) {
 	for i := range s.Professionals {
 		s.Professionals[i].Phone = nil
 	}
-	c.JSON(200, gin.H{"id": s.ID, "slug": s.Slug, "name": s.Name, "phone": s.Phone, "pixKey": s.PixKey, "logo": s.Logo, "cover": s.Cover, "gallery": s.Gallery, "mainColor": s.MainColor, "scheduleRaw": s.ScheduleRaw, "timezone": s.Timezone, "blockedDates": s.BlockedDates, "services": s.Services, "professionals": s.Professionals, "address": s.Address, "instagram": s.Instagram, "pixName": s.PixName, "depositPolicy": s.DepositPolicy, "depositType": s.DepositType, "depositValue": s.DepositValue})
+	c.JSON(200, gin.H{"reviewsRaw": s.ReviewsRaw, "id": s.ID, "slug": s.Slug, "name": s.Name, "phone": s.Phone, "pixKey": s.PixKey, "logo": s.Logo, "cover": s.Cover, "gallery": s.Gallery, "mainColor": s.MainColor, "scheduleRaw": s.ScheduleRaw, "timezone": s.Timezone, "blockedDates": s.BlockedDates, "services": s.Services, "professionals": s.Professionals, "address": s.Address, "instagram": s.Instagram, "pixName": s.PixName, "depositPolicy": s.DepositPolicy, "depositType": s.DepositType, "depositValue": s.DepositValue})
 }
 func GetAvailability(c *gin.Context) {
 	if c.Query("salonId") == "" || c.Query("professionalId") == "" || c.Query("serviceId") == "" || c.Query("date") == "" {

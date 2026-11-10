@@ -1,34 +1,25 @@
 import { useState, useEffect } from "react";
 import { 
   MessageCircle, 
-  QrCode, 
   CheckCircle2, 
   Smartphone, 
-  RefreshCw, 
   Send, 
-  ShieldCheck, 
   Clock, 
-  Sparkles, 
   AlertCircle, 
-  Sliders, 
   CheckCheck,
-  Zap,
-  PhoneCall,
-  Copy
+  ExternalLink
 } from "lucide-react";
 import { Button, Badge, Card } from "@/components/ui";
 import { api } from "@/lib/api";
 
 export function ChatbotWhatsAppView() {
-  const [status, setStatus] = useState<"connected" | "disconnected" | "qr_ready">("disconnected");
-  const [phoneNumber] = useState("Número central BelezaPura");
   const [usage, setUsage] = useState<{ enabled: boolean; limit: number; used: number; remaining: number; month: string; plan: string; subscriptionStatus: string } | null>(null);
   const [usageError, setUsageError] = useState("");
 
   useEffect(() => {
     api<any>("/salon/whatsapp-usage")
-      .then(d => { setUsage(d); setStatus(d?.enabled ? "connected" : "disconnected"); })
-      .catch(err => setUsageError(err.message || "Não foi possível carregar a franquia de WhatsApp."));
+      .then(d => { setUsage(d); })
+      .catch(err => setUsageError(err.message || "Não foi possível carregar o status do WhatsApp."));
   }, []);
 
   const usagePct = usage && usage.limit > 0 ? Math.min(100, Math.round((usage.used / usage.limit) * 100)) : 0;
@@ -43,7 +34,6 @@ export function ChatbotWhatsAppView() {
   // Template selecionado para pré-visualização
   const [selectedTemplate, setSelectedTemplate] = useState<"confirm" | "reminder24h" | "reminder2h" | "post">("confirm");
   const [testPhone, setTestPhone] = useState("");
-  const [testSent, setTestSent] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   const templates = {
@@ -65,11 +55,27 @@ export function ChatbotWhatsAppView() {
     },
   };
 
-  const handleTestSend = (e: React.FormEvent) => {
+  const getPopulatedTemplate = (key: keyof typeof templates) => {
+    return templates[key].text
+      .replace(/\{\{cliente\}\}/g, "Camila Silva")
+      .replace(/\{\{servico\}\}/g, "Alongamento em Gel")
+      .replace(/\{\{profissional\}\}/g, "Rafaela")
+      .replace(/\{\{data\}\}/g, "15/11")
+      .replace(/\{\{horario\}\}/g, "14:30")
+      .replace(/\{\{valor_sinal\}\}/g, "R$ 36,00 (20%)")
+      .replace(/\{\{chave_pix\}\}/g, "contato@belezapura.com.br")
+      .replace(/\{\{nome_salao\}\}/g, "Studio BelezaPura")
+      .replace(/\{\{endereco_salao\}\}/g, "Av. Paulista, 1000 - Sala 42")
+      .replace(/\{\{slug\}\}/g, "studio-belezapura");
+  };
+
+  const handleOpenDemoWhatsApp = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!testPhone) return;
-    setTestSent(true);
-    setTimeout(() => setTestSent(false), 4000);
+    const clean = testPhone.replace(/\D/g, "");
+    if (!clean) return;
+    const phoneWithCountry = clean.length <= 11 ? `55${clean}` : clean;
+    const text = getPopulatedTemplate(selectedTemplate);
+    window.open(`https://wa.me/${phoneWithCountry}?text=${encodeURIComponent(text)}`, "_blank");
   };
 
   const handleSaveAutomations = () => {
@@ -79,32 +85,37 @@ export function ChatbotWhatsAppView() {
 
   return (
     <div className="p-4 sm:p-6 space-y-6 max-w-5xl">
-      {/* Header */}
+      {/* Header com distinção explícita entre Configuração e Conexão Efetiva */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="font-serif text-2xl font-bold">WhatsApp & Atendimento Automático</h1>
-            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-xs">
+            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-xs">
               Sob demanda · franquia mensal
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            Notificações automáticas, confirmação de horários com Pix e lembretes para reduzir faltas (no-show).
+            Modelos de mensagens, confirmações de sinal Pix e status de ativação da rota automatizada.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          {status === "connected" ? (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 text-xs font-semibold border border-emerald-200">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              WhatsApp ativo · {usage ? `${usage.used}/${usage.limit} no mês` : phoneNumber}
+        <div className="flex flex-wrap items-center gap-2">
+          {usage?.enabled ? (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 text-xs font-semibold border border-blue-200">
+              <span className="w-2 h-2 rounded-full bg-blue-500" />
+              Configuração: Habilitada ({usage.plan || "Plano compatível"})
             </div>
           ) : (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 text-xs font-semibold border border-amber-200">
-              <span className="w-2 h-2 rounded-full bg-amber-500" />
-              WhatsApp automático desativado
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300 text-xs font-semibold border border-stone-200">
+              <span className="w-2 h-2 rounded-full bg-stone-400" />
+              Configuração: Não contratada
             </div>
           )}
+
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 text-xs font-semibold border border-amber-200">
+            <span className="w-2 h-2 rounded-full bg-amber-500" />
+            Conexão efetiva: Aguardando homologação técnica
+          </div>
         </div>
       </div>
 
@@ -142,80 +153,111 @@ export function ChatbotWhatsAppView() {
         </button>
       </div>
 
-      {/* Tab: Conexão */}
+      {/* Tab: Conexão & Status */}
       {activeTab === "connection" && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-2 space-y-4">
             <Card className="p-5 border-border">
               <h3 className="text-base font-semibold mb-2 flex items-center gap-2">
                 <Smartphone className="w-4 h-4 text-primary" />
-                Franquia mensal de disparos WhatsApp
+                Status da Conexão & Franquia Mensal
               </h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Os avisos automáticos saem pelo número central da BelezaPura — você não precisa configurar nada nem escanear QR Code.
-                O envio é liberado sob demanda pela equipe BelezaPura e cada plano tem uma franquia de mensagens por mês.
+                Para transparência e segurança operacional, distinguimos a <strong>habilitação da configuração</strong> da <strong>conexão efetiva com o WhatsApp</strong>. Mensagens automáticas só são disparadas após confirmação da rota pela equipe técnica.
               </p>
 
               {usageError && (
-                <div className="p-3 rounded-lg bg-amber-50 text-amber-700 text-xs border border-amber-200 mb-3">{usageError}</div>
+                <div role="alert" className="p-3 rounded-lg bg-amber-50 text-amber-700 text-xs border border-amber-200 mb-3">{usageError}</div>
               )}
 
-              {usage && usage.enabled && usage.limit > 0 ? (
-                <div className="p-4 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 space-y-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-semibold text-emerald-900 dark:text-emerald-100">Disparos no mês ({usage.month})</span>
-                    <span className="font-mono">{usage.used.toLocaleString("pt-BR")} / {usage.limit.toLocaleString("pt-BR")}</span>
+              {/* Comparativo de status */}
+              <div className="grid sm:grid-cols-2 gap-3 mb-4">
+                <div className="p-3.5 rounded-xl border border-border bg-card space-y-1">
+                  <div className="text-xs text-muted-foreground font-medium">1. Configuração no Plano</div>
+                  <div className="text-sm font-semibold flex items-center gap-2">
+                    {usage?.enabled ? (
+                      <span className="text-blue-600 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-4 h-4" /> Habilitado ({usage.plan || "Elite"})
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground flex items-center gap-1.5">
+                        <AlertCircle className="w-4 h-4 text-amber-500" /> Requer plano Elite
+                      </span>
+                    )}
                   </div>
-                  <div className="h-2.5 w-full rounded-full bg-emerald-100 dark:bg-emerald-900/50 overflow-hidden">
-                    <div className={`h-full rounded-full ${usagePct >= 90 ? "bg-red-500" : usagePct >= 70 ? "bg-amber-500" : "bg-emerald-500"}`} style={{ width: `${usagePct}%` }} />
+                  <p className="text-[11px] text-muted-foreground">
+                    {usage?.enabled
+                      ? "A franquia do plano está autorizada para este salão."
+                      : "Faça upgrade para a categoria Elite para liberar a franquia de automação."}
+                  </p>
+                </div>
+
+                <div className="p-3.5 rounded-xl border border-border bg-card space-y-1">
+                  <div className="text-xs text-muted-foreground font-medium">2. Conexão Efetiva do WhatsApp</div>
+                  <div className="text-sm font-semibold flex items-center gap-2 text-amber-600">
+                    <Clock className="w-4 h-4" /> Aguardando homologação técnica
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    O bot e os envios automáticos entram em operação mediante validação técnica da rota com o suporte.
+                  </p>
+                </div>
+              </div>
+
+              {usage && usage.enabled && usage.limit > 0 ? (
+                <div className="p-4 rounded-xl bg-muted/40 border border-border space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-semibold text-foreground">Franquia no mês ({usage.month})</span>
+                    <span className="font-mono text-xs">{usage.used.toLocaleString("pt-BR")} / {usage.limit.toLocaleString("pt-BR")} disparos</span>
+                  </div>
+                  <div className="h-2.5 w-full rounded-full bg-muted overflow-hidden">
+                    <div className={`h-full rounded-full ${usagePct >= 90 ? "bg-red-500" : usagePct >= 70 ? "bg-amber-500" : "bg-primary"}`} style={{ width: `${usagePct}%` }} />
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    Restam <strong>{usage.remaining.toLocaleString("pt-BR")}</strong> mensagens neste mês (plano {usage.plan || "atual"}). A franquia renova todo dia 1º.
-                    {usagePct >= 100 && " Franquia esgotada: os avisos voltam no próximo mês ou com upgrade de plano."}
+                    Restam <strong>{usage.remaining.toLocaleString("pt-BR")}</strong> disparos neste mês (plano {usage.plan || "atual"}). A franquia renova no dia 1º de cada mês.
+                    {usagePct >= 100 && " Franquia esgotada: os avisos voltam no próximo ciclo ou mediante ampliação de franquia."}
                   </div>
                 </div>
               ) : (
                 <div className="p-4 rounded-xl border border-dashed border-border space-y-2 text-sm">
                   <div className="font-medium flex items-center gap-2">
                     <AlertCircle className="w-4 h-4 text-amber-500" />
-                    {usage && usage.limit <= 0 ? "Seu plano não inclui avisos automáticos" : "Avisos automáticos ainda não ativados"}
+                    {usage && usage.limit <= 0 ? "Seu plano atual não inclui franquia automatizada" : "Avisos automáticos aguardando ativação"}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {usage && usage.limit <= 0
-                      ? "No plano Essencial você envia o aviso com 1 clique pela agenda (WhatsApp manual, sem custo). Faça upgrade para Studio (150/mês) ou Elite (1.000/mês) para avisos automáticos."
-                      : "Solicite a ativação ao suporte BelezaPura. Assim que liberado, as confirmações de agendamento passam a ser enviadas automaticamente."}
+                      ? "Nos planos Essencial e Studio você envia avisos e comprovantes com 1 clique pela agenda (via WhatsApp Web/App, sem custo). No plano Elite você conta com franquia mensal para automação."
+                      : "Entre em contato com o suporte BelezaPura para solicitar a ativação técnica e o pareamento da sua rota de envio."}
                   </p>
                 </div>
               )}
             </Card>
 
-
-            {/* Teste de Disparo */}
+            {/* Demonstração de Envio */}
             <Card className="p-5 border-border">
               <h3 className="text-base font-semibold mb-2 flex items-center gap-2">
                 <Send className="w-4 h-4 text-primary" />
-                Testar Envio de Mensagem
+                Demonstração e Validação do Modelo
               </h3>
               <p className="text-xs text-muted-foreground mb-4">
-                Envie uma mensagem de demonstração para seu número pessoal para validar o funcionamento do bot.
+                Como os disparos automáticos requerem rota técnica homologada, você pode conferir o formato da mensagem abrindo uma demonstração direta no seu WhatsApp Web ou aplicativo.
               </p>
-              <form onSubmit={handleTestSend} className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="(11) 99999-9999"
-                  value={testPhone}
-                  onChange={e => setTestPhone(e.target.value)}
-                  className="flex-1 border rounded-lg px-3 py-2 text-sm bg-background"
-                />
-                <Button type="submit" size="sm" disabled={testSent || !testPhone}>
-                  {testSent ? "Enviado com sucesso!" : "Enviar Teste"}
-                </Button>
-              </form>
-              {testSent && (
-                <p className="text-xs text-emerald-600 mt-2 flex items-center gap-1">
-                  <CheckCheck className="w-3.5 h-3.5" /> Mensagem de teste despachada para o WhatsApp informado!
+              <form onSubmit={handleOpenDemoWhatsApp} className="space-y-3">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="tel"
+                    placeholder="Seu telefone: (11) 99999-9999"
+                    value={testPhone}
+                    onChange={e => setTestPhone(e.target.value)}
+                    className="flex-1 border border-border rounded-lg px-3 py-2 text-sm bg-background"
+                  />
+                  <Button type="submit" size="sm" disabled={!testPhone.trim()} className="gap-1.5">
+                    <ExternalLink className="w-3.5 h-3.5" /> Abrir no WhatsApp
+                  </Button>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Abre uma conversa no seu WhatsApp preenchida com o modelo selecionado (sem custo e sem consumir franquia).
                 </p>
-              )}
+              </form>
             </Card>
           </div>
 
@@ -226,21 +268,25 @@ export function ChatbotWhatsAppView() {
               
               <div className="space-y-3">
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">Lembretes enviados:</span>
-                  <span className="font-bold text-foreground">148</span>
+                  <span className="text-muted-foreground">Disparos no mês:</span>
+                  <span className="font-bold text-foreground">{usage?.used ?? 0}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">Confirmações automáticas:</span>
-                  <span className="font-bold text-emerald-600">96.4%</span>
+                  <span className="text-muted-foreground">Franquia contratada:</span>
+                  <span className="font-bold text-foreground">{usage?.limit ?? 0}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">Queda no no-show:</span>
-                  <span className="font-bold text-primary">-78%</span>
+                  <span className="text-muted-foreground">Disparos restantes:</span>
+                  <span className="font-bold text-primary">{usage?.remaining ?? 0}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-muted-foreground">Status da rota:</span>
+                  <span className="font-medium text-amber-600 text-xs">Pendente ativação</span>
                 </div>
               </div>
 
               <div className="p-3 rounded-lg bg-primary/5 border border-primary/10 text-xs text-muted-foreground leading-relaxed">
-                💡 Salões que ativam o lembrete de 2 horas e a solicitação de sinal no Pix reduzem as faltas de clientes para menos de 4%.
+                💡 Enquanto a conexão automática aguarda ativação técnica, utilize o botão <strong>Conversar no WhatsApp</strong> na agenda para enviar lembretes e confirmações com 1 clique.
               </div>
             </Card>
           </div>
@@ -250,13 +296,22 @@ export function ChatbotWhatsAppView() {
       {/* Tab: Automações */}
       {activeTab === "automations" && (
         <div className="space-y-6">
+          <div className="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200 text-xs text-amber-800 space-y-1">
+            <div className="font-semibold flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5" /> Condição de ativação das regras
+            </div>
+            <p>
+              As regras abaixo definem o comportamento das mensagens do sistema. Enquanto a rota de disparo automático estiver pendente de homologação técnica, os textos abaixo servem como padrão para o envio manual via agenda.
+            </p>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card className="p-5 border-border space-y-3">
               <div className="flex items-start justify-between">
                 <div>
                   <h4 className="font-semibold text-sm">Notificação Imediata com Chave Pix</h4>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Envia confirmação instantânea para a cliente assim que ela faz o agendamento pela página web. Se houver sinal cadastrado, anexa os dados do Pix.
+                    Envia confirmação para a cliente assim que ela faz o agendamento pela página web. Se houver sinal cadastrado, anexa os dados do Pix.
                   </p>
                 </div>
                 <input
@@ -273,7 +328,7 @@ export function ChatbotWhatsAppView() {
                 <div>
                   <h4 className="font-semibold text-sm">Lembrete de 24 Horas Antes</h4>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Dispara uma mensagem no dia anterior avisando sobre o horário, profissional e endereço do espaço.
+                    Avisa no dia anterior sobre o horário, profissional e endereço do espaço para reduzir faltas.
                   </p>
                 </div>
                 <input
@@ -290,7 +345,7 @@ export function ChatbotWhatsAppView() {
                 <div>
                   <h4 className="font-semibold text-sm">Confirmação Rápida (2 Horas Antes)</h4>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Pede para a cliente responder 1 para confirmar ou 2 para reagendar caso ocorra imprevisto, liberando o horário para encaixe se necessário.
+                    Solicita resposta para confirmar presença ou solicitar reagendamento, facilitando o encaixe.
                   </p>
                 </div>
                 <input
@@ -307,7 +362,7 @@ export function ChatbotWhatsAppView() {
                 <div>
                   <h4 className="font-semibold text-sm">Pós-Atendimento e Avaliação</h4>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Envia mensagem de agradecimento 1 hora após a conclusão do agendamento, solicitando uma avaliação 5 estrelas.
+                    Agradece a visita e convida a cliente a deixar um depoimento no mural público do salão.
                   </p>
                 </div>
                 <input
@@ -321,8 +376,8 @@ export function ChatbotWhatsAppView() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Button onClick={handleSaveAutomations}>Salvar Regras de Envio</Button>
-            {savedSuccess && <span className="text-xs text-emerald-600 font-medium">Configurações salvas!</span>}
+            <Button onClick={handleSaveAutomations}>Salvar Preferências de Regras</Button>
+            {savedSuccess && <span className="text-xs text-emerald-600 font-medium">Preferências salvas com sucesso!</span>}
           </div>
         </div>
       )}
@@ -368,23 +423,12 @@ export function ChatbotWhatsAppView() {
           <div className="border border-border rounded-2xl p-4 bg-muted/20">
             <div className="text-xs font-semibold text-muted-foreground mb-3 flex items-center justify-between">
               <span>Pré-visualização no WhatsApp</span>
-              <span className="text-[10px] bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded-full font-medium">Exemplo Real</span>
+              <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">Exemplo de Mensagem</span>
             </div>
 
             <div className="bg-[#EFEAE2] dark:bg-stone-900 rounded-xl p-4 min-h-[300px] flex flex-col justify-end shadow-inner">
               <div className="bg-white dark:bg-[#1f2c34] text-slate-800 dark:text-slate-100 p-3.5 rounded-2xl rounded-tl-none max-w-[90%] shadow-sm text-xs leading-relaxed whitespace-pre-line relative">
-                {templates[selectedTemplate].text
-                  .replace(/\{\{cliente\}\}/g, "Camila Silva")
-                  .replace(/\{\{servico\}\}/g, "Alongamento em Gel")
-                  .replace(/\{\{profissional\}\}/g, "Rafaela")
-                  .replace(/\{\{data\}\}/g, "15/11")
-                  .replace(/\{\{horario\}\}/g, "14:30")
-                  .replace(/\{\{valor_sinal\}\}/g, "R$ 36,00 (20%)")
-                  .replace(/\{\{chave_pix\}\}/g, "contato@belezapura.com.br")
-                  .replace(/\{\{nome_salao\}\}/g, "Studio BelezaPura")
-                  .replace(/\{\{endereco_salao\}\}/g, "Av. Paulista, 1000 - Sala 42")
-                  .replace(/\{\{slug\}\}/g, "studio-belezapura")
-                }
+                {getPopulatedTemplate(selectedTemplate)}
                 <div className="flex items-center justify-end gap-1 text-[9px] text-muted-foreground mt-2">
                   <span>14:31</span>
                   <CheckCheck className="w-3.5 h-3.5 text-sky-500" />

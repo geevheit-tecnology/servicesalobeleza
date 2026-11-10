@@ -1,3 +1,5 @@
+import { CurrencyInput } from "@/components/FormattedInputs";
+import { parseCurrency } from "@/utils/formatters";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui";
 import { api } from "@/lib/api";
@@ -44,7 +46,7 @@ export function ConfiguracoesView() {
     try {
       await api("/salon/details", {
         method: "PUT",
-        body: JSON.stringify({ name, pixKey, phone, instagram, address, pixName, depositPolicy, depositType, depositValue: Number(depositValue.replace(",", ".")) })
+        body: JSON.stringify({ name, pixKey, phone, instagram, address, pixName, depositPolicy, depositType, depositValue: parseCurrency(depositValue) })
       });
       setMessage("Configurações salvas.");
     } catch (error) {
@@ -125,7 +127,7 @@ export function ConfiguracoesView() {
           <legend className="px-1 text-sm font-semibold">Sinal de reserva</legend>
           <label className="block text-sm font-medium">Exigir sinal<select aria-label="Exigir sinal" value={depositPolicy} onChange={e => setDepositPolicy(e.target.value)} className="block w-full border rounded-lg p-3 mt-1 bg-background text-sm"><option value="required">Obrigatório</option><option value="optional">Opcional para a cliente</option><option value="none">Sem sinal antecipado</option></select></label>
           <label className="block text-sm font-medium">Tipo do sinal<select aria-label="Tipo do sinal" value={depositType} onChange={e => { setDepositType(e.target.value); setDepositValue(e.target.value === "percentage" ? "20" : "30"); }} className="block w-full border rounded-lg p-3 mt-1 bg-background text-sm"><option value="percentage">Percentual do serviço (%)</option><option value="fixed">Valor fixo (R$)</option></select></label>
-          <label className="block text-sm font-medium">Valor do sinal<input required value={depositValue} onChange={e => setDepositValue(e.target.value)} inputMode="decimal" className="block w-full border rounded-lg p-3 mt-1 bg-background text-sm" /></label>
+          <label className="block text-sm font-medium">Valor do sinal{depositType === "fixed" ? <CurrencyInput aria-label="Valor do sinal" required value={depositValue} onValueChange={setDepositValue} className="h-10 rounded-lg border border-border px-3 text-sm bg-card" /> : <input type="number" min="0.01" max="100" step="0.01" required value={depositValue} onChange={e => setDepositValue(e.target.value)} inputMode="decimal" className="block w-full border rounded-lg p-3 mt-1 bg-background text-sm" />}</label>
           <p className="text-xs text-muted-foreground">O sinal é descontado do atendimento e nunca supera o preço do serviço.</p>
         </fieldset>
         <p className="text-xs text-muted-foreground">O sinal é enviado diretamente ao salão. Confira o recebimento no banco antes de confirmar o agendamento. Sem chave cadastrada, a reserva é registrada sem cobrança antecipada.</p>

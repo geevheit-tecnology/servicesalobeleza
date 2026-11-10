@@ -88,6 +88,7 @@ func GetSalonDetails(c *gin.Context) {
 	}
 
 	resMap := gin.H{
+		"reviewsRaw": salon.ReviewsRaw,
 		"address": salon.Address, "instagram": salon.Instagram, "pixName": salon.PixName,
 		"depositPolicy": salon.DepositPolicy, "depositType": salon.DepositType, "depositValue": salon.DepositValue,
 		"id":             salon.ID,
@@ -118,6 +119,7 @@ func UpdateSalonDetails(c *gin.Context) {
 
 	var salon db.Salon
 	var body struct {
+		ReviewsRaw    *string     `json:"reviewsRaw" binding:"omitempty,max=100000"`
 		Address       *db.Address `json:"address"`
 		Phone         *string     `json:"phone" binding:"omitempty,max=30"`
 		Instagram     *string     `json:"instagram" binding:"omitempty,max=100"`
@@ -147,6 +149,13 @@ func UpdateSalonDetails(c *gin.Context) {
 		}
 		if body.Name != nil && *body.Name != "" {
 			salon.Name = *body.Name
+		}
+		if body.ReviewsRaw != nil {
+			clean, err := validateReviews(*body.ReviewsRaw)
+			if err != nil {
+				return bookingError{400, err.Error()}
+			}
+			salon.ReviewsRaw = clean
 		}
 		if body.Address != nil {
 			salon.Address = *body.Address

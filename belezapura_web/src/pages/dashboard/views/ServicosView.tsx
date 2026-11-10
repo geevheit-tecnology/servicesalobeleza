@@ -1,3 +1,4 @@
+import { CurrencyInput, DurationInput, durationTime } from "@/components/FormattedInputs";
 import { useState, useEffect } from "react";
 import { Plus, X, Edit3, Trash2, XCircle, Scissors, Clock } from "lucide-react";
 import { Button, Badge } from "@/components/ui";
@@ -11,7 +12,7 @@ export function ServicosView() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const cats = ["Todos", "Cabelo", "Unhas", "Massagem", "Estética", "Sobrancelhas", "Maquiagem"];
+  const cats = ["Todos", "Cabelo", "Unhas", "Massagem", "Estética", "Sobrancelhas", "Maquiagem", "Bronzeamento", "Outros"];
   const [filterCat, setFilterCat] = useState("Todos");
 
   const loadServices = () => {
@@ -26,7 +27,7 @@ export function ServicosView() {
         if (d.services && Array.isArray(d.services)) {
           setServices(d.services.map((s: any) => ({
             ...s,
-            cat: s.category || "Cabelo",
+            cat: s.cat || s.category || "Outros",
             pros: ["Geral"],
             status: s.status || "active"
           })));
@@ -41,7 +42,7 @@ export function ServicosView() {
 
   const openNewForm = () => {
     setEditingId(null);
-    setFormSvc({ name: "", duration: "30", price: "", cat: "Cabelo" });
+    setFormSvc({ name: "", duration: "00:30", price: "", cat: "Cabelo" });
     setErrorMsg("");
     setShowForm(true);
   };
@@ -50,7 +51,7 @@ export function ServicosView() {
     setEditingId(svc.id);
     setFormSvc({
       name: svc.name,
-      duration: String(svc.duration || "30"),
+      duration: durationTime(Number(svc.duration) || 30),
       price: svc.price ? Number(svc.price).toFixed(2).replace(".", ",") : "",
       cat: svc.cat || "Cabelo"
     });
@@ -67,6 +68,9 @@ export function ServicosView() {
     const cleanPrice = parseCurrency(formSvc.price);
     const durationInt = parseDuration(formSvc.duration);
 
+    if (!formSvc.duration || durationInt < 1 || durationInt > 1439) {
+      setErrorMsg("Informe a duração em horas e minutos."); return;
+    }
     if (cleanPrice <= 0) {
       setErrorMsg("Informe um valor válido (ex: 50 ou 50,00).");
       return;
@@ -88,7 +92,8 @@ export function ServicosView() {
         body: JSON.stringify({
           name: formSvc.name.trim(),
           price: cleanPrice,
-          duration: durationInt
+          duration: durationInt,
+          cat: formSvc.cat
         })
       });
       const data = await res.json();
@@ -96,7 +101,7 @@ export function ServicosView() {
 
       setShowForm(false);
       setEditingId(null);
-      setFormSvc({ name: "", duration: "30", price: "", cat: "Cabelo" });
+      setFormSvc({ name: "", duration: "00:30", price: "", cat: "Cabelo" });
       loadServices();
     } catch (e: any) {
       setErrorMsg(e.message || "Erro de conexão ao salvar");
@@ -162,7 +167,7 @@ export function ServicosView() {
                 disabled={loading}
                 value={formSvc.name}
                 onChange={e => setFormSvc({ ...formSvc, name: e.target.value })}
-                placeholder="Ex: Corte Masculino, Escova, Manicure..."
+                placeholder="Ex: Alongamento, Escova, Manicure..."
                 className="w-full h-10 rounded-xl border border-border px-3 text-sm outline-none focus:border-primary bg-card"
               />
             </div>
@@ -184,7 +189,7 @@ export function ServicosView() {
               {/* Duração com atalhos e preview automático */}
               <div className="bg-muted/20 border border-border/80 rounded-xl p-3">
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
+                  <label htmlFor="service-duration" className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5 text-primary" /> Tempo de Atendimento
                   </label>
                   <span className="text-[11px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">
@@ -193,14 +198,8 @@ export function ServicosView() {
                 </div>
                 
                 <div className="relative mb-2">
-                  <input
-                    disabled={loading}
-                    type="text"
-                    value={formSvc.duration}
-                    onChange={e => setFormSvc({ ...formSvc, duration: e.target.value })}
-                    placeholder="Digite apenas o número (ex: 45 ou 1h)"
-                    className="w-full h-10 rounded-xl border border-border px-3 text-sm outline-none focus:border-primary bg-card"
-                  />
+                  <DurationInput id="service-duration" aria-label="Tempo de atendimento" disabled={loading} value={formSvc.duration} onValueChange={duration => setFormSvc({ ...formSvc, duration })} className="h-10 rounded-xl border border-border px-3 text-sm bg-card" />
+                  <p className="text-xs text-muted-foreground mt-1">Horas:minutos. Exemplo: 01:30 para uma hora e meia.</p>
                 </div>
 
                 {/* Chips rápidos de duração */}
@@ -210,7 +209,7 @@ export function ServicosView() {
                     <button
                       key={mins}
                       type="button"
-                      onClick={() => setFormSvc({ ...formSvc, duration: String(mins) })}
+                      onClick={() => setFormSvc({ ...formSvc, duration: durationTime(mins) })}
                       className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
                         parseDuration(formSvc.duration) === mins
                           ? "bg-primary text-primary-foreground font-bold shadow-xs"
@@ -236,24 +235,8 @@ export function ServicosView() {
                   )}
                 </div>
 
-                <div className="relative mb-2">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground select-none">
-                    R$
-                  </span>
-                  <input
-                    disabled={loading}
-                    type="text"
-                    value={formSvc.price}
-                    onChange={e => setFormSvc({ ...formSvc, price: e.target.value })}
-                    onBlur={() => {
-                      const num = parseCurrency(formSvc.price);
-                      if (num > 0) {
-                        setFormSvc({ ...formSvc, price: num.toFixed(2).replace(".", ",") });
-                      }
-                    }}
-                    placeholder="Digite o número (ex: 80 ou 80,00)"
-                    className="w-full h-10 rounded-xl border border-border pl-10 pr-3 text-sm outline-none focus:border-primary bg-card"
-                  />
+                <div className="mb-2">
+                  <CurrencyInput aria-label="Valor do serviço" disabled={loading} value={formSvc.price} onValueChange={price => setFormSvc({ ...formSvc, price })} placeholder="0,00" className="h-10 rounded-xl border border-border px-3 text-sm bg-card" />
                 </div>
 
                 {/* Chips rápidos de valores populares */}

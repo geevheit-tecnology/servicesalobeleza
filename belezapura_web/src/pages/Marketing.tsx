@@ -130,6 +130,10 @@ const FAQ_ITEMS = [
     a: "O painel calcula uma estimativa de comissão para cada profissional com base nos atendimentos concluídos e na porcentagem definida. O repasse financeiro é feito pelo salão fora do sistema."
   },
   {
+    q: "Como funciona a automação de WhatsApp e lembretes?",
+    a: "No plano Elite (e sob demanda no Studio), a automação de WhatsApp e o bot dependem de ativação técnica prévia e estão sujeitos à franquia mensal contratada. Em todos os planos, você pode enviar lembretes e comprovantes com 1 clique diretamente pelo WhatsApp Web ou celular, sem custo adicional."
+  },
+  {
     q: "Já tenho clientes anotados em planilhas ou cadernos. Como migrar?",
     a: "Cadastre seus clientes, serviços e profissionais diretamente pelo painel em poucos minutos. A importação automática de planilhas ainda não está disponível."
   }

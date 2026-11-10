@@ -5,17 +5,19 @@
  */
 export function parseCurrency(value: string | number | undefined | null): number {
   if (value === undefined || value === null) return 0;
-  if (typeof value === "number") return isNaN(value) ? 0 : value;
+  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
 
-  const cleaned = value
+  let cleaned = value
     .toString()
     .replace(/[R$\s]/g, "")
-    .replace(/\./g, "")
-    .replace(",", ".")
     .trim();
 
+  // Comma identifies BRL decimals; a lone dot can be a decimal from the API.
+  if (cleaned.includes(",")) cleaned = cleaned.replace(/\./g, "").replace(",", ".");
+  else if (/^-?\d{1,3}(\.\d{3})+$/.test(cleaned)) cleaned = cleaned.replace(/\./g, "");
+
   const num = parseFloat(cleaned);
-  return isNaN(num) ? 0 : num;
+  return Number.isFinite(num) ? num : 0;
 }
 
 /**

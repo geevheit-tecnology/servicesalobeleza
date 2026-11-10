@@ -497,6 +497,20 @@ export default function ClientView() {
                 ))}
               </div>
 
+              {homeTab === "sobre" && (() => {
+                let reviews: { id: string; name: string; rating: number; comment: string }[] = [];
+                try { const parsed = JSON.parse(salonData?.reviewsRaw || "[]"); if (Array.isArray(parsed)) reviews = parsed; } catch { /* No published reviews. */ }
+                return reviews.length > 0 && <section className="p-5 space-y-3" aria-label="Depoimentos publicados pelo salão">
+                  <h2 className="font-serif text-lg">Depoimentos de clientes</h2>
+                  <p className="text-xs text-muted-foreground">Depoimentos selecionados e publicados pelo salão.</p>
+                  {reviews.map(r => <article key={r.id} className="rounded-xl border border-border bg-card p-4 break-words">
+                    <h3 className="font-semibold text-sm">{r.name}</h3>
+                    <p aria-label={`${r.rating} de 5 estrelas`} className="text-amber-500">{"★".repeat(Math.max(0, Math.min(5, r.rating)))}</p>
+                    <p className="text-sm mt-2">{r.comment}</p>
+                  </article>)}
+                </section>;
+              })()}
+
               {/* ABA: SERVIÇOS (Catálogo) */}
               {homeTab === "servicos" && (
                 <div className="p-5 space-y-4">
