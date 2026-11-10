@@ -12,3 +12,6 @@ playwright-report/
 .cache/
 __pycache__/
 *.pyc
+
+# Metadados locais da CLI Supabase
+supabase/.temp/

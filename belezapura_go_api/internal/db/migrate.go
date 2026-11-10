@@ -60,11 +60,21 @@ func Migrate() error {
 }
 
 func CheckSchema() error {
-	var n int64
-	if err := DB.Raw("SELECT count(*) FROM schema_migrations WHERE version IN ('001_baseline','002_booking_integrity.sql','003_auth_provider.sql','004_onboarding_details.sql')").Scan(&n).Error; err != nil {
+	files, err := migrations.ReadDir("migrations")
+	if err != nil {
 		return err
 	}
-	if n != 4 {
+	required := []string{"001_baseline"}
+	for _, file := range files {
+		if !file.IsDir() {
+			required = append(required, file.Name())
+		}
+	}
+	var n int64
+	if err := DB.Raw("SELECT count(*) FROM schema_migrations WHERE version IN ?", required).Scan(&n).Error; err != nil {
+		return err
+	}
+	if n != int64(len(required)) {
 		return fmt.Errorf("schema desatualizado: execute go run ./cmd/migrate antes de iniciar a API")
 	}
 	return nil

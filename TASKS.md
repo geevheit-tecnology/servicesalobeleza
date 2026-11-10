@@ -1,3 +1,14 @@
+## Correção de cadastro — 09/11/2026
+
+- [x] Confirmar API Go publicada na Vercel e independente do Render.
+- [x] Reproduzir erro HTTP 500 e identificar migração 005 pendente.
+- [x] Aplicar correção aditiva no Supabase, preservando dados existentes.
+- [x] Validar cadastro HTTP 201, login e detalhes HTTP 200; remover dados sintéticos.
+- [x] Corrigir verificação local de migrações e atualizar guia operacional.
+- [ ] Publicar futuramente a prevenção `CheckSchema`; correção do cadastro já aplicada no banco.
+
+Evidências: [correção em produção](docs/validation/2026-11-09-cadastro-vercel.md). Itens Render abaixo são registros históricos, substituídos pelo destino Vercel confirmado nesta data.
+
 # Liberação comercial — 50 salões assinantes
 
 Referência: [auditoria de 04/11/2026](AUDITORIA_ASSINATURAS_50_CLIENTES.md).
