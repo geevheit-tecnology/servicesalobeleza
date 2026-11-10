@@ -312,17 +312,31 @@ func Onboarding(c *gin.Context) {
 		}
 	}
 
-	// Create subscription with exact 14 days of trial
-	trialEnds := time.Now().Add(14 * 24 * time.Hour)
+	// Create subscription respecting trial days from platform settings (default 14)
+	var settings db.SystemSettings
+	trialDays := 14
+	if err := tx.First(&settings).Error; err == nil && settings.TrialDays >= 0 {
+		trialDays = settings.TrialDays
+	}
+
+	var trialEnds *time.Time
+	subStatus := "TRIAL"
+	if trialDays > 0 {
+		ends := time.Now().Add(time.Duration(trialDays) * 24 * time.Hour)
+		trialEnds = &ends
+	} else {
+		subStatus = "LATE"
+	}
+
 	planIDToSave := selectedPlan.ID
 	planPrice := selectedPlan.Price
 
 	sub := db.Subscription{
 		SalonID:   salon.ID,
 		PlanID:    planIDToSave,
-		Status:    "TRIAL",
+		Status:    subStatus,
 		Price:     planPrice,
-		TrialEnds: &trialEnds,
+		TrialEnds: trialEnds,
 	}
 	if err := tx.Create(&sub).Error; err != nil {
 		tx.Rollback()
