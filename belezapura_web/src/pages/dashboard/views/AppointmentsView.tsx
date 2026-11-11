@@ -228,9 +228,156 @@ export function AppointmentsView({ onNewAppointment }: { onNewAppointment: () =>
         </div>
       </div>
 
-      {/* Appointments Table */}
+      {/* Appointments List - VISUALIZAÇÃO EM CARDS NO MOBILE & TABELA NO DESKTOP */}
       <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+        
+        {/* CARDS RESPONSIVOS PARA MOBILE (MD:HIDDEN) */}
+        <div className="md:hidden divide-y divide-border/60">
+          {filteredData.length === 0 ? (
+            <div className="p-8 text-center text-sm text-muted-foreground">
+              <Calendar className="w-10 h-10 mx-auto mb-2 opacity-40" />
+              Nenhum agendamento encontrado com os filtros atuais.
+            </div>
+          ) : (
+            filteredData.map(a => (
+              <div key={a.id} className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <Avatar name={a.client} size="sm" />
+                    <div className="min-w-0">
+                      <span className="text-sm font-bold text-foreground block truncate">{a.client}</span>
+                      {a.clientPhone && <span className="text-[11px] text-muted-foreground block truncate">{a.clientPhone}</span>}
+                    </div>
+                  </div>
+                  <Badge variant={a.status === "confirmed" ? "success" : a.status === "done" ? "info" : a.status === "waiting" ? "warning" : "danger"} className="shrink-0 text-[10px]">
+                    {statusLabel[a.status] || a.status}
+                  </Badge>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs bg-muted/30 p-2.5 rounded-xl">
+                  <div>
+                    <span className="text-[10px] text-muted-foreground block">Serviço / Profissional</span>
+                    <span className="font-semibold text-foreground truncate block">{a.service}</span>
+                    <span className="text-[11px] text-muted-foreground truncate block">{a.pro}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] text-muted-foreground block">Data / Horário</span>
+                    <span className="font-bold text-primary block">{a.date}</span>
+                    <span className="text-[11px] text-muted-foreground block">{a.time} • {a.value}</span>
+                  </div>
+                </div>
+
+                {/* Ações Mobile */}
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  {/* Botão de Disparo WhatsApp Mobile */}
+                  <div className="relative flex-1">
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        setOpenMenuId(null);
+                        setOpenAlertMenuId(openAlertMenuId === `m-${a.id}` ? null : `m-${a.id}`);
+                      }}
+                      className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold transition-colors cursor-pointer"
+                    >
+                      <MessageCircle className="w-4 h-4" /> Alertar WhatsApp
+                    </button>
+
+                    {/* Menu Mobile de Alertas */}
+                    {openAlertMenuId === `m-${a.id}` && (
+                      <div
+                        className="absolute left-0 bottom-11 w-full bg-card border border-border rounded-xl shadow-2xl py-1.5 z-50 text-left animate-in fade-in zoom-in-95"
+                        onClick={e => e.stopPropagation()}
+                      >
+                        <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border mb-1">
+                          Enviar Alerta WhatsApp
+                        </div>
+                        <button
+                          onClick={() => handleWhatsAppAlert(a, "confirm")}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                        >
+                          <CheckCheck className="w-3.5 h-3.5 shrink-0" />
+                          <span>Confirmar Vaga & Pagamento</span>
+                        </button>
+                        <button
+                          onClick={() => handleWhatsAppAlert(a, "reminder24h")}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-950/30"
+                        >
+                          <Clock className="w-3.5 h-3.5 shrink-0" />
+                          <span>Lembrete 24h antes</span>
+                        </button>
+                        <button
+                          onClick={() => handleWhatsAppAlert(a, "reminder2h")}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                        >
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                          <span>Lembrete 2h (Confirmar Horário)</span>
+                        </button>
+                        <button
+                          onClick={() => handleWhatsAppAlert(a, "post")}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950/30"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                          <span>Agradecimento & Avaliação</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Menu de Alterar Status Mobile */}
+                  <div className="relative">
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        setOpenAlertMenuId(null);
+                        setOpenMenuId(openMenuId === `m-${a.id}` ? null : `m-${a.id}`);
+                      }}
+                      className="p-2 rounded-xl bg-muted/60 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                      title="Opções"
+                    >
+                      <MoreHorizontal className="w-4 h-4" />
+                    </button>
+
+                    {openMenuId === `m-${a.id}` && (
+                      <div
+                        className="absolute right-0 bottom-11 w-48 bg-card border border-border rounded-xl shadow-2xl py-1 z-50 text-left animate-in fade-in zoom-in-95"
+                        onClick={e => e.stopPropagation()}
+                      >
+                        <button
+                          onClick={() => handleStatusChange(a.id, "confirmed")}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-emerald-600 hover:bg-emerald-50 transition-colors"
+                        >
+                          <Check className="w-3.5 h-3.5" /> Confirmar
+                        </button>
+                        <button
+                          onClick={() => handleStatusChange(a.id, "done")}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-sky-600 hover:bg-sky-50 transition-colors"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Concluir
+                        </button>
+                        <button
+                          onClick={() => handleStatusChange(a.id, "cancelled")}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-amber-600 hover:bg-amber-50 transition-colors"
+                        >
+                          <X className="w-3.5 h-3.5" /> Cancelar
+                        </button>
+                        <div className="border-t border-border my-1" />
+                        <button
+                          onClick={() => handleDelete(a.id, a.client)}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> Excluir
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* TABELA NO DESKTOP / TABLET (HIDDEN MD:BLOCK) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left min-w-[750px]">
             <thead>
               <tr className="border-b border-border bg-muted/30 text-xs font-semibold text-muted-foreground">

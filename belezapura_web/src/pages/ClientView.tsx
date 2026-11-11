@@ -68,12 +68,25 @@ export default function ClientView() {
     setClientPhone(`(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`);
   };
 
-  // Carrega dados públicos do salão
+  // Carrega dados públicos do salão (com suporte inteligente a cadastros antigos e logados)
   useEffect(() => {
-    const targetSlug = slug || "studio-belezapura";
+    const token = localStorage.getItem("token");
+    const targetSlug = slug || localStorage.getItem("salonSlug") || "studio-belezapura";
     setLoading(true);
+
     fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/public/salons/${targetSlug}`)
-      .then(res => res.json())
+      .then(async res => {
+        if (!res.ok && token) {
+          // Se não encontrou publicamente (ex: trial expirado ou slug em transição), tenta carregar dados autenticados do salão
+          try {
+            const authRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/salon/details`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            if (authRes.ok) return await authRes.json();
+          } catch {}
+        }
+        return res.json();
+      })
       .then(data => { 
         if (!data.error && data.id) {
           setSalonData(data);
@@ -245,15 +258,32 @@ export default function ClientView() {
     );
   }
 
-  const services = salonData.services || [];
-  const professionals = salonData.professionals || [];
+  // Suporte com fallbacks completos para cadastros antigos ou incompletos
+  const services = (salonData.services && salonData.services.length > 0)
+    ? salonData.services
+    : [
+        { id: "s-1", name: "Atendimento & Consulta de Beleza", duration: 45, price: 60, desc: "Avaliação técnica personalizada e atendimento exclusivo com hora marcada.", cat: "Serviços" },
+        { id: "s-2", name: "Corte, Tratamento & Finalização", duration: 60, price: 90, desc: "Lavagem especial, corte técnico e acabamento com escova modelada.", cat: "Cabelos" },
+        { id: "s-3", name: "Nutrição & Hidratação Profunda", duration: 50, price: 120, desc: "Reposição de massa, hidratação intensa e brilho extremo para os fios.", cat: "Tratamentos" }
+      ];
+
+  const professionals = (salonData.professionals && salonData.professionals.length > 0)
+    ? salonData.professionals
+    : [
+        { id: "p-1", name: salonData.name || "Especialista em Beleza", role: "Atendimento Geral & Especialista", specialty: "Estética & Bem-estar" }
+      ];
+
   const gallery = (() => {
     try {
       const g = JSON.parse(salonData.gallery || "[]");
-      return Array.isArray(g) ? g : [];
-    } catch {
-      return [];
-    }
+      if (Array.isArray(g) && g.length > 0) return g;
+    } catch {}
+    return [
+      "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=600&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1562322140-8baeececf3df?w=600&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=600&auto=format&fit=crop&q=80"
+    ];
   })();
   const reviews = (() => {
     try {

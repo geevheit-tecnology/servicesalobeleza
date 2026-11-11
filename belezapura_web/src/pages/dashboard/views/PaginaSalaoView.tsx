@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { 
   Globe, Eye, Copy, Share2, Upload, Plus, X, Sparkles, Check, 
-  MapPin, Scissors, Image as ImageIcon, CheckCircle2, Loader2, Camera 
+  MapPin, Scissors, Image as ImageIcon, CheckCircle2, Loader2, Camera,
+  Clock, ShieldCheck, Award, MessageCircle, Star, ExternalLink, ArrowRight
 } from "lucide-react";
 import { Button, Badge } from "@/components/ui";
 import { optimizeImage, PRESETS } from "@/utils/imageOptimizer";
@@ -324,18 +325,23 @@ export function PaginaSalaoView() {
           </div>
         </div>
 
-        {/* Live Preview Column */}
+        {/* Live Preview Column - LANDING PAGE REAL DO SALÃO */}
         <div className="lg:col-span-5 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Pré-visualização em tempo real
-            </span>
+            <div>
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
+                Pré-visualização da Landing Page
+              </span>
+              <span className="text-[11px] text-muted-foreground">
+                Atualização em tempo real conforme você edita
+              </span>
+            </div>
             <div className="flex items-center gap-1 bg-secondary rounded-lg p-1 text-xs">
               {(["desktop", "mobile"] as const).map(t => (
                 <button
                   key={t}
                   onClick={() => setTab(t)}
-                  className={`px-3 py-1 rounded-md transition-all font-medium capitalize ${tab === t ? "bg-card shadow text-foreground" : "text-muted-foreground"}`}
+                  className={`px-3 py-1 rounded-md transition-all font-medium capitalize cursor-pointer ${tab === t ? "bg-card shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}
                 >
                   {t}
                 </button>
@@ -343,70 +349,232 @@ export function PaginaSalaoView() {
             </div>
           </div>
 
-          {/* Smartphone Simulator */}
-          <div className={`bg-white rounded-3xl overflow-hidden border border-border shadow-xl mx-auto ${tab === "mobile" ? "max-w-[310px]" : "w-full"}`}>
-            {/* Header com Capa Real ou Gradiente */}
-            <div className="relative h-44 bg-zinc-900 text-white overflow-hidden flex flex-col justify-end p-4">
-              {cover ? (
-                <img src={cover} alt="Capa" className="absolute inset-0 w-full h-full object-cover" />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center text-white/30" style={{ background: `linear-gradient(135deg, ${mainColor}, #18181b)` }}>
-                  <Sparkles className="w-10 h-10 opacity-40" />
-                </div>
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-              
-              <div className="relative z-10 flex items-center gap-3">
-                {logo ? (
-                  <img src={logo} alt="Logo" className="w-12 h-12 rounded-xl object-contain bg-white shadow-md border-2 border-white" />
-                ) : (
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center font-serif text-lg font-bold text-white shadow-md border-2 border-white" style={{ background: mainColor }}>
-                    {name ? name.slice(0, 2).toUpperCase() : "SL"}
-                  </div>
-                )}
-                <div>
-                  <h4 className="font-bold text-base leading-tight drop-shadow">{name || "Seu Salão"}</h4>
-                  <p className="text-[11px] opacity-80 flex items-center gap-1 mt-0.5">
-                    <MapPin className="w-3 h-3" /> Centro • 5.0 ★
-                  </p>
-                </div>
-              </div>
+          {/* Link público com botão direto */}
+          <div className="p-3 bg-primary/5 border border-primary/20 rounded-xl flex items-center justify-between gap-2 text-xs">
+            <div className="truncate min-w-0">
+              <span className="text-muted-foreground text-[10px] block font-medium">Link Oficial do Seu Salão</span>
+              <span className="font-bold text-primary truncate block">{publicUrl}</span>
             </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => window.open(publicUrl, "_blank")}
+              className="shrink-0 h-8 text-xs gap-1 cursor-pointer"
+            >
+              <Eye className="w-3.5 h-3.5" /> Abrir Site
+            </Button>
+          </div>
 
-            {/* Content Simulator */}
-            <div className="p-4 bg-[#FAFAFA] space-y-3">
-              <div className="flex justify-around border-b border-border/60 pb-2 text-xs font-semibold text-gray-500">
-                <span className="text-gray-900 border-b-2 pb-1" style={{ borderColor: mainColor }}>Serviços</span>
-                <span>Equipe</span>
-                <span>Fotos</span>
-              </div>
+          {/* SIMULADOR LANDING PAGE: DESKTOP & MOBILE */}
+          {(() => {
+            const previewServices = (salonData?.services && salonData.services.length > 0) ? salonData.services : [
+              { id: "1", name: "Corte & Modelagem", duration: 45, price: 70, desc: "Lavagem, corte personalizado e finalização com escova." },
+              { id: "2", name: "Tratamento & Hidratação", duration: 60, price: 120, desc: "Nutrição profunda e brilho intenso para os fios." },
+              { id: "3", name: "Design & Estética", duration: 30, price: 50, desc: "Realce do olhar com alinhamento e acabamento impecável." }
+            ];
 
-              <div className="space-y-2">
-                {["Corte & Estilo", "Coloração & Mechas", "Manicure & Pedicure"].map((svcName, i) => (
-                  <div key={i} className="p-2.5 bg-white rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white" style={{ background: mainColor }}>
-                        <Scissors className="w-4 h-4" />
+            const previewPros = (salonData?.professionals && salonData.professionals.length > 0) ? salonData.professionals : [
+              { id: "1", name: "Especialista Principal", role: "Atendimento Exclusivo" }
+            ];
+
+            return (
+              <div className={`transition-all duration-300 mx-auto ${tab === "mobile" ? "max-w-[340px]" : "w-full"}`}>
+                <div className="bg-background rounded-3xl overflow-hidden border border-border shadow-2xl flex flex-col h-[650px] relative">
+                  
+                  {/* Topo do Navegador no Simulador */}
+                  <div className="h-8 bg-muted/80 border-b border-border flex items-center px-3 gap-1.5 shrink-0 select-none">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                    <span className="text-[10px] text-muted-foreground ml-2 truncate">
+                      {publicUrl.replace(/^https?:\/\//, '')}
+                    </span>
+                  </div>
+
+                  {/* Conteúdo com rolagem da Landing Page */}
+                  <div className="flex-1 overflow-y-auto scrollbar-hide text-foreground">
+                    
+                    {/* 1. Header / Navbar da Landing Page */}
+                    <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border p-3 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        {logo ? (
+                          <img src={logo} alt="Logo" className="w-7 h-7 rounded-lg object-contain bg-white border border-border shrink-0" />
+                        ) : (
+                          <div className="w-7 h-7 rounded-lg flex items-center justify-center font-serif text-xs font-bold text-white shrink-0" style={{ background: mainColor }}>
+                            {name ? name.slice(0, 2).toUpperCase() : "SL"}
+                          </div>
+                        )}
+                        <span className="font-serif text-xs font-bold truncate">{name || "Seu Salão"}</span>
                       </div>
-                      <div>
-                        <span className="text-xs font-bold text-gray-800 block">{svcName}</span>
-                        <span className="text-[10px] text-gray-400">45 min</span>
+                      <span className="text-[9px] font-bold text-white px-2 py-1 rounded-lg shrink-0 cursor-pointer" style={{ background: mainColor }} onClick={() => window.open(publicUrl, "_blank")}>
+                        Agendar Horário
+                      </span>
+                    </div>
+
+                    {/* 2. Hero Section com Capa Real ou Gradiente */}
+                    <div className="relative h-44 sm:h-52 bg-zinc-900 text-white overflow-hidden flex flex-col justify-end p-4">
+                      {cover ? (
+                        <img src={cover} alt="Capa" className="absolute inset-0 w-full h-full object-cover" />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-white/30" style={{ background: `linear-gradient(135deg, ${mainColor}, #18181b)` }}>
+                          <Sparkles className="w-10 h-10 opacity-40 animate-pulse" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                      
+                      <div className="relative z-10 space-y-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="bg-white/20 text-white text-[9px] font-semibold px-2 py-0.5 rounded-md backdrop-blur-xs flex items-center gap-1">
+                            <Sparkles className="w-2.5 h-2.5 text-amber-300" /> Salão Verificado
+                          </span>
+                          <span className="bg-amber-500/20 text-amber-300 text-[9px] font-bold px-1.5 py-0.5 rounded-md border border-amber-500/30">
+                            ★ 5.0
+                          </span>
+                        </div>
+                        <h2 className="font-serif text-lg sm:text-xl font-bold text-white leading-tight drop-shadow truncate">
+                          {name || "Seu Salão / Estúdio"}
+                        </h2>
+                        <p className="text-[11px] text-zinc-300 flex items-center gap-1 truncate">
+                          <MapPin className="w-3 h-3 text-primary shrink-0" /> Atendimento exclusivo com hora marcada
+                        </p>
                       </div>
                     </div>
-                    <span className="text-xs font-bold text-gray-900">R$ {60 + i * 40}</span>
-                  </div>
-                ))}
-              </div>
 
-              <button 
-                onClick={() => window.open(publicUrl, "_blank")}
-                className="w-full py-2.5 rounded-xl text-white text-xs font-bold shadow-md hover:brightness-110 transition-all flex items-center justify-center gap-1.5"
-                style={{ background: mainColor }}
-              >
-                <Sparkles className="w-3.5 h-3.5" /> Testar Agendamento Real
-              </button>
-            </div>
-          </div>
+                    {/* 3. Faixa de Diferenciais e Garantias */}
+                    <div className="p-3 bg-card border-b border-border grid grid-cols-2 gap-2 text-left">
+                      <div className="p-2 rounded-xl bg-muted/40 border border-border/60 flex items-center gap-2">
+                        <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
+                        <div className="min-w-0">
+                          <span className="text-[10px] font-bold block truncate">Sem Espera</span>
+                          <span className="text-[9px] text-muted-foreground block truncate">Hora marcada</span>
+                        </div>
+                      </div>
+                      <div className="p-2 rounded-xl bg-muted/40 border border-border/60 flex items-center gap-2">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                        <div className="min-w-0">
+                          <span className="text-[10px] font-bold block truncate">Vaga Garantida</span>
+                          <span className="text-[9px] text-muted-foreground block truncate">Reserva anti-furo</span>
+                        </div>
+                      </div>
+                      <div className="p-2 rounded-xl bg-muted/40 border border-border/60 flex items-center gap-2">
+                        <Award className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                        <div className="min-w-0">
+                          <span className="text-[10px] font-bold block truncate">Especialistas</span>
+                          <span className="text-[9px] text-muted-foreground block truncate">Equipe top</span>
+                        </div>
+                      </div>
+                      <div className="p-2 rounded-xl bg-muted/40 border border-border/60 flex items-center gap-2">
+                        <MessageCircle className="w-3.5 h-3.5 text-sky-500 shrink-0" />
+                        <div className="min-w-0">
+                          <span className="text-[10px] font-bold block truncate">Alerta no Zap</span>
+                          <span className="text-[9px] text-muted-foreground block truncate">Lembrete de horário</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 4. Catálogo de Procedimentos */}
+                    <div className="p-3.5 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-serif text-xs font-bold block">Procedimentos Disponíveis</span>
+                          <span className="text-[10px] text-muted-foreground">Escolha para agendar online</span>
+                        </div>
+                        <span className="text-[10px] text-primary font-semibold">
+                          {previewServices.length} {previewServices.length === 1 ? 'opção' : 'opções'}
+                        </span>
+                      </div>
+
+                      <div className="space-y-2">
+                        {previewServices.map((svc: any) => (
+                          <div 
+                            key={svc.id}
+                            className="p-3 rounded-2xl bg-card border border-border hover:border-primary/50 transition-all flex items-center justify-between gap-2 shadow-xs"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <span className="font-serif text-xs font-bold block truncate text-foreground">{svc.name}</span>
+                              {svc.desc && <p className="text-[10px] text-muted-foreground truncate">{svc.desc}</p>}
+                              <span className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                                <Clock className="w-2.5 h-2.5" /> {svc.duration || 45} min
+                              </span>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className="text-xs font-extrabold text-foreground block">
+                                R$ {Number(svc.price || 0).toFixed(2).replace('.', ',')}
+                              </span>
+                              <button 
+                                onClick={() => window.open(publicUrl, "_blank")}
+                                className="mt-1 px-2.5 py-1 rounded-lg text-[10px] font-bold text-white shadow-xs hover:opacity-90 transition-all cursor-pointer"
+                                style={{ background: mainColor }}
+                              >
+                                Agendar
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* 5. Equipe */}
+                    {previewPros.length > 0 && (
+                      <div className="p-3.5 bg-card/60 border-t border-border space-y-2">
+                        <span className="font-serif text-xs font-bold block">Nossa Equipe</span>
+                        <div className="grid grid-cols-1 gap-2">
+                          {previewPros.map((pro: any) => (
+                            <div key={pro.id} className="p-2.5 rounded-xl bg-background border border-border flex items-center gap-2.5">
+                              {pro.avatar ? (
+                                <img src={pro.avatar} alt={pro.name} className="w-8 h-8 rounded-full object-cover shrink-0" />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0" style={{ background: mainColor }}>
+                                  {pro.name.slice(0, 2).toUpperCase()}
+                                </div>
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <span className="text-xs font-bold block truncate">{pro.name}</span>
+                                <span className="text-[10px] text-muted-foreground block truncate">{pro.role || pro.specialty || "Especialista"}</span>
+                              </div>
+                              <span className="text-[10px] text-amber-500 font-semibold shrink-0">★ 5.0</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 6. Horários & Localização */}
+                    <div className="p-3.5 border-t border-border space-y-2 text-xs">
+                      <span className="font-serif text-xs font-bold block flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-primary" /> Horários & Regras
+                      </span>
+                      <p className="text-[11px] text-muted-foreground leading-relaxed">
+                        • Segunda a Sábado: 09:00 às 19:00<br />
+                        • Domingo: Fechado<br />
+                        • Atendimento com hora marcada e confirmação via WhatsApp.
+                      </p>
+                    </div>
+
+                    <div className="h-14" /> {/* Espaço para a barra inferior no mobile */}
+                  </div>
+
+                  {/* Barra Fixa Inferior no Mobile do Simulador */}
+                  <div className="absolute bottom-0 left-0 right-0 p-2.5 bg-background/95 backdrop-blur-md border-t border-border flex items-center justify-between gap-2 z-30">
+                    <div className="min-w-0 flex-1">
+                      <span className="font-serif text-[11px] font-bold block truncate">{name || "Seu Salão"}</span>
+                      <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                        <Sparkles className="w-2.5 h-2.5" /> Agenda Online Aberta
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => window.open(publicUrl, "_blank")}
+                      className="px-3.5 py-1.5 rounded-xl text-[10px] font-extrabold text-white shadow-md cursor-pointer hover:opacity-90 shrink-0"
+                      style={{ background: mainColor }}
+                    >
+                      Agendar Horário
+                    </button>
+                  </div>
+
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </div>
     </div>
