@@ -35,7 +35,7 @@ export function NovoAgendamentoModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-card border border-border rounded-2xl shadow-sm hover:shadow-md transition-shadow shadow-2xl w-full max-w-md">
+      <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-md max-h-[92vh] overflow-y-auto">
         <div className="flex items-center justify-between p-5 border-b border-border">
           <div>
             <h3 className="font-semibold">Novo agendamento</h3>

@@ -52,6 +52,7 @@ export default function App() {
           <Route path="/superadmin" element={<SuperAdmin />} />
           <Route path="/onboarding" element={<Onboarding onFinish={() => {}} />} />
           <Route path="/agendar/:slug" element={<ClientView />} />
+          <Route path="/s/:slug" element={<ClientView />} />
           <Route path="/app" element={<ClientView />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

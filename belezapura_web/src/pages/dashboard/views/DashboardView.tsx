@@ -16,13 +16,13 @@ export function DashboardView({ onNewAppointment }: { onNewAppointment: () => vo
   }, []);
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-4 sm:p-6 space-y-5 sm:space-y-6 max-w-[1600px] mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="font-serif text-2xl font-medium">Painel de Controle ✨</h1>
-          <p className="text-muted-foreground text-sm">{new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+          <p className="text-muted-foreground text-xs sm:text-sm">{new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
         </div>
-        <Button size="sm" onClick={onNewAppointment}><Plus className="w-4 h-4" /> Novo agendamento</Button>
+        <Button size="sm" onClick={onNewAppointment} className="w-full sm:w-auto"><Plus className="w-4 h-4" /> Novo agendamento</Button>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">

@@ -353,9 +353,9 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
         <p className="text-muted-foreground text-lg mb-2">
           Seu salão está pronto para receber agendamentos.
         </p>
-        <div className="flex items-center gap-2 bg-secondary border border-border rounded-xl px-4 py-2 mb-8 text-sm font-mono">
-          <Globe className="w-4 h-4 text-primary" />
-          <span className="text-primary font-semibold">{window.location.origin}/agendar/{localStorage.getItem('salonSlug') || salonName.toLowerCase().replace(/\s/g, "-")}</span>
+        <div className="flex items-center gap-2 bg-secondary border border-border rounded-xl px-4 py-2 mb-8 text-sm font-mono max-w-full overflow-hidden">
+          <Globe className="w-4 h-4 text-primary shrink-0" />
+          <span className="text-primary font-semibold break-all text-xs sm:text-sm">{window.location.origin}/agendar/{localStorage.getItem('salonSlug') || salonName.toLowerCase().replace(/\s/g, "-")}</span>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 mb-8">
           <Button size="lg" onClick={() => navigate(`/agendar/${localStorage.getItem('salonSlug') || salonName.toLowerCase().replace(/\s/g, "-")}`)}>
@@ -778,12 +778,12 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
 
             <div>
               <label className="text-sm font-medium block mb-2">Tipo de chave PIX</label>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
                 {["CPF", "CNPJ", "E-mail", "Celular", "Aleatória"].map(t => (
                   <button
                     key={t}
                     onClick={() => setPixType(t.toLowerCase())}
-                    className={`py-2.5 rounded-xl text-sm font-medium border transition-all ${pixType === t.toLowerCase() ? "bg-primary text-primary-foreground border-primary" : "border-border hover:border-primary/30 bg-card"}`}
+                    className={`py-2 sm:py-2.5 px-2 rounded-xl text-xs sm:text-sm font-medium border transition-all text-center ${pixType === t.toLowerCase() ? "bg-primary text-primary-foreground border-primary" : "border-border hover:border-primary/30 bg-card"}`}
                   >
                     {t}
                   </button>
@@ -887,7 +887,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
               </div>
 
               {/* Seletor rápido de planos */}
-              <div className="grid grid-cols-3 gap-2 p-1.5 bg-muted/60 rounded-2xl border border-border">
+              <div className="grid grid-cols-3 gap-1.5 sm:gap-2 p-1.5 bg-muted/60 rounded-2xl border border-border">
                 {planCatalog.map(p => (
                   <button
                     key={p.id}
@@ -899,8 +899,8 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
                         : "text-muted-foreground hover:text-foreground text-xs"
                     }`}
                   >
-                    <div className="text-xs sm:text-sm leading-tight">{p.name}</div>
-                    <div className="text-[11px] font-mono text-primary font-semibold">{p.price}</div>
+                    <div className="text-[11px] sm:text-sm font-semibold truncate leading-tight">{p.name}</div>
+                    <div className="text-[10px] sm:text-[11px] font-mono text-primary font-bold mt-0.5">{p.price}</div>
                   </button>
                 ))}
               </div>

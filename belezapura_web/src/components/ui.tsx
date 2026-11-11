@@ -11,7 +11,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 export function Button({ variant = "primary", size = "md", className, children, ...props }: ButtonProps) {
-  const base = "inline-flex items-center justify-center gap-2 font-medium transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+  const base = "inline-flex items-center justify-center gap-2 font-medium text-center leading-snug max-w-full transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
   const variants = {
     primary: "bg-primary text-primary-foreground hover:brightness-110 shadow-sm",
     secondary: "bg-secondary text-secondary-foreground hover:bg-muted border border-border",
@@ -20,9 +20,9 @@ export function Button({ variant = "primary", size = "md", className, children, 
     danger: "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100",
   };
   const sizes = {
-    sm: "h-8 px-3 text-sm rounded-md",
-    md: "h-10 px-4 text-sm rounded-lg",
-    lg: "h-12 px-6 text-base rounded-xl",
+    sm: "min-h-8 py-1.5 px-3 text-xs sm:text-sm rounded-md",
+    md: "min-h-10 py-2 px-4 text-sm rounded-lg",
+    lg: "min-h-12 py-2.5 px-5 sm:px-6 text-sm sm:text-base rounded-xl",
   };
   return (
     <button className={cn(base, variants[variant], sizes[size], className)} {...props}>
@@ -64,7 +64,7 @@ export function Avatar({ src, name, size = "md", className }: AvatarProps) {
   const colors = ["bg-rose-100 text-rose-700", "bg-violet-100 text-violet-700", "bg-amber-100 text-amber-700", "bg-teal-100 text-teal-700", "bg-sky-100 text-sky-700"];
   const color = colors[name.charCodeAt(0) % colors.length];
   if (src) {
-    return <img src={src} alt={name} className={cn("rounded-full object-cover", sizes[size], className)} />;
+    return <img src={src} alt={name} className={cn("rounded-full object-cover shrink-0", sizes[size], className)} />;
   }
   return (
     <div className={cn("rounded-full flex items-center justify-center font-semibold shrink-0", sizes[size], color, className)}>

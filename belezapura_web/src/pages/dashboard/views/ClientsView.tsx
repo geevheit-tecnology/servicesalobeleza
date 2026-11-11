@@ -107,12 +107,12 @@ export function ClientsView() {
 
   return (
     <div className="p-6 space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="font-serif text-2xl font-medium">CRM e Fidelização</h1>
           <p className="text-sm text-muted-foreground mt-1">Gestão de carteira, pontos e campanhas</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={() => setShowCampaign(true)}>
             <MessageCircle className="w-4 h-4 mr-2 text-emerald-500" />
             Nova Campanha Zap
@@ -121,10 +121,12 @@ export function ClientsView() {
         </div>
       </div>
 
-      <div className="flex items-center gap-3 bg-card border border-border rounded-2xl shadow-sm hover:shadow-md transition-shadow p-4">
-        <Search className="w-4 h-4 text-muted-foreground" />
-        <input placeholder="Buscar cliente por nome ou telefone..." className="bg-transparent outline-none text-sm flex-1 placeholder:text-muted-foreground" />
-        <div className="flex gap-2 border-l border-border pl-3">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-3 bg-card border border-border rounded-2xl shadow-sm hover:shadow-md transition-shadow p-3.5 sm:p-4">
+        <div className="flex items-center gap-2.5 flex-1 min-w-0">
+          <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+          <input placeholder="Buscar cliente por nome ou telefone..." className="bg-transparent outline-none text-sm flex-1 min-w-0 placeholder:text-muted-foreground" />
+        </div>
+        <div className="flex gap-2 sm:border-l border-border sm:pl-3 pt-1 sm:pt-0">
           <Badge variant="outline" className="cursor-pointer hover:bg-muted">VIP</Badge>
           <Badge variant="outline" className="cursor-pointer hover:bg-muted text-amber-600 border-amber-200">Em Risco (30d+)</Badge>
         </div>
@@ -161,45 +163,47 @@ export function ClientsView() {
           )}
           
           <div className="bg-card border border-border rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border bg-muted/40">
-                  {["Cliente", "Telefone", "Último atend.", "Total gasto", "Pontos", "Status", ""].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {data.map((c: any) => (
-                  <tr key={c.id} onClick={() => setSelected(c)} className={`border-b border-border last:border-0 hover:bg-muted/30 cursor-pointer transition-colors ${selected?.id === c.id ? 'bg-primary/5' : ''}`}>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <Avatar name={c.name} size="sm" />
-                        <div>
-                          <div className="text-sm font-medium">{c.name}</div>
-                          {c.tags.map((t: string) => <Badge key={t} variant="purple" className="text-[10px] mr-1 mt-0.5">{t}</Badge>)}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">{c.phone || "Não informado"}</td>
-                    <td className="px-4 py-3 text-sm">{c.lastVisit}</td>
-                    <td className="px-4 py-3 text-sm font-medium">{c.total}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1.5 text-sm font-semibold text-amber-500">
-                        <Star className="w-3.5 h-3.5 fill-amber-500" />
-                        {c.pontos}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge variant={c.status === "inactive" ? "danger" : "success"}>{c.status === "inactive" ? "Inativo" : "Ativo"}</Badge>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <button className="p-1.5 rounded-lg hover:bg-muted"><ChevronRight className="w-4 h-4 text-muted-foreground" /></button>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border bg-muted/40">
+                    {["Cliente", "Telefone", "Último atend.", "Total gasto", "Pontos", "Status", ""].map(h => (
+                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{h}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {data.map((c: any) => (
+                    <tr key={c.id} onClick={() => setSelected(c)} className={`border-b border-border last:border-0 hover:bg-muted/30 cursor-pointer transition-colors ${selected?.id === c.id ? 'bg-primary/5' : ''}`}>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <Avatar name={c.name} size="sm" />
+                          <div>
+                            <div className="text-sm font-medium">{c.name}</div>
+                            {c.tags.map((t: string) => <Badge key={t} variant="purple" className="text-[10px] mr-1 mt-0.5">{t}</Badge>)}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-muted-foreground whitespace-nowrap">{c.phone || "Não informado"}</td>
+                      <td className="px-4 py-3 text-sm whitespace-nowrap">{c.lastVisit}</td>
+                      <td className="px-4 py-3 text-sm font-medium whitespace-nowrap">{c.total}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 text-sm font-semibold text-amber-500">
+                          <Star className="w-3.5 h-3.5 fill-amber-500" />
+                          {c.pontos}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <Badge variant={c.status === "inactive" ? "danger" : "success"}>{c.status === "inactive" ? "Inativo" : "Ativo"}</Badge>
+                      </td>
+                      <td className="px-4 py-3 text-right whitespace-nowrap">
+                        <button className="p-1.5 rounded-lg hover:bg-muted"><ChevronRight className="w-4 h-4 text-muted-foreground" /></button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
@@ -259,8 +263,8 @@ export function ClientsView() {
       </div>
 
       {showCampaign && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in" onClick={() => setShowCampaign(false)}>
-          <div className="w-[500px] bg-card rounded-2xl shadow-2xl p-6 border border-border animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in" onClick={() => setShowCampaign(false)}>
+          <div className="w-full max-w-lg bg-card rounded-2xl shadow-2xl p-5 sm:p-6 border border-border animate-in zoom-in-95 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg"><MessageCircle className="w-5 h-5" /></div>

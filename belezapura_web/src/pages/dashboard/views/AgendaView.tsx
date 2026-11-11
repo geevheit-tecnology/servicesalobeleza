@@ -223,7 +223,9 @@ export function AgendaView({ onNewAppointment }: { onNewAppointment: () => void 
       {/* Main Grid View */}
       {view === "dia" && (
         <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
-          {/* Header row with professionals */}
+          <div className="overflow-x-auto">
+            <div className="min-w-fit">
+              {/* Header row with professionals */}
           <div
             className="grid border-b border-border bg-muted/30 sticky top-0 z-10"
             style={{
@@ -307,6 +309,8 @@ export function AgendaView({ onNewAppointment }: { onNewAppointment: () => void 
                 })}
               </div>
             ))}
+          </div>
+            </div>
           </div>
         </div>
       )}

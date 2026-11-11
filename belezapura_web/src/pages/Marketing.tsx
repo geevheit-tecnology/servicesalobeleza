@@ -313,13 +313,13 @@ export default function Marketing() {
               <Button 
                 size="lg" 
                 onClick={() => navigate("/onboarding?planId=studio")} 
-                className="btn-sheen h-14 sm:h-16 px-8 bg-[#111827] hover:bg-[#1F2937] text-white font-bold text-base sm:text-lg rounded-2xl shadow-xl shadow-[#111827]/15 hover-lift justify-center"
+                className="btn-sheen min-h-14 sm:min-h-16 py-3.5 px-6 sm:px-8 bg-[#111827] hover:bg-[#1F2937] text-white font-bold text-base sm:text-lg rounded-2xl shadow-xl shadow-[#111827]/15 hover-lift justify-center"
               >
                 Testar 14 dias grátis <ArrowRight className="w-5 h-5 ml-2 text-[#E5A991]" />
               </Button>
               <a 
                 href="#demonstracao"
-                className="inline-flex items-center justify-center h-14 sm:h-16 px-6 rounded-2xl border border-[#E5E7EB] bg-white hover:bg-stone-50 text-[#111827] font-semibold text-base transition-all shadow-xs hover-lift gap-2"
+                className="inline-flex items-center justify-center min-h-14 sm:min-h-16 py-3.5 px-6 rounded-2xl border border-[#E5E7EB] bg-white hover:bg-stone-50 text-[#111827] font-semibold text-base transition-all shadow-xs hover-lift gap-2 text-center"
               >
                 <Play className="w-4 h-4 text-[#111827] fill-[#111827]" /> Ver como a cliente agenda
               </a>
@@ -715,7 +715,7 @@ export default function Marketing() {
 
             <button 
               onClick={() => navigate("/onboarding?planId=studio")} 
-              className="w-full h-13 bg-[#E5A991] hover:bg-[#D89981] text-[#111827] font-extrabold text-base rounded-xl shadow-lg hover-lift justify-center flex items-center cursor-pointer transition-all"
+              className="w-full min-h-12 py-3 px-4 bg-[#E5A991] hover:bg-[#D89981] text-[#111827] font-extrabold text-base rounded-xl shadow-lg hover-lift justify-center flex items-center cursor-pointer transition-all"
             >
               Testar 14 dias grátis &rarr;
             </button>

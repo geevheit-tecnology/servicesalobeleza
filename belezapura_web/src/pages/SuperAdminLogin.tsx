@@ -108,7 +108,7 @@ export default function SuperAdminLogin() {
           <p className="text-stone-500 mt-2 text-center text-sm">Gestão Executiva da Plataforma BelezaPura</p>
         </div>
 
-        <div className="bg-card border border-border rounded-3xl p-8 shadow-xl">
+        <div className="bg-card border border-border rounded-3xl p-5 sm:p-8 shadow-xl">
           <form onSubmit={handleLogin} className="space-y-5">
             {error && (
               <div className="p-3 bg-red-50 text-red-600 text-sm rounded-xl border border-red-100 text-center animate-in fade-in">

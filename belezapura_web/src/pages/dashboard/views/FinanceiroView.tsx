@@ -80,8 +80,11 @@ export function FinanceiroView() {
   }, [transactions]);
 
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="font-serif text-2xl font-medium">Painel Financeiro</h1>
+    <div className="p-4 sm:p-6 space-y-5 sm:space-y-6 max-w-[1600px] mx-auto">
+      <div>
+        <h1 className="font-serif text-2xl font-medium">Painel Financeiro</h1>
+        <p className="text-xs text-muted-foreground mt-0.5">Visão consolidada de receitas e meios de pagamento</p>
+      </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard
@@ -124,19 +127,19 @@ export function FinanceiroView() {
           ) : (
             <div className="space-y-2">
               {transactions.map((m, i) => (
-                <div key={i} className="flex items-center justify-between p-3 bg-secondary rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm bg-emerald-100 text-emerald-600">
+                <div key={i} className="flex items-center justify-between gap-3 p-3 bg-secondary rounded-xl">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm bg-emerald-100 text-emerald-600 shrink-0">
                       ↑
                     </div>
-                    <div>
-                      <div className="font-medium text-sm">{m.desc}</div>
-                      <div className="text-xs text-muted-foreground">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium text-sm truncate">{m.desc}</div>
+                      <div className="text-xs text-muted-foreground truncate">
                         {m.date} · {m.method} · {m.status === "done" ? "Concluído" : m.status === "confirmed" ? "Confirmado" : "Pendente"}
                       </div>
                     </div>
                   </div>
-                  <span className="font-semibold text-sm text-emerald-600">+{m.value}</span>
+                  <span className="font-semibold text-sm text-emerald-600 shrink-0">+{m.value}</span>
                 </div>
               ))}
             </div>

@@ -67,21 +67,21 @@ function StatCard({ label, value, sub, icon: Icon, trend, color = "primary" }: {
     rose: "bg-rose-100 text-rose-600",
   };
   return (
-    <div className="bg-card border border-border rounded-2xl shadow-sm hover:shadow-md transition-shadow p-5">
-      <div className="flex items-start justify-between mb-3">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colors[color] || colors.primary}`}>
-          <Icon className="w-5 h-5" />
+    <div className="bg-card border border-border rounded-2xl shadow-sm hover:shadow-md transition-shadow p-3.5 sm:p-5 min-w-0">
+      <div className="flex items-start justify-between mb-2 sm:mb-3">
+        <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 ${colors[color] || colors.primary}`}>
+          <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
         </div>
         {trend !== undefined && (
-          <span className={`text-xs font-medium flex items-center gap-0.5 ${trend >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+          <span className={`text-[11px] sm:text-xs font-medium flex items-center gap-0.5 shrink-0 ${trend >= 0 ? "text-emerald-600" : "text-red-500"}`}>
             {trend >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
             {Math.abs(trend)}%
           </span>
         )}
       </div>
-      <div className="font-serif text-2xl font-medium">{value}</div>
-      <div className="text-muted-foreground text-xs mt-1">{label}</div>
-      {sub && <div className="text-xs text-muted-foreground mt-0.5">{sub}</div>}
+      <div className="font-serif text-lg sm:text-2xl font-medium truncate" title={value}>{value}</div>
+      <div className="text-muted-foreground text-xs mt-1 truncate">{label}</div>
+      {sub && <div className="text-xs text-muted-foreground mt-0.5 truncate">{sub}</div>}
     </div>
   );
 }

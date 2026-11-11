@@ -254,25 +254,25 @@ export default function SalonDashboard() {
         </nav>
 
         <div className="p-3 border-t border-border">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mb-2">
             <Avatar name={userName.split(' (')[0]} size="sm" />
             <div className="min-w-0 flex-1">
               <div className="text-xs font-medium truncate">{userName.split(' (')[0]}</div>
               <div className="text-xs text-muted-foreground">{getRoleLabel()}</div>
             </div>
-            <button 
-              onClick={() => {
-                localStorage.removeItem("token");
-                localStorage.removeItem("role");
-                localStorage.removeItem("userName");
-                window.location.reload();
-              }}
-              className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 transition-colors"
-              title="Sair"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
           </div>
+          <button 
+            onClick={() => {
+              localStorage.removeItem("token");
+              localStorage.removeItem("role");
+              localStorage.removeItem("userName");
+              navigate("/login", { replace: true });
+            }}
+            className="w-full flex items-center justify-center gap-2 p-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold transition-colors cursor-pointer border border-red-200"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Sair da conta</span>
+          </button>
         </div>
       </aside>
 
@@ -410,6 +410,19 @@ export default function SalonDashboard() {
               <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full" />
             </button>
             <Avatar name={userName.split(' (')[0]} size="sm" />
+            <button
+              onClick={() => {
+                localStorage.removeItem("token");
+                localStorage.removeItem("role");
+                localStorage.removeItem("userName");
+                navigate("/login", { replace: true });
+              }}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-red-50 text-red-500 hover:text-red-600 text-xs font-semibold transition-colors cursor-pointer border border-transparent hover:border-red-200"
+              title="Sair da conta"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="hidden sm:inline">Sair</span>
+            </button>
           </div>
         </header>
 

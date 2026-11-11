@@ -77,7 +77,7 @@ export function AvaliacoesView() {
       : "—";
 
   return (
-    <div className="p-4 sm:p-6 space-y-4">
+    <div className="p-4 sm:p-6 space-y-5 max-w-5xl mx-auto">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-serif text-2xl font-medium">Mural de Avaliações</h1>

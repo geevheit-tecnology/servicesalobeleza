@@ -84,7 +84,7 @@ export function ChatbotWhatsAppView() {
   };
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 max-w-5xl">
+    <div className="p-4 sm:p-6 space-y-6 max-w-5xl mx-auto">
       {/* Header com distinção explícita entre Configuração e Conexão Efetiva */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
         <div>
@@ -120,10 +120,10 @@ export function ChatbotWhatsAppView() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-border">
+      <div className="flex gap-2 border-b border-border overflow-x-auto whitespace-nowrap scrollbar-hide">
         <button
           onClick={() => setActiveTab("connection")}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer ${
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer shrink-0 ${
             activeTab === "connection"
               ? "border-primary text-primary font-semibold"
               : "border-transparent text-muted-foreground hover:text-foreground"
@@ -133,7 +133,7 @@ export function ChatbotWhatsAppView() {
         </button>
         <button
           onClick={() => setActiveTab("automations")}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer ${
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer shrink-0 ${
             activeTab === "automations"
               ? "border-primary text-primary font-semibold"
               : "border-transparent text-muted-foreground hover:text-foreground"
@@ -143,7 +143,7 @@ export function ChatbotWhatsAppView() {
         </button>
         <button
           onClick={() => setActiveTab("templates")}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer ${
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer shrink-0 ${
             activeTab === "templates"
               ? "border-primary text-primary font-semibold"
               : "border-transparent text-muted-foreground hover:text-foreground"

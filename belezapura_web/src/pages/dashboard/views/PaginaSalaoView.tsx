@@ -129,7 +129,7 @@ export function PaginaSalaoView() {
   const publicUrl = `${window.location.origin}/agendar/${slug}`;
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="p-4 sm:p-6 space-y-5 max-w-[1600px] mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="font-serif text-2xl font-medium">Página do Salão</h1>
@@ -137,7 +137,7 @@ export function PaginaSalaoView() {
             Personalize a foto de capa, logo, galeria e cores que seus clientes veem no celular.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button 
             variant="outline" 
             size="sm"

@@ -94,13 +94,16 @@ export function RelatoriosView() {
   }, [pros, validAppts]);
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="font-serif text-2xl font-medium">Relatórios de Desempenho</h1>
+    <div className="p-4 sm:p-6 space-y-5 sm:space-y-6 max-w-[1600px] mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h1 className="font-serif text-2xl font-medium">Relatórios de Desempenho</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">Métricas de faturamento, cancelamentos e produtividade</p>
+        </div>
         <select
           value={period}
           onChange={e => setPeriod(e.target.value)}
-          className="h-9 px-3 rounded-lg border border-border bg-card text-sm outline-none focus:border-primary"
+          className="h-10 px-3 rounded-xl border border-border bg-card text-xs sm:text-sm outline-none focus:border-primary self-start sm:self-auto"
         >
           <option value="mes_atual">Mês Atual</option>
           <option value="mes_anterior">Mês Anterior</option>
