@@ -54,6 +54,9 @@ export function AgendaView({ onNewAppointment }: { onNewAppointment: () => void 
 
   useEffect(() => {
     loadData();
+    const onUpdated = () => loadData();
+    window.addEventListener("belezapura:appointments-updated", onUpdated);
+    return () => window.removeEventListener("belezapura:appointments-updated", onUpdated);
   }, []);
 
   // Format header date

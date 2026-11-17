@@ -108,11 +108,12 @@ const CORE_BENEFITS = [
 ];
 
 // FAQs Oficiais BelezaPura
-const FAQ_ITEMS = [
-  {
-    q: "Como funciona a demonstração gratuita de 14 dias?",
-    a: "Você tem 14 dias para testar os recursos disponíveis no período de avaliação com suas clientes. Você cadastra seus serviços, equipe e chave Pix. Sem cartão de crédito e sem taxas de adesão."
-  },
+function getFaqItems(trialDays: number) {
+  return [
+    {
+      q: `Como funciona a demonstração gratuita de ${trialDays} dias?`,
+      a: `Você tem ${trialDays} dias para testar os recursos disponíveis no período de avaliação com suas clientes. Você cadastra seus serviços, equipe e chave Pix. Sem cartão de crédito e sem taxas de adesão.`
+    },
   {
     q: "Para onde vai o dinheiro do sinal cobrado no Pix?",
     a: "O valor do sinal vai 100% diretamente para a sua chave Pix bancária cadastrada. O BelezaPura não retém seu dinheiro e não cobra porcentagem sobre o agendamento. Você confere o recebimento no seu aplicativo bancário e confirma a reserva no painel."
@@ -137,11 +138,14 @@ const FAQ_ITEMS = [
     q: "Já tenho clientes anotados em planilhas ou cadernos. Como migrar?",
     a: "Cadastre seus clientes, serviços e profissionais diretamente pelo painel em poucos minutos. A importação automática de planilhas ainda não está disponível."
   }
-];
+  ];
+}
 
 export default function Marketing() {
   const navigate = useNavigate();
   const [mobileMenu, setMobileMenu] = useState(false);
+  const [trialDays, setTrialDays] = useState<number>(14);
+  const faqItems = getFaqItems(trialDays);
   
   // Ciclo de cobrança (Mensal vs Anual)
   
@@ -195,7 +199,7 @@ export default function Marketing() {
       {/* Top Banner Elegante Preto Profundo */}
       <div className="relative z-50 bg-[#111827] text-white py-2.5 px-4 text-center text-xs md:text-sm font-medium tracking-wide flex items-center justify-center gap-2 shadow-xs">
         <Sparkles className="w-4 h-4 text-[#E5A991]" />
-        <span>14 dias grátis, sem cartão. Você testa com suas clientes de verdade.</span>
+        <span>{trialDays} dias grátis, sem cartão. Você testa com suas clientes de verdade.</span>
         <button 
           onClick={() => navigate("/onboarding?planId=studio")}
           className="underline font-bold text-[#E5A991] hover:text-white cursor-pointer ml-1 hidden sm:inline"
@@ -246,7 +250,7 @@ export default function Marketing() {
               onClick={() => navigate("/onboarding?planId=studio")} 
               className="bg-[#111827] hover:bg-[#1F2937] text-white font-bold shadow-md shadow-[#111827]/15 hover-lift rounded-xl px-5"
             >
-              Testar 14 dias grátis <ArrowRight className="w-4 h-4 ml-1 text-[#E5A991]" />
+              Testar {trialDays} dias grátis <ArrowRight className="w-4 h-4 ml-1 text-[#E5A991]" />
             </Button>
           </div>
 
@@ -281,7 +285,7 @@ export default function Marketing() {
                 className="w-full justify-center bg-[#111827] hover:bg-[#1F2937] text-white font-bold h-12 shadow-md" 
                 onClick={() => { setMobileMenu(false); navigate("/onboarding?planId=studio"); }}
               >
-                Testar 14 dias grátis
+                Testar {trialDays} dias grátis
               </Button>
             </div>
           </div>
@@ -315,7 +319,7 @@ export default function Marketing() {
                 onClick={() => navigate("/onboarding?planId=studio")} 
                 className="btn-sheen min-h-14 sm:min-h-16 py-3.5 px-6 sm:px-8 bg-[#111827] hover:bg-[#1F2937] text-white font-bold text-base sm:text-lg rounded-2xl shadow-xl shadow-[#111827]/15 hover-lift justify-center"
               >
-                Testar 14 dias grátis <ArrowRight className="w-5 h-5 ml-2 text-[#E5A991]" />
+                Testar {trialDays} dias grátis <ArrowRight className="w-5 h-5 ml-2 text-[#E5A991]" />
               </Button>
               <a 
                 href="#demonstracao"
@@ -328,7 +332,7 @@ export default function Marketing() {
             {/* Guarantees */}
             <div className="flex flex-wrap items-center gap-y-2 gap-x-5 text-xs sm:text-sm text-[#4B5563] font-medium">
               <span className="flex items-center gap-1.5 text-[#111827]">
-                <Check className="w-4 h-4 text-emerald-700 stroke-[3]" /> 14 dias sem custo
+                <Check className="w-4 h-4 text-emerald-700 stroke-[3]" /> {trialDays} dias sem custo
               </span>
               <span className="flex items-center gap-1.5 text-[#111827]">
                 <Check className="w-4 h-4 text-emerald-700 stroke-[3]" /> Sem taxa de adesão
@@ -489,7 +493,7 @@ export default function Marketing() {
           </div>
 
           <div className="flex flex-col items-center">
-            <span className="font-serif text-3xl sm:text-4xl font-extrabold text-[#9C5A42] tracking-tight">14 Dias</span>
+            <span className="font-serif text-3xl sm:text-4xl font-extrabold text-[#9C5A42] tracking-tight">{trialDays} Dias</span>
             <span className="text-[#6B7280] text-xs sm:text-sm font-medium mt-1">
               Demonstração gratuita sem burocracia
             </span>
@@ -717,7 +721,7 @@ export default function Marketing() {
               onClick={() => navigate("/onboarding?planId=studio")} 
               className="w-full min-h-12 py-3 px-4 bg-[#E5A991] hover:bg-[#D89981] text-[#111827] font-extrabold text-base rounded-xl shadow-lg hover-lift justify-center flex items-center cursor-pointer transition-all"
             >
-              Testar 14 dias grátis &rarr;
+              Testar {trialDays} dias grátis &rarr;
             </button>
 
           </div>
@@ -726,7 +730,7 @@ export default function Marketing() {
       </section>
 
       {/* Planos Oficiais BelezaPura */}
-      <PlanCatalog />
+      <PlanCatalog onTrialDaysLoaded={setTrialDays} />
 
       {/* FAQ */}
       <section id="faq" className="relative z-10 py-24 max-w-4xl mx-auto px-5">
@@ -743,7 +747,7 @@ export default function Marketing() {
         </div>
 
         <div className="space-y-3.5">
-          {FAQ_ITEMS.map((item, index) => {
+          {faqItems.map((item, index) => {
             const isOpen = openFaq === index;
             return (
               <div 
@@ -773,7 +777,7 @@ export default function Marketing() {
       <section className="relative z-10 py-24 overflow-hidden border-t border-[#E5E7EB] bg-gradient-to-b from-[#FAFAFA] to-[#F3F4F6]">
         <div className="max-w-4xl mx-auto px-5 text-center relative z-10">
           <Badge className="bg-[#E5A991]/20 text-[#9C5A42] border border-[#E5A991]/40 font-bold mb-6 text-sm py-1.5 px-4">
-            🚀 14 dias grátis, sem cartão
+            🚀 {trialDays} dias grátis, sem cartão
           </Badge>
 
           <h2 className="font-serif text-4xl sm:text-6xl font-bold tracking-tight text-[#111827] mb-6 leading-tight">
@@ -790,7 +794,7 @@ export default function Marketing() {
               onClick={() => navigate("/onboarding?planId=studio")} 
               className="h-16 px-10 bg-[#111827] hover:bg-[#1F2937] text-white font-extrabold text-lg rounded-2xl shadow-xl shadow-[#111827]/25 hover:scale-105 transition-transform"
             >
-              Testar 14 dias grátis <ArrowRight className="w-5 h-5 ml-2 text-[#E5A991]" />
+              Testar {trialDays} dias grátis <ArrowRight className="w-5 h-5 ml-2 text-[#E5A991]" />
             </Button>
           </div>
 

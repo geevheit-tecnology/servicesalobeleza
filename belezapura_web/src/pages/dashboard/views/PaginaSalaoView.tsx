@@ -377,6 +377,16 @@ export function PaginaSalaoView() {
               { id: "1", name: "Especialista Principal", role: "Atendimento Exclusivo" }
             ];
 
+            const previewSchedule = (() => {
+              if (!salonData?.scheduleRaw) return [];
+              try {
+                const parsed = JSON.parse(salonData.scheduleRaw);
+                return Array.isArray(parsed) ? parsed : [];
+              } catch {
+                return [];
+              }
+            })();
+
             return (
               <div className={`transition-all duration-300 mx-auto ${tab === "mobile" ? "max-w-[340px]" : "w-full"}`}>
                 <div className="bg-background rounded-3xl overflow-hidden border border-border shadow-2xl flex flex-col h-[650px] relative">
@@ -544,11 +554,21 @@ export function PaginaSalaoView() {
                       <span className="font-serif text-xs font-bold block flex items-center gap-1.5">
                         <Clock className="w-3.5 h-3.5 text-primary" /> Horários & Regras
                       </span>
-                      <p className="text-[11px] text-muted-foreground leading-relaxed">
-                        • Segunda a Sábado: 09:00 às 19:00<br />
-                        • Domingo: Fechado<br />
-                        • Atendimento com hora marcada e confirmação via WhatsApp.
-                      </p>
+                      <div className="text-[11px] text-muted-foreground leading-relaxed space-y-0.5">
+                        {previewSchedule.length > 0 ? (
+                          previewSchedule.map((d: any) => (
+                            <div key={d.day}>
+                              • {d.day}: {d.open !== false ? `${d.start || "09:00"} às ${d.end || "19:00"}` : "Fechado"}
+                            </div>
+                          ))
+                        ) : (
+                          <>
+                            <div>• Segunda a Sábado: 09:00 às 19:00</div>
+                            <div>• Domingo: Fechado</div>
+                          </>
+                        )}
+                        <div>• Atendimento com hora marcada e confirmação via WhatsApp.</div>
+                      </div>
                     </div>
 
                     <div className="h-14" /> {/* Espaço para a barra inferior no mobile */}

@@ -41,4 +41,13 @@ func TestScheduleAndBlockedDate(t *testing.T) {
 	if _, _, err := scheduleFor(s, date.AddDate(0, 0, 1)); err == nil {
 		t.Fatal("unconfigured weekday allowed")
 	}
+	// Empty timezone, blocked dates, and schedule fall back safely instead of failing.
+	fallback := db.Salon{Timezone: "", BlockedDates: "", ScheduleRaw: "[]"}
+	start, end, err = scheduleFor(fallback, date)
+	if err != nil || start.Hour() != 9 || end.Hour() != 19 {
+		t.Fatalf("fallback schedule failed: %v %v %v", start, end, err)
+	}
+	if _, _, err := scheduleFor(fallback, date.AddDate(0, 0, -1)); err == nil {
+		t.Fatal("default Sunday should be closed")
+	}
 }

@@ -1,6 +1,6 @@
-import { CurrencyInput, DurationInput } from "@/components/FormattedInputs";
+import { CurrencyInput, DurationInput, durationTime } from "@/components/FormattedInputs";
 import { formatCurrency, parseCurrency, parseDuration, formatDurationDisplay } from "@/utils/formatters";
-import { planFeatures } from "@/components/PlanCatalog";
+import { planFeatures, extractTrialDays } from "@/components/PlanCatalog";
 import { api } from "@/lib/api";
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
@@ -103,7 +103,7 @@ const defaultSchedule = [
   { day: "Quinta", open: true, start: "09:00", end: "19:00" },
   { day: "Sexta", open: true, start: "09:00", end: "19:00" },
   { day: "Sábado", open: true, start: "09:00", end: "17:00" },
-  { day: "Domingo", open: false, start: "—", end: "—" },
+  { day: "Domingo", open: false, start: "09:00", end: "13:00" },
 ];
 
 function StepIndicator({ current }: { current: number }) {
@@ -172,11 +172,14 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
   });
 
   const [planCatalog, setPlanCatalog] = useState<typeof ONBOARDING_PLANS>([]);
+  const [trialDays, setTrialDays] = useState<number>(14);
   const [catalogLoaded, setCatalogLoaded] = useState(false);
   const [catalogError, setCatalogError] = useState("");
   useEffect(() => { api<any[]>("/public/plans").then(plans => {
     if (!Array.isArray(plans) || plans.length === 0) throw new Error("Não há planos disponíveis. Entre em contato antes de iniciar o cadastro.");
-    setPlanCatalog(plans.map(p => ({ ...p, period: "/mês", price: Number(p.price).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }), desc: "Assinatura mensal com conferência manual", features: planFeatures(p) })));
+    const td = extractTrialDays(plans);
+    setTrialDays(td);
+    setPlanCatalog(plans.map(p => ({ ...p, period: "/mês", price: Number(p.price).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }), desc: "Assinatura mensal com conferência manual", features: planFeatures(p, td) })));
     setSelectedPlanId(current => (plans.find(p => p.id === current || p.name.toLowerCase() === current) || plans[0]).id);
     setCatalogLoaded(true);
   }).catch(error => setCatalogError(error.message)); }, []);
@@ -199,7 +202,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
 
   const [newServiceName, setNewServiceName] = useState("");
   const [newServiceCat, setNewServiceCat] = useState("Cabelo");
-  const [newServiceDur, setNewServiceDur] = useState("");
+  const [newServiceDur, setNewServiceDur] = useState("00:45");
   const [newServicePrice, setNewServicePrice] = useState("");
 
   const [newProName, setNewProName] = useState("");
@@ -682,16 +685,41 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
                 </select>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
-                <label className="text-xs font-medium space-y-1"><span>Duração (horas:minutos)</span><DurationInput value={newServiceDur} onValueChange={setNewServiceDur} aria-label="Duração do serviço" className="h-10 rounded-lg border border-border px-3 text-sm bg-card" /></label>
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-medium">Duração (horas:minutos)</span>
+                    <span className="text-[11px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">
+                      {formatDurationDisplay(newServiceDur)}
+                    </span>
+                  </div>
+                  <DurationInput value={newServiceDur} onValueChange={setNewServiceDur} aria-label="Duração do serviço" className="h-10 rounded-lg border border-border px-3 text-sm bg-card" />
+                </div>
                 <label className="text-xs font-medium space-y-1"><span>Preço do serviço</span><CurrencyInput value={newServicePrice} onValueChange={setNewServicePrice} aria-label="Preço do serviço" placeholder="0,00" className="h-10 rounded-lg border border-border px-3 text-sm bg-card" /></label>
                 <Button size="sm" className="h-10" onClick={() => {
                   if (newServiceName.trim() && parseCurrency(newServicePrice) > 0 && parseDuration(newServiceDur) > 0 && newServiceDur) {
                     setServices(prev => [...prev, { name: newServiceName, cat: newServiceCat, duration: newServiceDur, price: parseCurrency(newServicePrice).toFixed(2).replace(".", ","), active: true }]);
                     setNewServiceName("");
-                    setNewServiceDur("");
+                    setNewServiceDur("00:45");
                     setNewServicePrice("");
                   }
                 }}>Adicionar</Button>
+              </div>
+              <div className="flex items-center gap-1.5 flex-wrap mt-2.5">
+                <span className="text-[10px] text-muted-foreground mr-1">Duração rápida:</span>
+                {[30, 45, 60, 90, 120].map(mins => (
+                  <button
+                    key={mins}
+                    type="button"
+                    onClick={() => setNewServiceDur(durationTime(mins))}
+                    className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
+                      parseDuration(newServiceDur) === mins
+                        ? "bg-primary text-primary-foreground font-bold shadow-xs"
+                        : "bg-card border border-border text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {mins < 60 ? `${mins}m` : mins === 60 ? "1h" : mins === 90 ? "1h30" : "2h"}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
@@ -744,12 +772,16 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
             {schedule.map((s, i) => (
               <div key={s.day} className="flex flex-wrap items-center gap-3 p-3 bg-card border border-border rounded-xl">
                 <button
+                  type="button"
                   onClick={() => setSchedule(prev => prev.map((d, j) => j === i ? { ...d, open: !d.open } : d))}
                   className={`shrink-0 w-10 h-5 rounded-full transition-all relative ${s.open ? "bg-primary" : "bg-muted"}`}
                 >
                   <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${s.open ? "left-5" : "left-0.5"}`} />
                 </button>
                 <span className={`text-sm font-medium w-20 ${s.open ? "text-foreground" : "text-muted-foreground"}`}>{s.day}</span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${s.open ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-rose-500/10 text-rose-500"}`}>
+                  {s.open ? "Aberto" : "Fechado"}
+                </span>
                 {s.open ? (
                   <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 w-full sm:w-auto sm:ml-auto">
                     <input type="time" aria-label={`Abertura ${s.day}`} value={s.start} onChange={e => setSchedule(prev => prev.map((d, j) => j === i ? { ...d, start: e.target.value } : d))} className="w-full min-w-0 h-10 px-2 rounded-lg border border-border text-sm bg-card" />
@@ -757,7 +789,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
                     <input type="time" aria-label={`Fechamento ${s.day}`} value={s.end} onChange={e => setSchedule(prev => prev.map((d, j) => j === i ? { ...d, end: e.target.value } : d))} className="w-full min-w-0 h-10 px-2 rounded-lg border border-border text-sm bg-card" />
                   </div>
                 ) : (
-                  <span className="ml-auto text-xs text-muted-foreground">Fechado</span>
+                  <span className="ml-auto text-xs text-muted-foreground">Sem atendimento neste dia</span>
                 )}
               </div>
             ))}
@@ -880,9 +912,9 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-2">
                   <Sparkles className="w-3.5 h-3.5" /> Setup quase finalizado
                 </div>
-                <h3 className="font-bold text-2xl tracking-tight text-foreground">Comece seus 14 dias grátis</h3>
+                <h3 className="font-bold text-2xl tracking-tight text-foreground">Comece seus {trialDays} dias grátis</h3>
                 <p className="text-muted-foreground text-xs sm:text-sm max-w-md mx-auto mt-1">
-                  Teste os recursos disponíveis no seu plano por 14 dias, sem cartão. Para continuar, solicite a assinatura e aguarde a conferência manual do pagamento.
+                  Teste os recursos disponíveis no seu plano por {trialDays} dias, sem cartão. Para continuar, solicite a assinatura e aguarde a conferência manual do pagamento.
                 </p>
               </div>
 
@@ -927,7 +959,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
 
                 <div className="mb-4">
                   <div className="inline-flex items-center gap-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-bold py-1 px-3 rounded-lg">
-                    🎁 14 Dias de Demonstração Gratuita Inclusos
+                    🎁 {trialDays} Dias de Demonstração Gratuita Inclusos
                   </div>
                   <p className="text-[11px] text-muted-foreground mt-1.5">
                     Assinatura de {currentPlan.price} por mês, somente se você solicitar e o administrador confirmar o pagamento. Sem débito automático.
@@ -945,7 +977,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
               </div>
 
               <div className="bg-card rounded-2xl p-5 border space-y-3">
-                <h3 className="font-semibold">14 dias para testar, sem cartão</h3>
+                <h3 className="font-semibold">{trialDays} dias para testar, sem cartão</h3>
                 <p className="text-sm text-muted-foreground">Ao concluir, seu salão inicia o período gratuito. A assinatura é solicitada no painel e liberada após a conferência manual do pagamento pelo administrador. Não há débito automático.</p>
                 {paymentError && <p role="alert" className="text-red-600">{paymentError}</p>}
               </div>

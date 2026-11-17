@@ -1,21 +1,24 @@
 package handler
 
 import (
-	"belezapura_go_api/internal/db"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgconn"
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 	"math"
 	"net/http"
 	"net/mail"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+
+	"belezapura_go_api/internal/db"
+
 	_ "time/tzdata"
 )
 
@@ -48,7 +51,24 @@ type workingDay struct {
 
 var weekdayNames = []string{"Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"}
 
-func salonLocation(s db.Salon) (*time.Location, error) { return time.LoadLocation(s.Timezone) }
+func salonLocation(s db.Salon) (*time.Location, error) {
+	tz := strings.TrimSpace(s.Timezone)
+	if tz == "" {
+		tz = "America/Sao_Paulo"
+	}
+	return time.LoadLocation(tz)
+}
+
+var defaultWorkingSchedule = []workingDay{
+	{Day: "Segunda", Open: true, Start: "09:00", End: "19:00"},
+	{Day: "Terça", Open: true, Start: "09:00", End: "19:00"},
+	{Day: "Quarta", Open: true, Start: "09:00", End: "19:00"},
+	{Day: "Quinta", Open: true, Start: "09:00", End: "19:00"},
+	{Day: "Sexta", Open: true, Start: "09:00", End: "19:00"},
+	{Day: "Sábado", Open: true, Start: "09:00", End: "19:00"},
+	{Day: "Domingo", Open: false, Start: "09:00", End: "13:00"},
+}
+
 func scheduleFor(s db.Salon, date time.Time) (time.Time, time.Time, error) {
 	loc, err := salonLocation(s)
 	if err != nil {
@@ -56,8 +76,10 @@ func scheduleFor(s db.Salon, date time.Time) (time.Time, time.Time, error) {
 	}
 	d := date.In(loc)
 	var blocks []string
-	if err := json.Unmarshal([]byte(s.BlockedDates), &blocks); err != nil {
-		return time.Time{}, time.Time{}, err
+	if strings.TrimSpace(s.BlockedDates) != "" {
+		if err := json.Unmarshal([]byte(s.BlockedDates), &blocks); err != nil {
+			return time.Time{}, time.Time{}, err
+		}
 	}
 	for _, b := range blocks {
 		if b == d.Format("2006-01-02") {
@@ -65,7 +87,10 @@ func scheduleFor(s db.Salon, date time.Time) (time.Time, time.Time, error) {
 		}
 	}
 	var schedule []workingDay
-	if err := json.Unmarshal([]byte(s.ScheduleRaw), &schedule); err != nil {
+	rawSchedule := strings.TrimSpace(s.ScheduleRaw)
+	if rawSchedule == "" || rawSchedule == "[]" {
+		schedule = defaultWorkingSchedule
+	} else if err := json.Unmarshal([]byte(rawSchedule), &schedule); err != nil {
 		return time.Time{}, time.Time{}, bookingError{409, "Configure o horário de funcionamento antes de agendar."}
 	}
 	for _, day := range schedule {

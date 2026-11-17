@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { 
   ArrowLeft, MapPin, Search, ChevronLeft, ChevronRight, Check, Copy, 
   Scissors, Sparkles, User, Calendar, Clock, ShieldCheck, CheckCircle2, 
@@ -8,11 +8,10 @@ import {
 } from "lucide-react";
 import { Button, Badge } from "@/components/ui";
 
-type BookingStep = "home" | "booking" | "data" | "pix" | "confirm";
+type BookingStep = "home" | "booking" | "data" | "pix" | "confirm" | "exit";
 
 export default function ClientView() {
   const { slug } = useParams();
-  const navigate = useNavigate();
 
   const [salonData, setSalonData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -159,6 +158,17 @@ export default function ClientView() {
   }, [salonData]);
 
   // Horários de funcionamento do salão
+  const normalizeDayPrefix = (val: string) =>
+    String(val || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .slice(0, 3);
+
+  const formatDateYMD = (date: Date) =>
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+
   const salonSchedule = useMemo(() => {
     if (!salonData?.scheduleRaw) return [];
     try {
@@ -169,24 +179,61 @@ export default function ClientView() {
     }
   }, [salonData?.scheduleRaw]);
 
-  // Verifica se o dia é aberto no salão
+  const blockedDates = useMemo<string[]>(() => {
+    if (!salonData?.blockedDates) return [];
+    try {
+      const parsed = JSON.parse(salonData.blockedDates);
+      return Array.isArray(parsed) ? parsed.map(String) : [];
+    } catch {
+      return [];
+    }
+  }, [salonData?.blockedDates]);
+
+  // Verifica se o dia é aberto no salão e não está bloqueado
   const isDayOpen = (date: Date) => {
+    if (blockedDates.includes(formatDateYMD(date))) return false;
     if (salonSchedule.length === 0) return true;
     const weekDaysPt = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
-    const dayName = weekDaysPt[date.getDay()];
-    const dayConfig = salonSchedule.find((s: any) => s.day?.toLowerCase().startsWith(dayName.toLowerCase()));
+    const dayPrefix = normalizeDayPrefix(weekDaysPt[date.getDay()]);
+    const dayConfig = salonSchedule.find((s: any) => normalizeDayPrefix(s.day) === dayPrefix);
     if (dayConfig) {
       return dayConfig.open !== false;
     }
     return true;
   };
 
+  // Verifica se o expediente de hoje já encerrou considerando a duração do serviço
+  const isTodayPastClosing = (date: Date) => {
+    const now = new Date();
+    if (
+      date.getFullYear() !== now.getFullYear() ||
+      date.getMonth() !== now.getMonth() ||
+      date.getDate() !== now.getDate()
+    ) {
+      return false;
+    }
+    const weekDaysPt = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+    const dayPrefix = normalizeDayPrefix(weekDaysPt[date.getDay()]);
+    const dayConfig = salonSchedule.find((s: any) => normalizeDayPrefix(s.day) === dayPrefix);
+    if (dayConfig && dayConfig.open === false) return true;
+    const endStr = dayConfig?.end || "19:00";
+    const [endH, endM] = String(endStr).split(":").map(Number);
+    if (Number.isNaN(endH) || Number.isNaN(endM)) return false;
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    const endMinutes = endH * 60 + endM;
+    const duration = Number(selectedService?.duration) || 30;
+    return nowMinutes + duration > endMinutes;
+  };
+
   // Verifica se o salão está aberto agora
   const openStatus = useMemo(() => {
     const now = new Date();
+    if (blockedDates.includes(formatDateYMD(now))) {
+      return { isOpen: false, text: "Fechado hoje" };
+    }
     const weekDaysPt = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
-    const todayName = weekDaysPt[now.getDay()];
-    const dayConfig = salonSchedule.find((s: any) => s.day?.toLowerCase().startsWith(todayName.toLowerCase()));
+    const todayPrefix = normalizeDayPrefix(weekDaysPt[now.getDay()]);
+    const dayConfig = salonSchedule.find((s: any) => normalizeDayPrefix(s.day) === todayPrefix);
 
     if (!dayConfig || dayConfig.open === false) {
       return { isOpen: false, text: "Fechado hoje" };
@@ -204,7 +251,7 @@ export default function ClientView() {
       return { isOpen: true, text: `Aberto hoje até às ${end}` };
     }
     return { isOpen: false, text: `Fechado no momento • Abre às ${start}` };
-  }, [salonSchedule]);
+  }, [salonSchedule, blockedDates]);
 
   // Verifica se a data já passou (ontem ou antes)
   const isPastDate = (date: Date) => {
@@ -215,17 +262,108 @@ export default function ClientView() {
     return target < today;
   };
 
+  // Cálculos do Calendário
+  const changeMonth = (offset: number) => {
+    const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + offset, 1);
+    const today = new Date();
+    const minMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    if (newDate < minMonth) return;
+    setCurrentDate(newDate);
+  };
+
+  const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
+
+  const calendarDays = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const isCurrentMonth = year === today.getFullYear() && month === today.getMonth();
+    const days = [];
+    const weekDays = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
+    const monthsStr = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
+
+    if (isCurrentMonth) {
+      for (let i = 0; i < 30; i++) {
+        const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
+        const isPast = isPastDate(date);
+        const isOpen = isDayOpen(date);
+        const isTodayClosed = isTodayPastClosing(date);
+        days.push({
+          dateObj: date,
+          day: date.getDate(),
+          weekStr: weekDays[date.getDay()],
+          monthStr: monthsStr[date.getMonth()],
+          isPast,
+          isOpen,
+          isTodayClosed,
+          disabled: isPast || !isOpen || isTodayClosed
+        });
+      }
+      return days;
+    }
+
+    const daysCount = getDaysInMonth(year, month);
+    for (let i = 1; i <= daysCount; i++) {
+      const date = new Date(year, month, i);
+      const isPast = isPastDate(date);
+      const isOpen = isDayOpen(date);
+      const isTodayClosed = isTodayPastClosing(date);
+      days.push({
+        dateObj: date,
+        day: i,
+        weekStr: weekDays[date.getDay()],
+        monthStr: monthsStr[month],
+        isPast,
+        isOpen,
+        isTodayClosed,
+        disabled: isPast || !isOpen || isTodayClosed
+      });
+    }
+    return days;
+  }, [currentDate, salonSchedule, blockedDates, selectedService]);
+
+  const nextAvailableDay = useMemo(() => {
+    if (!selectedDate) return calendarDays.find(d => !d.disabled) || null;
+    const selectedDayStart = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate()).getTime();
+    return calendarDays.find(d => !d.disabled && d.dateObj.getTime() > selectedDayStart) || null;
+  }, [calendarDays, selectedDate]);
+
+  // Garante profissional padrão e seleciona automaticamente a primeira data disponível
+  useEffect(() => {
+    if (!salonData) return;
+    if (!selectedPro) {
+      if (salonData.professionals && salonData.professionals.length > 0) {
+        setSelectedPro(salonData.professionals[0]);
+      } else {
+        setSelectedPro({ id: "p-1", name: salonData.name || "Especialista em Beleza", role: "Atendimento Geral & Especialista", specialty: "Estética & Bem-estar" });
+      }
+    }
+    if (step !== "booking") return;
+    const selectedDisabled = selectedDate
+      ? isPastDate(selectedDate) || !isDayOpen(selectedDate) || isTodayPastClosing(selectedDate)
+      : true;
+    if (selectedDisabled) {
+      const firstAvailable = calendarDays.find(d => !d.disabled);
+      if (firstAvailable) {
+        setSelectedDate(firstAvailable.dateObj);
+        setSelectedTime(null);
+      }
+    }
+  }, [step, salonData, selectedPro, selectedDate, calendarDays]);
+
   // Carrega horários disponíveis quando Data e Profissional estão selecionados
   useEffect(() => {
     if (selectedDate && selectedPro && selectedService && salonData) {
-      if (!isDayOpen(selectedDate)) {
+      if (!isDayOpen(selectedDate) || isTodayPastClosing(selectedDate)) {
         setAvailableTimes([]);
         setSelectedTime(null);
+        setLoadingTimes(false);
         return;
       }
 
       setLoadingTimes(true); setSelectedTime(null); setAvailableTimes([]); setSlotDates({});
-      const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`;
+      const dateStr = formatDateYMD(selectedDate);
       const controller = new AbortController();
       fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/public/availability?salonId=${salonData.id}&date=${dateStr}&professionalId=${selectedPro.id}&serviceId=${selectedService.id}`, { signal: controller.signal })
         .then(async res => { const data = await res.json(); if (!res.ok) throw new Error(data.error); return data; })
@@ -253,7 +391,7 @@ export default function ClientView() {
         <p className="text-sm text-zinc-400 mt-1 max-w-sm">
           O link de agendamento que você acessou pode estar incorreto ou o salão foi desativado.
         </p>
-        <Button className="mt-6" onClick={() => navigate("/")}>Ir para a página inicial</Button>
+        <Button className="mt-6" onClick={() => window.location.reload()}>Tentar novamente</Button>
       </div>
     );
   }
@@ -302,41 +440,6 @@ export default function ClientView() {
   const dynamicBgStyle = { backgroundColor: mainColor };
   const dynamicTextStyle = { color: mainColor };
 
-  // Cálculos do Calendário
-  const changeMonth = (offset: number) => {
-    const newDate = new Date(currentDate);
-    newDate.setMonth(newDate.getMonth() + offset);
-    setCurrentDate(newDate);
-  };
-
-  const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
-  
-  const generateCalendarDays = () => {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    const daysCount = getDaysInMonth(year, month);
-    const days = [];
-    const weekDays = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
-    const monthsStr = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
-    
-    for (let i = 1; i <= daysCount; i++) {
-      const date = new Date(year, month, i);
-      const isPast = isPastDate(date);
-      const isOpen = isDayOpen(date);
-      days.push({
-        dateObj: date,
-        day: i,
-        weekStr: weekDays[date.getDay()],
-        monthStr: monthsStr[month],
-        isPast,
-        isOpen,
-        disabled: isPast || !isOpen
-      });
-    }
-    return days;
-  };
-
-  const calendarDays = generateCalendarDays();
   const currentMonthName = currentDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
 
   // Disparo da Reserva Real
@@ -421,6 +524,17 @@ export default function ClientView() {
     }
   };
 
+  const handleExitClientPage = () => {
+    setSelectedService(null);
+    setSelectedTime(null);
+    setShowSummaryModal(false);
+    setPixCode(null);
+    try {
+      window.close();
+    } catch {}
+    setStep("exit");
+  };
+
   // Se for o passo inicial "home", renderiza a LANDING PAGE COMPLETA E RESPONSIVA DO SALÃO
   if (step === "home") {
     const cleanPhone = (salonData.phone || "").replace(/\D/g, "");
@@ -497,7 +611,7 @@ export default function ClientView() {
 
               {/* Botão de Sair */}
               <button
-                onClick={() => navigate("/")}
+                onClick={handleExitClientPage}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 border border-red-200 dark:border-red-900/40 transition-colors cursor-pointer"
                 title="Sair da página do salão"
               >
@@ -931,18 +1045,19 @@ export default function ClientView() {
               </h3>
               <div className="divide-y divide-border/60 text-xs sm:text-sm">
                 {[
-                  { day: "Segunda-feira", key: "mon" },
-                  { day: "Terça-feira", key: "tue" },
-                  { day: "Quarta-feira", key: "wed" },
-                  { day: "Quinta-feira", key: "thu" },
-                  { day: "Sexta-feira", key: "fri" },
-                  { day: "Sábado", key: "sat" },
-                  { day: "Domingo", key: "sun" },
-                ].map(({ day, key }) => {
+                  { day: "Segunda-feira", prefix: "seg", key: "mon", defaultOpen: true },
+                  { day: "Terça-feira", prefix: "ter", key: "tue", defaultOpen: true },
+                  { day: "Quarta-feira", prefix: "qua", key: "wed", defaultOpen: true },
+                  { day: "Quinta-feira", prefix: "qui", key: "thu", defaultOpen: true },
+                  { day: "Sexta-feira", prefix: "sex", key: "fri", defaultOpen: true },
+                  { day: "Sábado", prefix: "sab", key: "sat", defaultOpen: true },
+                  { day: "Domingo", prefix: "dom", key: "sun", defaultOpen: false },
+                ].map(({ day, prefix, key, defaultOpen }) => {
+                  const dayConfig = salonSchedule.find((s: any) => normalizeDayPrefix(s.day) === prefix);
                   const dayData = salonData.hours?.[key];
-                  const isOpen = dayData?.isOpen ?? (key !== "sun");
-                  const open = dayData?.open || "09:00";
-                  const close = dayData?.close || "19:00";
+                  const isOpen = dayConfig ? dayConfig.open !== false : (dayData?.isOpen ?? defaultOpen);
+                  const open = dayConfig?.start || dayData?.open || "09:00";
+                  const close = dayConfig?.end || dayData?.close || "19:00";
                   return (
                     <div key={key} className="py-2.5 flex items-center justify-between">
                       <span className="text-foreground font-medium">{day}</span>
@@ -1024,7 +1139,7 @@ export default function ClientView() {
             <div className="flex items-center gap-4">
               <span>Powered by <strong>BelezaPura</strong></span>
               <button
-                onClick={() => navigate("/")}
+                onClick={handleExitClientPage}
                 className="flex items-center gap-1 text-red-600 dark:text-red-400 hover:underline font-semibold cursor-pointer"
               >
                 <LogOut className="w-3.5 h-3.5" /> Sair
@@ -1052,6 +1167,42 @@ export default function ClientView() {
           </a>
         </div>
 
+      </div>
+    );
+  }
+
+  if (step === "exit") {
+    return (
+      <div className="min-h-screen bg-stone-50 dark:bg-zinc-950 text-foreground flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-full max-w-md bg-card border border-border rounded-3xl p-8 shadow-xl space-y-5">
+          {salonData.logo ? (
+            <img
+              src={salonData.logo}
+              alt={salonData.name}
+              className="w-16 h-16 rounded-2xl object-contain bg-white border border-border mx-auto shadow-sm"
+            />
+          ) : (
+            <div
+              className="w-16 h-16 rounded-2xl flex items-center justify-center font-serif text-xl font-bold text-white mx-auto shadow-sm"
+              style={{ background: mainColor }}
+            >
+              {salonData.name ? salonData.name.slice(0, 2).toUpperCase() : "SL"}
+            </div>
+          )}
+          <div className="space-y-2">
+            <h2 className="font-serif text-2xl font-bold text-foreground">Atendimento finalizado</h2>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Obrigado por visitar <strong>{salonData.name}</strong>! Você já pode fechar esta página com segurança.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => setStep("home")}
+            className="w-full min-h-11 rounded-xl font-semibold cursor-pointer"
+          >
+            Voltar para a página de {salonData.name}
+          </Button>
+        </div>
       </div>
     );
   }
@@ -1090,7 +1241,7 @@ export default function ClientView() {
           </div>
 
           <button
-            onClick={() => navigate("/")}
+            onClick={handleExitClientPage}
             className="flex items-center gap-1 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 px-2 py-1 rounded-lg transition-colors cursor-pointer"
             title="Sair do agendamento"
           >
@@ -1202,11 +1353,15 @@ export default function ClientView() {
                 {/* Carrossel Horizontal de Dias */}
                 <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-hide pt-1">
                   {calendarDays.map((d, idx) => {
-                    const isSelected = selectedDate?.getDate() === d.day && selectedDate?.getMonth() === d.dateObj.getMonth();
+                    const isSelected =
+                      selectedDate?.getDate() === d.day &&
+                      selectedDate?.getMonth() === d.dateObj.getMonth() &&
+                      selectedDate?.getFullYear() === d.dateObj.getFullYear();
+                    const crossesMonth = d.dateObj.getMonth() !== currentDate.getMonth();
                     return (
                       <button
                         key={idx}
-                        aria-label={`Escolher data ${d.dateObj.getFullYear()}-${String(d.dateObj.getMonth() + 1).padStart(2, "0")}-${String(d.day).padStart(2, "0")}`}
+                        aria-label={`Escolher data ${formatDateYMD(d.dateObj)}`}
                         type="button"
                         disabled={d.disabled}
                         onClick={() => {
@@ -1222,13 +1377,13 @@ export default function ClientView() {
                         }`}
                       >
                         <span className={`text-[10px] font-bold uppercase tracking-wider ${isSelected ? "text-primary-foreground/90" : "text-muted-foreground"}`}>
-                          {d.weekStr}
+                          {crossesMonth ? `${d.weekStr} · ${d.monthStr}` : d.weekStr}
                         </span>
                         <span className="text-xl font-extrabold my-0.5">
                           {d.day}
                         </span>
                         <span className={`text-[9px] font-semibold ${d.disabled ? "text-rose-500" : isSelected ? "text-primary-foreground/90" : "text-emerald-600 dark:text-emerald-400"}`}>
-                          {d.isPast ? "Passou" : !d.isOpen ? "Fechado" : "Livre"}
+                          {d.isPast ? "Passou" : !d.isOpen ? "Fechado" : d.isTodayClosed ? "Encerrado" : "Livre"}
                         </span>
                       </button>
                     );
@@ -1258,13 +1413,45 @@ export default function ClientView() {
                   <div className="p-6 rounded-2xl border border-rose-200 bg-rose-50/50 dark:bg-rose-950/20 text-center text-xs text-rose-600">
                     O salão não abre neste dia da semana. Por favor, escolha outra data com a etiqueta "Livre".
                   </div>
+                ) : isTodayPastClosing(selectedDate) ? (
+                  <div className="p-6 rounded-2xl border border-amber-200 bg-amber-50/50 text-center text-xs text-amber-700 space-y-3">
+                    <p>O expediente de hoje já foi encerrado para este serviço.</p>
+                    {nextAvailableDay && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedDate(nextAvailableDay.dateObj);
+                          setSelectedTime(null);
+                        }}
+                        className="border-amber-300 text-amber-800 hover:bg-amber-100/60"
+                      >
+                        Ver próximo dia disponível ({nextAvailableDay.dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })})
+                      </Button>
+                    )}
+                  </div>
                 ) : loadingTimes ? (
                   <div className="p-8 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
                     <Sparkles className="w-4 h-4 animate-spin text-primary" /> Consultando horários disponíveis...
                   </div>
                 ) : availableTimes.length === 0 ? (
-                  <div className="p-6 rounded-2xl border border-amber-200 bg-amber-50/50 text-center text-xs text-amber-700">
-                    Não há horários disponíveis para este profissional nesta data. Tente outro profissional ou dia.
+                  <div className="p-6 rounded-2xl border border-amber-200 bg-amber-50/50 text-center text-xs text-amber-700 space-y-3">
+                    <p>Não há horários disponíveis para este profissional nesta data. Tente outro profissional ou dia.</p>
+                    {nextAvailableDay && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedDate(nextAvailableDay.dateObj);
+                          setSelectedTime(null);
+                        }}
+                        className="border-amber-300 text-amber-800 hover:bg-amber-100/60"
+                      >
+                        Ver próximo dia disponível ({nextAvailableDay.dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })})
+                      </Button>
+                    )}
                   </div>
                 ) : (
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
@@ -1663,7 +1850,7 @@ export default function ClientView() {
               </Button>
 
               <button
-                onClick={() => navigate("/")}
+                onClick={handleExitClientPage}
                 className="w-full py-2 text-xs font-semibold text-muted-foreground hover:text-red-500 transition-colors flex items-center justify-center gap-1 cursor-pointer"
               >
                 <LogOut className="w-3.5 h-3.5" /> Sair

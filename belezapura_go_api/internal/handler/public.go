@@ -81,11 +81,20 @@ func GetAvailability(c *gin.Context) {
 		c.JSON(409, gin.H{"error": "Duração inválida."})
 		return
 	}
-	for t := open; !t.Add(time.Duration(service.Duration) * time.Minute).After(close); t = t.Add(30 * time.Minute) {
+	slotDuration := service.Duration
+	shiftMinutes := int(close.Sub(open).Minutes())
+	if slotDuration > shiftMinutes && shiftMinutes > 0 {
+		if shiftMinutes >= 60 {
+			slotDuration = 60
+		} else {
+			slotDuration = shiftMinutes
+		}
+	}
+	for t := open; !t.Add(time.Duration(slotDuration) * time.Minute).After(close); t = t.Add(30 * time.Minute) {
 		if !t.After(time.Now()) {
 			continue
 		}
-		end := t.Add(time.Duration(service.Duration) * time.Minute)
+		end := t.Add(time.Duration(slotDuration) * time.Minute)
 		free := true
 		for _, a := range booked {
 			if t.Before(a.EndsAt) && end.After(a.Date) {

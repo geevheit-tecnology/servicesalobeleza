@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"belezapura_go_api/internal/db"
-
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
+	"belezapura_go_api/internal/db"
 )
 
 // GET /api/salon/dashboard
@@ -107,7 +107,7 @@ func GetSalonDetails(c *gin.Context) {
 		"subscriptions":  []db.Subscription{sub},
 		"trialExpired":   trialExpired,
 		"daysRemaining":  daysRemaining,
-		"trialTotalDays": 14,
+		"trialTotalDays": currentTrialDays(),
 		"timezone":       salon.Timezone, "blockedDates": salon.BlockedDates,
 	}
 	c.JSON(http.StatusOK, resMap)

@@ -61,9 +61,33 @@ const FALLBACK_PLANS: PlanItem[] = [
   }
 ];
 
-export function planFeatures(plan: { name?: string; price?: number; maxProfessionals: number; features?: string[] }) {
+export function extractTrialDays(plans: any[]): number {
+  if (Array.isArray(plans)) {
+    for (const p of plans) {
+      if (typeof p?.trialDays === "number" && p.trialDays > 0) {
+        return p.trialDays;
+      }
+    }
+    for (const p of plans) {
+      if (Array.isArray(p?.features)) {
+        for (const f of p.features) {
+          const m = String(f || "").match(/(\d+)\s*dias\s+de\s+teste/i);
+          if (m) {
+            const parsed = parseInt(m[1], 10);
+            if (parsed > 0) return parsed;
+          }
+        }
+      }
+    }
+  }
+  return 14;
+}
+
+export function planFeatures(plan: { name?: string; price?: number; maxProfessionals: number; features?: string[] }, trialDays = 14) {
   if (Array.isArray(plan.features) && plan.features.length > 0) {
-    return plan.features;
+    return plan.features.map(f =>
+      String(f).replace(/(\d+)\s*dias de teste gr[áa]tis/i, `${trialDays} dias de teste grátis`)
+    );
   }
   const nameLower = (plan.name || "").toLowerCase();
   if (nameLower.includes("elite") || plan.maxProfessionals === 0 || (plan.price && plan.price >= 200)) {
@@ -99,8 +123,9 @@ export function planFeatures(plan: { name?: string; price?: number; maxProfessio
   ];
 }
 
-export function PlanCatalog() {
+export function PlanCatalog({ onTrialDaysLoaded }: { onTrialDaysLoaded?: (days: number) => void }) {
   const [plans, setPlans] = useState<PlanItem[]>([]);
+  const [trialDays, setTrialDays] = useState<number>(14);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -109,6 +134,9 @@ export function PlanCatalog() {
     api<any[]>("/public/plans")
       .then(data => {
         if (!Array.isArray(data) || data.length === 0) throw new Error("Nenhum plano disponível.");
+        const td = extractTrialDays(data);
+        setTrialDays(td);
+        onTrialDaysLoaded?.(td);
         setPlans(data.map(plan => {
           const presentation = FALLBACK_PLANS.find(p => p.name.toLowerCase() === plan.name?.toLowerCase());
           const isHighlight = Boolean(plan.highlight) || plan.name?.toLowerCase() === "studio";
@@ -119,7 +147,7 @@ export function PlanCatalog() {
             desc: presentation?.desc || plan.category || "Assinatura mensal com conferência manual",
             highlight: isHighlight,
             badge: isHighlight ? "MAIS ESCOLHIDO" : (plan.category || undefined),
-            features: planFeatures(plan),
+            features: planFeatures(plan, td),
           };
         }));
       })
@@ -139,7 +167,7 @@ export function PlanCatalog() {
             Escolha o plano ideal para o seu espaço
           </h2>
           <p className="text-[#6B7280] text-base max-w-xl mx-auto">
-            14 dias de teste sem cartão. Comece a receber agendamentos com sinal hoje mesmo.
+            {trialDays} dias de teste sem cartão. Comece a receber agendamentos com sinal hoje mesmo.
           </p>
         </div>
 
@@ -177,7 +205,7 @@ export function PlanCatalog() {
                     <span className={`text-sm ${p.highlight ? "text-stone-300" : "text-[#6B7280]"}`}>/mês</span>
                   </div>
                   <span className={`text-[11px] block mt-1 font-medium ${p.highlight ? "text-[#E5A991]" : "text-emerald-700"}`}>
-                    🎁 14 dias de teste grátis
+                    🎁 {trialDays} dias de teste grátis
                   </span>
                 </div>
 

@@ -67,6 +67,9 @@ export default function SalonDashboard() {
           if (typeof data.daysRemaining === 'number') {
             setDaysRemaining(data.daysRemaining);
           }
+          if (typeof data.trialTotalDays === 'number' && data.trialTotalDays > 0) {
+            setPlanName(`Trial ${data.trialTotalDays} Dias`);
+          }
           if (data.subscriptions && data.subscriptions.length > 0) {
             const sub = data.subscriptions.find((s: any) => s.status === "ACTIVE" || s.status === "TRIAL") || data.subscriptions[0];
             if (sub?.plan?.name) {

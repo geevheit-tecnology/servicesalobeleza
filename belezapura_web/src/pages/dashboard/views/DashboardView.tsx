@@ -8,11 +8,16 @@ export function DashboardView({ onNewAppointment }: { onNewAppointment: () => vo
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/salon/dashboard`, { headers: { 'Authorization': `Bearer ${token}` } })
-      .then(res => res.json())
-      .then(setStats)
-      .catch(console.error);
+    const loadStats = () => {
+      const token = localStorage.getItem('token');
+      fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/salon/dashboard`, { headers: { 'Authorization': `Bearer ${token}` } })
+        .then(res => res.json())
+        .then(setStats)
+        .catch(console.error);
+    };
+    loadStats();
+    window.addEventListener("belezapura:appointments-updated", loadStats);
+    return () => window.removeEventListener("belezapura:appointments-updated", loadStats);
   }, []);
 
   return (

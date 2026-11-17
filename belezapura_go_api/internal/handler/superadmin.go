@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -326,6 +327,51 @@ func DeleteSalon(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Salão removido com sucesso."})
 }
 
+var trialFeaturePattern = regexp.MustCompile(`(?i)^(?:🎁\s*)?\d+\s*dias de teste gr[áa]tis$`)
+
+func currentTrialDays() int {
+	if db.DB == nil {
+		return 14
+	}
+	var settings db.SystemSettings
+	if err := db.DB.First(&settings).Error; err == nil && settings.TrialDays > 0 {
+		return settings.TrialDays
+	}
+	return 14
+}
+
+func syncPlanTrialFeatureText(trialDays int) {
+	if db.DB == nil || trialDays <= 0 {
+		return
+	}
+	var plans []db.Plan
+	if err := db.DB.Find(&plans).Error; err != nil {
+		return
+	}
+	replacement := fmt.Sprintf("%d dias de teste grátis", trialDays)
+	for _, p := range plans {
+		if strings.TrimSpace(p.Features) == "" {
+			continue
+		}
+		var parsed []string
+		if err := json.Unmarshal([]byte(p.Features), &parsed); err != nil {
+			continue
+		}
+		changed := false
+		for i, f := range parsed {
+			if trialFeaturePattern.MatchString(strings.TrimSpace(f)) {
+				parsed[i] = replacement
+				changed = true
+			}
+		}
+		if changed {
+			if b, err := json.Marshal(parsed); err == nil {
+				db.DB.Model(&db.Plan{}).Where("id = ?", p.ID).Update("features", string(b))
+			}
+		}
+	}
+}
+
 func GetSettings(c *gin.Context) {
 	var settings db.SystemSettings
 	if err := db.DB.First(&settings).Error; err != nil {
@@ -350,6 +396,10 @@ func UpdateSettings(c *gin.Context) {
 	}
 
 	db.DB.Model(&settings).Updates(body)
+	db.DB.First(&settings, "id = ?", settings.ID)
+	if settings.TrialDays > 0 {
+		syncPlanTrialFeatureText(settings.TrialDays)
+	}
 	writeAuditLog(c, "SETTINGS_UPDATE", "Configurações", "Configurações da plataforma atualizadas.", "info")
 	c.JSON(http.StatusOK, settings)
 }
@@ -682,6 +732,7 @@ type planResponse struct {
 	Features         []string `json:"features"`
 	MaxProfessionals int      `json:"maxProfessionals"`
 	Color            string   `json:"color"`
+	TrialDays        int      `json:"trialDays"`
 }
 
 func inferPlanCategory(p db.Plan) string {
@@ -782,6 +833,12 @@ func planToResponse(p db.Plan) planResponse {
 			db.DB.Model(&db.Plan{}).Where("id = ?", p.ID).Update("features", string(b))
 		}
 	}
+	td := currentTrialDays()
+	for i, f := range clean {
+		if trialFeaturePattern.MatchString(f) {
+			clean[i] = fmt.Sprintf("%d dias de teste grátis", td)
+		}
+	}
 	period := p.Period
 	if strings.TrimSpace(period) == "" {
 		period = "/mês"
@@ -800,6 +857,7 @@ func planToResponse(p db.Plan) planResponse {
 		Features:         clean,
 		MaxProfessionals: p.MaxProfessionals,
 		Color:            color,
+		TrialDays:        td,
 	}
 }
 

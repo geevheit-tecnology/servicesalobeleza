@@ -81,6 +81,9 @@ export function AppointmentsView({ onNewAppointment }: { onNewAppointment: () =>
 
   useEffect(() => {
     loadAppointments();
+    const onUpdated = () => loadAppointments();
+    window.addEventListener("belezapura:appointments-updated", onUpdated);
+    return () => window.removeEventListener("belezapura:appointments-updated", onUpdated);
   }, []);
 
   const handleStatusChange = async (id: string, newStatus: string) => {
