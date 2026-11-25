@@ -165,17 +165,6 @@ export default function Marketing() {
     return () => clearInterval(scenarioTimer);
   }, []);
 
-  // Notificações flutuantes dinâmicas
-  const [liveNotifIndex, setLiveNotifIndex] = useState(0);
-  const [showLiveNotif, setShowLiveNotif] = useState(true);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setLiveNotifIndex((prev) => (prev + 1) % DEMO_NOTIFICATIONS.length);
-    }, 5500);
-    return () => clearInterval(timer);
-  }, []);
-
   // Calculadora de Retorno do BelezaPura
   const [numStaff, setNumStaff] = useState<number>(3);
   const [ticketMedio, setTicketMedio] = useState<number>(85);
@@ -1059,37 +1048,6 @@ export default function Marketing() {
 
         </div>
       </footer>
-
-      {/* Exemplo flutuante de uso */}
-      {showLiveNotif && (
-        <div className="fixed bottom-6 left-6 z-40 hidden sm:flex items-center gap-3 bg-white/95 border border-[#E5E7EB] p-3.5 rounded-2xl shadow-2xl backdrop-blur-md animate-fade-up max-w-sm transition-all duration-300 hover:scale-[1.02]">
-          <div className="w-10 h-10 rounded-xl bg-[#E5A991]/20 text-[#9C5A42] flex items-center justify-center shrink-0">
-            <Sparkles className="w-5 h-5 text-[#C47F65]" />
-          </div>
-          <div className="flex-1 pr-2">
-            <div className="text-xs font-bold text-[#111827] flex items-center gap-1.5">
-              <span>{DEMO_NOTIFICATIONS[liveNotifIndex].name}</span>
-              <span className="text-[10px] font-normal text-[#6B7280]">
-                • {DEMO_NOTIFICATIONS[liveNotifIndex].time}
-              </span>
-            </div>
-            <div className="text-[11px] text-[#4B5563] truncate">
-              {DEMO_NOTIFICATIONS[liveNotifIndex].action}
-            </div>
-            <div className="text-[10px] font-bold text-emerald-700 mt-0.5 flex items-center gap-1">
-              <Check className="w-3 h-3 stroke-[3]" />
-              {DEMO_NOTIFICATIONS[liveNotifIndex].value}
-            </div>
-          </div>
-          <button 
-            onClick={() => setShowLiveNotif(false)}
-            className="text-stone-400 hover:text-stone-600 p-1 rounded-md cursor-pointer"
-            aria-label="Fechar notificação"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
 
     </div>
   );
