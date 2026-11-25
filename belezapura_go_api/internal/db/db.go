@@ -3,7 +3,9 @@ package db
 import (
 	"fmt"
 	"log"
+	"net/url"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -36,6 +38,7 @@ func Connect() error {
 	if dsn == "" {
 		return fmt.Errorf("DATABASE_URL not set")
 	}
+	dsn = transactionPoolerDSN(dsn)
 
 	newLogger := logger.New(
 		log.New(os.Stdout, "\r\n", log.LstdFlags),
@@ -63,12 +66,27 @@ func Connect() error {
 		return err
 	}
 	sqlDB.SetMaxIdleConns(1)
-	sqlDB.SetMaxOpenConns(3)
-	sqlDB.SetConnMaxIdleTime(5 * time.Minute)
-	sqlDB.SetConnMaxLifetime(30 * time.Minute)
+	sqlDB.SetMaxOpenConns(2)
+	sqlDB.SetConnMaxIdleTime(30 * time.Second)
+	sqlDB.SetConnMaxLifetime(10 * time.Minute)
 
 	log.Println("✅ Database connected")
 	return nil
+}
+
+// transactionPoolerDSN troca o pooler do Supabase do modo sessão (porta 5432,
+// limite de ~15 clientes, causa EMAXCONNSESSION em ambiente serverless) para o
+// modo transação (porta 6543), que multiplexa centenas de clientes.
+func transactionPoolerDSN(dsn string) string {
+	u, err := url.Parse(dsn)
+	if err != nil || u.Host == "" {
+		return dsn
+	}
+	if strings.HasSuffix(u.Hostname(), ".pooler.supabase.com") && u.Port() == "5432" {
+		u.Host = u.Hostname() + ":6543"
+		return u.String()
+	}
+	return dsn
 }
 
 func Close() {
