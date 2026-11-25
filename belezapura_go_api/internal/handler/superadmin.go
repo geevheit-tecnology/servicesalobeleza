@@ -375,7 +375,7 @@ func DeleteSalon(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Salão removido com sucesso."})
 }
 
-var trialFeaturePattern = regexp.MustCompile(`(?i)^(?:🎁\s*)?\d+\s*dias de teste gr[áa]tis$`)
+var trialFeaturePattern = regexp.MustCompile(`(?i)\d+\s*dias\s+de\s+teste\s+gr[áa]tis`)
 
 func currentTrialDays() int {
 	if db.DB == nil {
@@ -396,7 +396,7 @@ func syncPlanTrialFeatureText(trialDays int) {
 	if err := db.DB.Find(&plans).Error; err != nil {
 		return
 	}
-	replacement := fmt.Sprintf("%d dias de teste grátis", trialDays)
+	replacement := fmt.Sprintf("🎁 %d dias de teste grátis", trialDays)
 	for _, p := range plans {
 		if strings.TrimSpace(p.Features) == "" {
 			continue
@@ -969,7 +969,7 @@ func planToResponse(p db.Plan) planResponse {
 	td := currentTrialDays()
 	for i, f := range clean {
 		if trialFeaturePattern.MatchString(f) {
-			clean[i] = fmt.Sprintf("%d dias de teste grátis", td)
+			clean[i] = fmt.Sprintf("🎁 %d dias de teste grátis", td)
 		}
 	}
 	period := p.Period

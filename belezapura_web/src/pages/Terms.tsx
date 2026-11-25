@@ -56,17 +56,17 @@ export default function Terms() {
     },
     {
       id: "planos",
-      title: "3. Período de Testes (Trial de 14 Dias) e Planos",
+      title: "3. Período de Testes (Trial Gratuito) e Planos",
       icon: CreditCard,
       content: (
         <>
           <p className="text-muted-foreground leading-relaxed">
-            O BelezaPura concede a novos estabelecimentos um período de avaliação gratuita de <strong>14 (quatorze) dias corridos</strong>, sem necessidade de inserção prévia de dados de cartão de crédito.
+            O BelezaPura concede a novos estabelecimentos um período de avaliação gratuita (conforme o prazo vigente exibido na oferta do plano no momento do cadastro), sem necessidade de inserção prévia de dados de cartão de crédito.
           </p>
           <div className="bg-muted/40 border border-border/80 rounded-2xl p-4 mt-3 space-y-2">
             <p className="text-foreground text-sm font-medium">Condições do Período de Testes:</p>
             <p className="text-muted-foreground text-sm leading-relaxed">
-              Durante o trial, o estabelecimento tem acesso a todas as funcionalidades essenciais do plano selecionado. Ao término dos 14 dias, caso não ocorra a migração para um plano pago ativo, os agendamentos online e acessos de gestão serão temporariamente suspensos até a confirmação da assinatura.
+              Durante o trial, o estabelecimento tem acesso a todas as funcionalidades essenciais do plano selecionado. Ao término do período gratuito, caso não ocorra a migração para um plano pago ativo, os agendamentos online e acessos de gestão serão temporariamente suspensos até a confirmação da assinatura.
             </p>
           </div>
           <p className="text-muted-foreground leading-relaxed mt-3">
