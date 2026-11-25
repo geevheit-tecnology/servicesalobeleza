@@ -48,6 +48,7 @@ export default function ClientView() {
   const [homeTab, setHomeTab] = useState<"servicos" | "equipe" | "sobre">("servicos");
   const [serviceFilter, setServiceFilter] = useState("Todos");
   const [searchQuery, setSearchQuery] = useState("");
+  const [lightboxImg, setLightboxImg] = useState<string | null>(null);
 
   // Máscara de telefone WhatsApp: (99) 99999-9999
   const handlePhoneChange = (val: string) => {
@@ -624,94 +625,219 @@ export default function ClientView() {
         </header>
 
         {/* ======================================================== */}
-        {/* 2. HERO SECTION COM CAPA DE ALTO IMPACTO                  */}
+        {/* 2. HERO SECTION COM CAPA DE ALTO IMPACTO & AURORA GLOW    */}
         {/* ======================================================== */}
         <section className="relative overflow-hidden bg-zinc-950 text-white">
-          {/* Imagem de Fundo / Capa */}
-          <div className="absolute inset-0 z-0">
+          {/* Imagem de Fundo / Capa + Orbes Dinâmicas */}
+          <div className="absolute inset-0 z-0 overflow-hidden">
             {salonData.cover ? (
               <img 
                 src={salonData.cover} 
                 alt={salonData.name} 
-                className="w-full h-full object-cover object-center opacity-30 transform scale-105 transition-transform duration-1000" 
+                className="w-full h-full object-cover object-center opacity-35 transform scale-105 animate-pulse-soft" 
               />
             ) : (
               <div 
-                className="w-full h-full opacity-35"
-                style={{ background: `linear-gradient(135deg, ${mainColor} 0%, #18181b 100%)` }}
+                className="w-full h-full opacity-40"
+                style={{ background: `radial-gradient(circle at 20% 20%, ${mainColor} 0%, #09090b 75%)` }}
               />
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/70 to-zinc-950/30" />
+            <div 
+              className="absolute -top-28 -right-24 w-96 h-96 rounded-full blur-[120px] opacity-45 animate-aurora pointer-events-none"
+              style={{ background: mainColor }}
+            />
+            <div 
+              className="absolute -bottom-32 left-1/4 w-96 h-96 rounded-full blur-[130px] opacity-30 animate-aurora-reverse pointer-events-none"
+              style={{ background: mainColor }}
+            />
+            <div className="absolute inset-0 hero-vignette" />
           </div>
 
           <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-20 lg:py-24">
-            <div className="max-w-3xl">
+            <div className="grid lg:grid-cols-12 gap-10 items-center">
               
-              {/* Badges de Destaque */}
-              <div className="flex flex-wrap items-center gap-2 mb-4">
-                <Badge variant="outline" className="bg-white/10 backdrop-blur-md text-white border-white/20 text-xs font-semibold py-1 px-3">
-                  <Sparkles className="w-3 h-3 text-amber-400 mr-1.5" /> Salão Verificado BelezaPura
-                </Badge>
-                <div className="flex items-center gap-1 bg-amber-500/20 text-amber-300 px-2.5 py-1 rounded-full font-bold text-xs border border-amber-500/30">
-                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                  <span>5.0 (Avaliações Excelentes)</span>
+              {/* Coluna Esquerda: Identidade + CTAs */}
+              <div className="lg:col-span-7 animate-fade-up">
+                {/* Badges de Destaque */}
+                <div className="flex flex-wrap items-center gap-2.5 mb-5">
+                  <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md text-white border border-white/20 text-xs font-semibold py-1.5 px-3.5 rounded-full shadow-lg">
+                    <span className={`w-2 h-2 rounded-full ${openStatus.isOpen ? 'bg-emerald-400 beacon-dot' : 'bg-amber-400'}`} />
+                    <span>{openStatus.text}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 bg-amber-500/20 text-amber-300 px-3 py-1.5 rounded-full font-bold text-xs border border-amber-400/30 backdrop-blur-md">
+                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                    <span>5.0 • Espaço Verificado</span>
+                  </div>
+                  {salonData.instagram && (
+                    <a
+                      href={`https://instagram.com/${String(salonData.instagram).replace(/^@/, "")}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-zinc-200 px-3 py-1.5 rounded-full text-xs font-semibold border border-white/15 transition-all"
+                    >
+                      <span>@{String(salonData.instagram).replace(/^@/, "")}</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                </div>
+
+                {/* Avatar grande + Título Principal */}
+                <div className="flex items-center gap-4 mb-4">
+                  {salonData.logo && (
+                    <img
+                      src={salonData.logo}
+                      alt={salonData.name}
+                      className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-contain bg-white p-1.5 shadow-2xl border-2 border-white/30 shrink-0 hidden sm:block animate-float-gentle"
+                    />
+                  )}
+                  <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-[1.1] drop-shadow-sm">
+                    {salonData.name}
+                  </h1>
+                </div>
+
+                {/* Descrição / Sobre */}
+                <p className="mt-3 text-sm sm:text-base lg:text-lg text-zinc-200/90 leading-relaxed max-w-2xl">
+                  {salonData.about || "Experiência exclusiva em beleza, estética e bem-estar. Escolha seu procedimento abaixo e garanta seu horário online em poucos segundos, sem fila de espera."}
+                </p>
+
+                {/* Endereço Resumido */}
+                {addressText && (
+                  <div className="inline-flex items-center gap-2 mt-5 px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm text-xs sm:text-sm text-zinc-200">
+                    <MapPin className="w-4 h-4 shrink-0" style={{ color: mainColor }} />
+                    <span className="truncate">{addressText}</span>
+                  </div>
+                )}
+
+                {/* CTAs de Ação Imediata */}
+                <div className="mt-8 flex flex-wrap items-center gap-3.5">
+                  <a
+                    href="#servicos"
+                    className="btn-sheen inline-flex items-center justify-center gap-2.5 px-7 py-4 rounded-2xl text-sm sm:text-base font-extrabold text-white shadow-2xl hover:scale-[1.03] active:scale-[0.98] transition-all cursor-pointer"
+                    style={{ background: mainColor, boxShadow: `0 18px 40px -10px ${mainColor}90` }}
+                  >
+                    <Calendar className="w-4 h-4" /> Agendar Meu Horário Agora
+                    <ArrowRight className="w-4 h-4" />
+                  </a>
+
+                  {waUrl && (
+                    <a
+                      href={waUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center justify-center gap-2 px-5 py-4 rounded-2xl text-sm font-bold bg-emerald-600/90 hover:bg-emerald-600 text-white border border-emerald-400/30 shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer backdrop-blur-md"
+                    >
+                      <MessageCircle className="w-4 h-4" /> WhatsApp
+                    </a>
+                  )}
+
+                  {mapsUrl && (
+                    <a
+                      href={mapsUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center justify-center gap-2 px-4 py-4 rounded-2xl text-sm font-semibold bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-md transition-all cursor-pointer"
+                    >
+                      <MapPin className="w-4 h-4" /> Como Chegar
+                    </a>
+                  )}
                 </div>
               </div>
 
-              {/* Título Principal */}
-              <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-[1.15]">
-                {salonData.name}
-              </h1>
+              {/* Coluna Direita: Card Flutuante Glassmorphism de Reserva Rápida */}
+              <div className="lg:col-span-5 hidden lg:block animate-fade-up">
+                <div className="relative mx-auto max-w-sm">
+                  <div
+                    className="absolute -inset-1 rounded-[2rem] blur-xl opacity-50 animate-pulse-soft"
+                    style={{ background: `linear-gradient(135deg, ${mainColor}, transparent)` }}
+                  />
+                  <div className="relative rounded-[1.85rem] bg-zinc-900/80 backdrop-blur-xl border border-white/15 p-6 shadow-2xl space-y-5 animate-float-gentle">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                      <div>
+                        <span className="text-[11px] uppercase tracking-wider text-zinc-400 font-bold block">Agendamento Rápido</span>
+                        <h3 className="font-serif text-lg font-bold text-white mt-0.5">Destaques da Agenda</h3>
+                      </div>
+                      <div
+                        className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg"
+                        style={{ background: mainColor }}
+                      >
+                        <Sparkles className="w-5 h-5" />
+                      </div>
+                    </div>
 
-              {/* Descrição / Sobre */}
-              <p className="mt-4 text-sm sm:text-base lg:text-lg text-zinc-300 leading-relaxed max-w-2xl">
-                {salonData.about || "Espaço especializado em beleza, autocuidado e estética de alto padrão. Atendimento exclusivo com hora marcada e os melhores especialistas da região."}
-              </p>
+                    <div className="space-y-2.5">
+                      {services.slice(0, 3).map((srv: any) => (
+                        <button
+                          key={srv.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedService(srv);
+                            setSelectedTime(null);
+                            setShowSummaryModal(false);
+                            setStep("booking");
+                            window.scrollTo({ top: 0, behavior: "smooth" });
+                          }}
+                          className="w-full text-left p-3.5 rounded-2xl bg-white/5 hover:bg-white/15 border border-white/10 hover:border-white/30 transition-all flex items-center justify-between gap-3 group cursor-pointer"
+                        >
+                          <div className="min-w-0">
+                            <div className="text-xs font-bold text-white truncate group-hover:text-amber-200 transition-colors">
+                              {srv.name}
+                            </div>
+                            <div className="text-[11px] text-zinc-400 flex items-center gap-2 mt-0.5">
+                              <span><Clock className="w-3 h-3 inline mr-1" />{srv.duration} min</span>
+                              <span>•</span>
+                              <span className="font-semibold text-zinc-200">R$ {Number(srv.price || 0).toFixed(2).replace(".", ",")}</span>
+                            </div>
+                          </div>
+                          <div
+                            className="w-8 h-8 rounded-xl flex items-center justify-center text-white shrink-0 group-hover:translate-x-0.5 transition-transform"
+                            style={{ background: mainColor }}
+                          >
+                            <ArrowRight className="w-4 h-4" />
+                          </div>
+                        </button>
+                      ))}
+                    </div>
 
-              {/* Endereço Resumido */}
-              {addressText && (
-                <div className="flex items-center gap-2 mt-4 text-xs sm:text-sm text-zinc-300">
-                  <MapPin className="w-4 h-4 text-primary shrink-0" />
-                  <span className="truncate">{addressText}</span>
+                    <div className="pt-2 flex items-center justify-between text-[11px] text-zinc-300">
+                      <span className="flex items-center gap-1.5">
+                        <ShieldCheck className="w-4 h-4 text-emerald-400" /> Confirmação imediata
+                      </span>
+                      <span className="font-semibold text-amber-300">{services.length} procedimentos</span>
+                    </div>
+                  </div>
                 </div>
-              )}
-
-              {/* CTAs de Ação Imediata */}
-              <div className="mt-8 flex flex-wrap items-center gap-3">
-                <a
-                  href="#servicos"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl text-sm font-extrabold text-white shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
-                  style={{ background: mainColor }}
-                >
-                  <Calendar className="w-4 h-4" /> Agendar Meu Horário
-                </a>
-
-                {waUrl && (
-                  <a
-                    href={waUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
-                  >
-                    <MessageCircle className="w-4 h-4" /> Falar no WhatsApp
-                  </a>
-                )}
-
-                {mapsUrl && (
-                  <a
-                    href={mapsUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl text-sm font-semibold bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-md transition-all cursor-pointer"
-                  >
-                    <ExternalLink className="w-4 h-4" /> Como Chegar
-                  </a>
-                )}
               </div>
 
             </div>
           </div>
         </section>
+
+        {/* ======================================================== */}
+        {/* 2.5 FAIXA DINÂMICA (MARQUEE) DE PROCEDIMENTOS             */}
+        {/* ======================================================== */}
+        <div className="bg-zinc-900 text-zinc-200 border-b border-zinc-800 py-3 overflow-hidden">
+          <div className="flex items-center gap-8 whitespace-nowrap animate-marquee text-xs font-semibold tracking-wide">
+            {[...services, ...services, ...services].slice(0, 12).map((srv: any, idx: number) => (
+              <button
+                key={`${srv.id}-${idx}`}
+                type="button"
+                onClick={() => {
+                  setSelectedService(srv);
+                  setSelectedTime(null);
+                  setShowSummaryModal(false);
+                  setStep("booking");
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="inline-flex items-center gap-2.5 hover:text-white transition-colors cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5 shrink-0" style={{ color: mainColor }} />
+                <span>{srv.name}</span>
+                <span className="text-zinc-400 font-mono">R$ {Number(srv.price || 0).toFixed(2).replace(".", ",")}</span>
+                <span className="text-zinc-600 ml-4">•</span>
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* ======================================================== */}
         {/* 3. FAIXA DE DIFERENCIAIS E GARANTIAS                     */}
@@ -830,60 +956,93 @@ export default function ClientView() {
               <p className="text-xs mt-1">Tente buscar por outro termo ou selecione a categoria "Todos".</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {filteredServices.map((service: any) => {
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+              {filteredServices.map((service: any, idx: number) => {
                 const sPrice = Number(service.price || 0);
                 const sDeposit = depositForPrice(sPrice);
+                const isPopular = idx === 0;
                 return (
                   <div 
                     key={service.id}
-                    className="p-5 sm:p-6 rounded-3xl bg-card border border-border hover:border-primary/50 transition-all hover:shadow-xl flex flex-col justify-between group"
+                    onClick={() => {
+                      setSelectedService(service);
+                      setSelectedTime(null);
+                      setShowSummaryModal(false);
+                      setStep("booking");
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    className="card-spotlight p-5 sm:p-6 rounded-3xl bg-card border border-border hover:border-primary/40 flex flex-col justify-between group cursor-pointer"
                   >
+                    <div
+                      className="absolute top-0 left-0 right-0 h-1 opacity-75 transition-opacity group-hover:opacity-100"
+                      style={{ background: `linear-gradient(90deg, ${mainColor}, transparent)` }}
+                    />
                     <div>
-                      <div className="flex items-start justify-between gap-3 mb-2">
-                        <div className="p-2 rounded-xl bg-primary/10 text-primary shrink-0 group-hover:scale-110 transition-transform">
-                          <Scissors className="w-4 h-4" />
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="p-2.5 rounded-xl text-white shrink-0 group-hover:scale-110 group-hover:rotate-3 transition-transform shadow-sm"
+                            style={{ background: mainColor }}
+                          >
+                            <Scissors className="w-4 h-4" />
+                          </div>
+                          {service.cat && (
+                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+                              {service.cat}
+                            </span>
+                          )}
+                          {isPopular && (
+                            <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                              ★ Destaque
+                            </span>
+                          )}
                         </div>
-                        <span className="text-xs font-bold text-muted-foreground flex items-center gap-1 bg-muted/60 px-2.5 py-1 rounded-lg">
+                        <span className="text-xs font-bold text-muted-foreground flex items-center gap-1 bg-muted/70 px-2.5 py-1 rounded-lg shrink-0">
                           <Clock className="w-3 h-3" /> {service.duration} min
                         </span>
                       </div>
 
-                      <h3 className="font-serif text-base sm:text-lg font-bold text-foreground leading-snug">
+                      <h3 className="font-serif text-base sm:text-xl font-bold text-foreground leading-snug group-hover:text-primary transition-colors">
                         {service.name}
                       </h3>
-                      {service.desc && (
+                      {service.desc ? (
                         <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
                           {service.desc}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+                          Atendimento individual com hora marcada e produtos selecionados.
                         </p>
                       )}
                     </div>
 
-                    <div className="mt-5 pt-4 border-t border-border flex items-center justify-between gap-3">
+                    <div className="mt-6 pt-4 border-t border-border/80 flex items-center justify-between gap-3">
                       <div>
-                        <span className="text-[10px] text-muted-foreground block font-medium">Valor total</span>
-                        <div className="font-extrabold text-base sm:text-lg text-foreground">
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground block font-semibold">Investimento</span>
+                        <div className="font-extrabold text-lg sm:text-xl text-foreground font-mono">
                           R$ {sPrice.toFixed(2).replace('.', ',')}
                         </div>
                         {sDeposit > 0 && (
-                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold block">
-                            Sinal: R$ {sDeposit.toFixed(2).replace('.', ',')}
+                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1 mt-0.5">
+                            <ShieldCheck className="w-3 h-3" /> Reserva com sinal de R$ {sDeposit.toFixed(2).replace('.', ',')}
                           </span>
                         )}
                       </div>
 
                       <button
-                        onClick={() => {
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setSelectedService(service);
                           setSelectedTime(null);
                           setShowSummaryModal(false);
                           setStep("booking");
                           window.scrollTo({ top: 0, behavior: "smooth" });
                         }}
-                        className="px-4 py-2.5 rounded-xl text-xs font-bold text-white shadow-md hover:opacity-90 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+                        className="btn-sheen px-4 py-2.5 rounded-xl text-xs font-bold text-white shadow-md group-hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
                         style={{ background: mainColor }}
                       >
-                        Agendar <ArrowRight className="w-3.5 h-3.5" />
+                        Reservar <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                       </button>
                     </div>
                   </div>
@@ -968,20 +1127,50 @@ export default function ClientView() {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-5">
               {gallery.map((img: string, idx: number) => (
-                <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden group shadow-md bg-zinc-900">
+                <button
+                  type="button"
+                  key={idx}
+                  onClick={() => setLightboxImg(img)}
+                  className="relative aspect-square rounded-3xl overflow-hidden group shadow-md hover:shadow-2xl bg-zinc-900 cursor-pointer border border-border/60 transition-all duration-300 hover:-translate-y-1 text-left"
+                >
                   <img 
                     src={img} 
-                    alt={`Foto ${idx + 1}`} 
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                    alt={`Foto ${idx + 1} - ${salonData.name}`} 
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
                   />
-                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold">
-                    <Sparkles className="w-5 h-5 text-amber-300" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4 text-white">
+                    <span className="text-xs font-bold flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-amber-300" /> Ampliar foto
+                    </span>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
+
+            {/* Modal Lightbox da Galeria */}
+            {lightboxImg && (
+              <div
+                onClick={() => setLightboxImg(null)}
+                className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in"
+              >
+                <div className="relative max-w-3xl w-full max-h-[85vh] flex flex-col items-center">
+                  <button
+                    type="button"
+                    onClick={() => setLightboxImg(null)}
+                    className="absolute -top-11 right-0 px-3 py-1.5 rounded-full bg-white/15 hover:bg-white/25 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <X className="w-4 h-4" /> Fechar
+                  </button>
+                  <img
+                    src={lightboxImg}
+                    alt="Visualização ampliada"
+                    className="max-h-[80vh] w-auto rounded-3xl shadow-2xl border border-white/20 object-contain"
+                  />
+                </div>
+              </div>
+            )}
           </section>
         )}
 

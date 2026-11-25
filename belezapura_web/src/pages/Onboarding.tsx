@@ -225,6 +225,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
   const [estado, setEstado] = useState("");
 
   const [paymentError, setPaymentError] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const consultarCNPJ = async () => {
     const limpo = documento.replace(/\D/g, '');
@@ -280,6 +281,10 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
     if (step < 8) {
       setStep(s => s + 1);
     } else {
+      if (!acceptedTerms) {
+        setPaymentError("Para concluir o cadastro, confirme que leu e concorda com os Termos de Uso e a Política de Privacidade (LGPD).");
+        return;
+      }
       setLoading(true);
       setPaymentError("");
       try {
@@ -979,6 +984,25 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
               <div className="bg-card rounded-2xl p-5 border space-y-3">
                 <h3 className="font-semibold">{trialDays} dias para testar, sem cartão</h3>
                 <p className="text-sm text-muted-foreground">Ao concluir, seu salão inicia o período gratuito. A assinatura é solicitada no painel e liberada após a conferência manual do pagamento pelo administrador. Não há débito automático.</p>
+                <label className="flex items-start gap-2.5 pt-2 border-t border-border cursor-pointer text-xs sm:text-sm text-foreground">
+                  <input
+                    type="checkbox"
+                    checked={acceptedTerms}
+                    onChange={e => setAcceptedTerms(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-border accent-primary shrink-0"
+                  />
+                  <span className="leading-relaxed">
+                    Li e concordo com os{" "}
+                    <a href="/termos" target="_blank" rel="noopener noreferrer" className="text-primary font-semibold underline hover:opacity-80">
+                      Termos de Uso
+                    </a>{" "}
+                    e a{" "}
+                    <a href="/privacidade" target="_blank" rel="noopener noreferrer" className="text-primary font-semibold underline hover:opacity-80">
+                      Política de Privacidade (LGPD)
+                    </a>{" "}
+                    da plataforma BelezaPura.
+                  </span>
+                </label>
                 {paymentError && <p role="alert" className="text-red-600">{paymentError}</p>}
               </div>
             </div>

@@ -2,14 +2,14 @@ package handler
 
 import (
 	"fmt"
-	"gorm.io/gorm/clause"
 	"net/http"
 	"time"
 
-	"belezapura_go_api/internal/db"
-
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+
+	"belezapura_go_api/internal/db"
 )
 
 // POST /api/appointments
@@ -80,7 +80,7 @@ func CreateService(c *gin.Context) {
 		Duration: body.Duration,
 	}
 	if err := db.DB.Create(&svc).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao cadastrar serviço."})
 		return
 	}
 	c.JSON(http.StatusCreated, svc)

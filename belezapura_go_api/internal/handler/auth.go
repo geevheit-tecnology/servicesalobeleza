@@ -9,12 +9,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
+
 	"belezapura_go_api/internal/db"
 	"belezapura_go_api/internal/identity"
 	"belezapura_go_api/internal/middleware"
-
-	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/bcrypt"
 )
 
 const (
@@ -129,7 +129,7 @@ func Login(c *gin.Context) {
 	}
 
 	cleanEmail := strings.ToLower(strings.TrimSpace(req.Email))
-	ip := c.ClientIP()
+	ip := middleware.RealClientIP(c)
 	now := time.Now()
 
 	// 1. Trava de segurança: bloqueia tentativas se atingiu o limite de 5 falhas consecutivas

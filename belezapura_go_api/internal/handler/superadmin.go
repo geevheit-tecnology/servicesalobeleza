@@ -206,7 +206,7 @@ func BlockSalon(c *gin.Context) {
 	}
 
 	if err := db.DB.Model(&subscription).Update("status", "BLOCKED").Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao bloquear salão."})
 		return
 	}
 
@@ -695,7 +695,7 @@ func UpdateUser(c *gin.Context) {
 	}
 
 	if err := db.DB.Model(&user).Updates(updates).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao atualizar usuário."})
 		return
 	}
 
@@ -713,7 +713,7 @@ func DeleteUser(c *gin.Context) {
 	}
 
 	if err := db.DB.Delete(&user).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao remover usuário."})
 		return
 	}
 	writeAuditLog(c, "USER_DELETED", user.Email, "Usuário administrativo removido.", "warning")
@@ -922,7 +922,7 @@ func CreatePlan(c *gin.Context) {
 	tempPlan.Features = string(featuresJSON)
 
 	if err := db.DB.Create(&tempPlan).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao criar plano."})
 		return
 	}
 	writeAuditLog(c, "PLAN_CREATED", tempPlan.Name, "Plano criado pelo superadmin.", "success")
@@ -987,7 +987,7 @@ func UpdatePlan(c *gin.Context) {
 		"color":             color,
 	}
 	if err := db.DB.Model(&plan).Updates(updates).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao atualizar plano."})
 		return
 	}
 
@@ -1005,7 +1005,7 @@ func DeletePlan(c *gin.Context) {
 	}
 
 	if err := db.DB.Delete(&plan).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao remover plano."})
 		return
 	}
 	writeAuditLog(c, "PLAN_DELETED", plan.Name, "Plano removido pelo superadmin.", "warning")
@@ -1015,7 +1015,7 @@ func DeletePlan(c *gin.Context) {
 func GetAuditLogs(c *gin.Context) {
 	var logs []db.AdminAuditLog
 	if err := db.DB.Order("created_at desc").Limit(200).Find(&logs).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao carregar logs de auditoria."})
 		return
 	}
 

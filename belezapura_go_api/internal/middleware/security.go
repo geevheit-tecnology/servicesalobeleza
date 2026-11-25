@@ -2,13 +2,25 @@ package middleware
 
 import (
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
-	"belezapura_go_api/internal/db"
-
 	"github.com/gin-gonic/gin"
+
+	"belezapura_go_api/internal/db"
 )
+
+// RealClientIP extrai o IP real do cliente com suporte aos headers da Vercel
+func RealClientIP(c *gin.Context) string {
+	if ip := strings.TrimSpace(c.GetHeader("X-Vercel-Forwarded-For")); ip != "" {
+		return strings.TrimSpace(strings.Split(ip, ",")[0])
+	}
+	if ip := strings.TrimSpace(c.GetHeader("X-Real-IP")); ip != "" {
+		return ip
+	}
+	return c.ClientIP()
+}
 
 // SecurityHeaders adds standard web security headers to protect against XSS, clickjacking and MIME sniffing
 func SecurityHeaders() gin.HandlerFunc {
@@ -33,7 +45,7 @@ func RateLimiter(maxRequests int, window time.Duration) gin.HandlerFunc {
 	var rateMutex sync.Mutex
 	lastCleanup := time.Now()
 	return func(c *gin.Context) {
-		ip := c.ClientIP()
+		ip := RealClientIP(c)
 		now := time.Now()
 
 		rateMutex.Lock()

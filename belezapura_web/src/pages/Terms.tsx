@@ -56,7 +56,7 @@ export default function Terms() {
     },
     {
       id: "planos",
-      title: "3. Período de Testes (Trial de 10 Dias) e Planos",
+      title: "3. Período de Testes (Trial de 14 Dias) e Planos",
       icon: CreditCard,
       content: (
         <>

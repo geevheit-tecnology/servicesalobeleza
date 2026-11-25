@@ -305,6 +305,97 @@ html, body, #root {
 }
 
 .mesh-grid {
-  background-image: radial-gradient(rgba(17, 24, 39, 0.04) 1px, transparent 1px);
-  background-size: 28px 28px;
+  background-image: radial-gradient(rgba(17, 24, 39, 0.05) 1px, transparent 1px);
+  background-size: 26px 26px;
 }
+
+/* ================================================================
+   Efeitos Premium, Aurora Glow, 3D Hover & Micro-Interações
+   ================================================================ */
+@keyframes auroraDrift {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+  33% {
+    transform: translate3d(25px, -18px, 0) scale(1.08) rotate(3deg);
+  }
+  66% {
+    transform: translate3d(-20px, 15px, 0) scale(0.95) rotate(-3deg);
+  }
+}
+
+@keyframes textShimmer {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes borderGlowSpin {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(25deg); }
+}
+
+@keyframes ringRipple {
+  0% { transform: scale(0.95); opacity: 0.75; }
+  70% { transform: scale(1.35); opacity: 0; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+
+.animate-aurora {
+  animation: auroraDrift 14s ease-in-out infinite;
+}
+
+.animate-aurora-reverse {
+  animation: auroraDrift 18s ease-in-out infinite reverse;
+}
+
+.animate-text-shimmer {
+  background-size: 220% auto;
+  animation: textShimmer 5s ease-in-out infinite;
+}
+
+.card-spotlight {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.35s ease;
+}
+
+.card-spotlight:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 22px 45px -12px rgba(17, 24, 39, 0.14),
+              0 8px 18px -8px rgba(229, 169, 145, 0.22);
+}
+
+.card-spotlight::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(500px circle at var(--mouse-x, 85%) var(--mouse-y, 15%), rgba(229, 169, 145, 0.14), transparent 55%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.card-spotlight:hover::before {
+  opacity: 1;
+}
+
+.glass-luxury {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+}
+
+.dark .glass-luxury {
+  background: rgba(17, 24, 39, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.hero-vignette {
+  background: radial-gradient(circle at 25% 30%, rgba(255, 255, 255, 0.08) 0%, transparent 55%),
+              linear-gradient(180deg, rgba(9, 9, 11, 0.35) 0%, rgba(9, 9, 11, 0.82) 70%, rgba(9, 9, 11, 0.98) 100%);
+}
+

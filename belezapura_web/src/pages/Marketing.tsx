@@ -152,6 +152,18 @@ export default function Marketing() {
   // Demonstrador interativo
   const [activeScenario, setActiveScenario] = useState<BookingScenario>(BOOKING_SCENARIOS[0]);
   const [copiedPix, setCopiedPix] = useState(false);
+  const [demoTab, setDemoTab] = useState<"agenda" | "pix" | "equipe">("agenda");
+
+  // Rotação automática suave dos cenários do celular no Hero
+  useEffect(() => {
+    const scenarioTimer = setInterval(() => {
+      setActiveScenario(prev => {
+        const idx = BOOKING_SCENARIOS.findIndex(s => s.id === prev.id);
+        return BOOKING_SCENARIOS[(idx + 1) % BOOKING_SCENARIOS.length];
+      });
+    }, 6500);
+    return () => clearInterval(scenarioTimer);
+  }, []);
 
   // Notificações flutuantes dinâmicas
   const [liveNotifIndex, setLiveNotifIndex] = useState(0);
@@ -299,18 +311,38 @@ export default function Marketing() {
           {/* Hero Left Content */}
           <div className="lg:col-span-7 flex flex-col items-start animate-fade-up">
             
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#E5A991]/15 border border-[#E5A991]/40 text-[#9C5A42] text-xs md:text-sm font-semibold mb-6 shadow-xs">
+            <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-[#E5A991]/15 border border-[#E5A991]/40 text-[#9C5A42] text-xs md:text-sm font-semibold mb-6 shadow-xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 beacon-dot" />
               <Sparkles className="w-4 h-4 text-[#C47F65]" />
-              <span>Seu espaço. Sua agenda. Suas clientes.</span>
+              <span>Seu espaço • Sua agenda 24h • Sinal direto no seu PIX</span>
             </div>
 
-            <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight text-[#111827] leading-[1.08] mb-6">
-              Cliente marcou, pagou o sinal, veio.
+            <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight text-[#111827] leading-[1.06] mb-6">
+              Cliente marcou,{" "}
+              <span className="brand-text-gradient animate-text-shimmer">pagou o sinal</span>, veio.
             </h1>
 
-            <p className="text-[#4B5563] text-lg sm:text-xl leading-relaxed mb-8 max-w-2xl font-normal">
-              Agenda online para estética, bronzeamento e unhas. Sua cliente escolhe o serviço e a profissional pelo link do Instagram, paga o sinal no Pix e o horário fica reservado.
+            <p className="text-[#4B5563] text-lg sm:text-xl leading-relaxed mb-6 max-w-2xl font-normal">
+              Transforme o link da sua bio e o seu Google Maps em uma recepção inteligente 24h. Sua cliente escolhe o procedimento, paga o sinal no Pix direto na sua conta e o horário fica blindado contra furos.
             </p>
+
+            {/* Pílulas de Nichos com Efeito Hover */}
+            <div className="flex flex-wrap items-center gap-2 mb-8">
+              {[
+                "✨ Clínicas de Estética",
+                "💅 Nail Designers & Esmalterias",
+                "☀️ Studios de Bronzeamento",
+                "💇‍♀️ Salões & Cílios",
+                "💆‍♀️ Massoterapia & SPA"
+              ].map((niche) => (
+                <span
+                  key={niche}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-white/90 border border-[#E5E7EB] text-[#374151] shadow-2xs hover:border-[#E5A991] hover:-translate-y-0.5 transition-all"
+                >
+                  {niche}
+                </span>
+              ))}
+            </div>
 
             {/* CTAs */}
             <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-4 mb-8">
@@ -355,7 +387,18 @@ export default function Marketing() {
                 </div>
                 <div>
                   <div className="text-xs font-bold text-[#111827]">Sinal no Pix, direto na sua conta</div>
-                  <div className="text-[10px] text-[#6B7280]">Direto na sua conta bancária</div>
+                  <div className="text-[10px] text-[#6B7280]">0% de taxa sobre os agendamentos</div>
+                </div>
+              </div>
+
+              {/* Badge Flutuante Inferior Direito */}
+              <div className="absolute -bottom-5 -right-5 z-20 bg-[#111827] text-white border border-[#E5A991]/40 rounded-2xl p-3.5 shadow-2xl hidden sm:flex items-center gap-3 animate-float-slow">
+                <div className="w-9 h-9 rounded-xl bg-[#E5A991]/20 text-[#E5A991] flex items-center justify-center font-bold">
+                  <TrendingUp className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-white">+R$ 1.840 protegidos</div>
+                  <div className="text-[10px] text-[#E5A991]">Agenda blindada contra no-show</div>
                 </div>
               </div>
 
@@ -467,7 +510,30 @@ export default function Marketing() {
         </div>
       </section>
 
-      {/* Faixa de Métricas Centrais */}
+      {/* Faixa Dinâmica Marquee + Métricas Centrais */}
+      <div className="relative z-20 bg-[#111827] text-white py-3 border-t border-stone-800 overflow-hidden">
+        <div className="flex items-center gap-10 whitespace-nowrap animate-marquee text-xs font-semibold tracking-wider uppercase">
+          {[
+            "✦ Agendamento Online 24h na Bio",
+            "✦ Sinal Anti-Furo no PIX (0% de taxa)",
+            "✦ Link Direto no Google Maps",
+            "✦ Controle de Comissões da Equipe",
+            "✦ Alerta de Estoque Mínimo",
+            "✦ Mural de Avaliações 5 Estrelas",
+            "✦ Agendamento Online 24h na Bio",
+            "✦ Sinal Anti-Furo no PIX (0% de taxa)",
+            "✦ Link Direto no Google Maps",
+            "✦ Controle de Comissões da Equipe",
+            "✦ Alerta de Estoque Mínimo",
+            "✦ Mural de Avaliações 5 Estrelas",
+          ].map((item, idx) => (
+            <span key={idx} className="inline-flex items-center gap-3 text-stone-200">
+              <span className="text-[#E5A991]">{item}</span>
+            </span>
+          ))}
+        </div>
+      </div>
+
       <section className="relative z-20 border-y border-[#E5E7EB] bg-white py-9 shadow-xs">
         <div className="max-w-7xl mx-auto px-5 grid grid-cols-2 lg:grid-cols-4 gap-6 text-center">
           
@@ -562,30 +628,30 @@ export default function Marketing() {
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-14">
             {[
               {
                 step: "01",
-                title: "Link na bio",
-                desc: "Ela abre o link da sua bio."
+                title: "Link na bio & Google",
+                desc: "Sua cliente toca no link exclusivo do seu Instagram ou botão Agendar do Google Maps."
               },
               {
                 step: "02",
                 title: "Serviço e profissional",
-                desc: "Escolhe o serviço, a profissional e o horário."
+                desc: "Escolhe o procedimento, a especialista disponível e o horário livre em tempo real."
               },
               {
                 step: "03",
                 title: "Sinal no Pix",
-                desc: "Paga o sinal no Pix."
+                desc: "Copia o código Pix do sinal configurado por você e paga direto para a sua conta."
               },
               {
                 step: "04",
-                title: "Conferência e confirmação",
-                desc: "Você confere no banco e confirma."
+                title: "Agenda confirmada",
+                desc: "Você confere o Pix no banco, confirma com 1 clique e o painel já calcula caixa e comissão."
               }
             ].map((st, i) => (
-              <div key={i} className="bg-white/95 rounded-3xl p-6 border border-[#E5E7EB] hover:border-[#E5A991] hover:-translate-y-1.5 transition-all duration-300 shadow-xs hover:shadow-xl group">
+              <div key={i} className="card-spotlight bg-white/95 rounded-3xl p-6 border border-[#E5E7EB] hover:border-[#E5A991] group">
                 <div className="w-10 h-10 rounded-xl bg-[#111827] text-[#E5A991] flex items-center justify-center font-bold text-sm mb-4 shadow-xs group-hover:scale-110 group-hover:bg-[#E5A991] group-hover:text-[#111827] transition-all duration-300">
                   {st.step}
                 </div>
@@ -593,6 +659,118 @@ export default function Marketing() {
                 <p className="text-[#4B5563] text-sm leading-relaxed">{st.desc}</p>
               </div>
             ))}
+          </div>
+
+          {/* Vitrine Interativa em Tempo Real do Painel do Salão */}
+          <div className="bg-[#111827] text-white rounded-[2rem] p-6 sm:p-10 border border-stone-800 shadow-2xl relative overflow-hidden">
+            <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-[#E5A991]/15 blur-[110px] pointer-events-none animate-aurora" />
+
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-8 border-b border-stone-800">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-[#E5A991] flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" /> Visão por dentro do sistema
+                </span>
+                <h3 className="font-serif text-2xl sm:text-3xl font-bold text-white mt-1">
+                  Veja o que você controla no seu painel
+                </h3>
+              </div>
+
+              <div className="flex flex-wrap gap-2 bg-stone-900/90 p-1.5 rounded-2xl border border-stone-800">
+                {[
+                  { id: "agenda" as const, label: "📅 Agenda & Sinal PIX" },
+                  { id: "pix" as const, label: "🌐 Sua Landing Page Exclusiva" },
+                  { id: "equipe" as const, label: "💸 Comissões & Financeiro" },
+                ].map(t => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setDemoTab(t.id)}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      demoTab === t.id
+                        ? "bg-[#E5A991] text-[#111827] shadow-md"
+                        : "text-stone-400 hover:text-white"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {demoTab === "agenda" && (
+              <div className="grid md:grid-cols-3 gap-4 pt-8 animate-fade-in">
+                {[
+                  { time: "09:00 • 12:00", client: "Mariana Costa", service: "Alongamento Fibra de Vidro", pro: "Rafaela", price: "R$ 180,00", deposit: "Sinal R$ 36,00 pago", status: "Confirmado", color: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" },
+                  { time: "14:00 • 15:30", client: "Fernanda Lima", service: "Bronzeamento Natural com Fita", pro: "Juliana", price: "R$ 140,00", deposit: "Sinal R$ 28,00 pago", status: "Confirmado", color: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" },
+                  { time: "16:00 • 17:00", client: "Beatriz Souza", service: "Limpeza de Pele Profunda", pro: "Camila", price: "R$ 150,00", deposit: "Aguardando conferência", status: "Pré-reserva", color: "bg-amber-500/15 text-amber-300 border-amber-500/30" },
+                ].map((card, idx) => (
+                  <div key={idx} className="p-5 rounded-2xl bg-stone-900/90 border border-stone-800 hover:border-[#E5A991]/40 transition-all space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-mono text-stone-400">{card.time}</span>
+                      <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${card.color}`}>
+                        {card.status}
+                      </span>
+                    </div>
+                    <div>
+                      <div className="font-bold text-white text-base">{card.client}</div>
+                      <div className="text-xs text-stone-300 mt-0.5">{card.service}</div>
+                    </div>
+                    <div className="pt-3 border-t border-stone-800 flex items-center justify-between text-xs">
+                      <span className="text-stone-400">Profissional: <strong className="text-white">{card.pro}</strong></span>
+                      <span className="font-bold text-[#E5A991]">{card.price}</span>
+                    </div>
+                    <div className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
+                      <ShieldCheck className="w-3.5 h-3.5" /> {card.deposit}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {demoTab === "pix" && (
+              <div className="grid md:grid-cols-3 gap-4 pt-8 animate-fade-in">
+                <div className="p-5 rounded-2xl bg-stone-900/90 border border-stone-800 space-y-2">
+                  <div className="text-xs font-bold text-[#E5A991] uppercase">1. Sua Marca e Cores</div>
+                  <div className="font-bold text-white text-base">Página com a identidade do seu espaço</div>
+                  <p className="text-xs text-stone-400 leading-relaxed">
+                    Foto de capa, logo, galeria de transformações, mural de avaliações 5 estrelas e botão direto para o seu WhatsApp e Google Maps.
+                  </p>
+                </div>
+                <div className="p-5 rounded-2xl bg-stone-900/90 border border-stone-800 space-y-2">
+                  <div className="text-xs font-bold text-[#E5A991] uppercase">2. Horários Inteligentes</div>
+                  <div className="font-bold text-white text-base">Zero choque de agenda</div>
+                  <p className="text-xs text-stone-400 leading-relaxed">
+                    O sistema calcula sozinho a duração de cada procedimento e bloqueia o intervalo da profissional escolhida em tempo real.
+                  </p>
+                </div>
+                <div className="p-5 rounded-2xl bg-stone-900/90 border border-stone-800 space-y-2">
+                  <div className="text-xs font-bold text-[#E5A991] uppercase">3. Regra de Sinal Flexível</div>
+                  <div className="font-bold text-white text-base">Você escolhe como cobrar</div>
+                  <p className="text-xs text-stone-400 leading-relaxed">
+                    Defina sinal obrigatório (ex: 20% ou R$ 30 fixos), opcional ou desativado. O código Pix Copia e Cola é gerado na hora para a cliente.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {demoTab === "equipe" && (
+              <div className="grid md:grid-cols-3 gap-4 pt-8 animate-fade-in">
+                {[
+                  { name: "Rafaela (Nail Designer)", services: "28 atendimentos concluídos", total: "R$ 4.760,00 produzidos", comm: "R$ 1.904,00 (40% comissão)" },
+                  { name: "Juliana (Bronze & Corpo)", services: "34 atendimentos concluídos", total: "R$ 4.420,00 produzidos", comm: "R$ 1.768,00 (40% comissão)" },
+                  { name: "Camila (Estética Facial)", services: "22 atendimentos concluídos", total: "R$ 3.520,00 produzidos", comm: "R$ 1.408,00 (40% comissão)" },
+                ].map((pro, idx) => (
+                  <div key={idx} className="p-5 rounded-2xl bg-stone-900/90 border border-stone-800 space-y-2.5">
+                    <div className="font-bold text-white text-base">{pro.name}</div>
+                    <div className="text-xs text-stone-400">{pro.services}</div>
+                    <div className="text-sm font-semibold text-stone-200">{pro.total}</div>
+                    <div className="pt-2 border-t border-stone-800 text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4" /> {pro.comm}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
         </div>

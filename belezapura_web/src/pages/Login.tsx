@@ -151,7 +151,13 @@ export default function Login() {
                 />
               </div>
               <div className="flex justify-end mt-2">
-                <a href="#" className="text-xs text-primary hover:underline">Esqueceu a senha?</a>
+                <button
+                  type="button"
+                  onClick={() => navigate("/contato")}
+                  className="text-xs text-primary hover:underline bg-transparent border-0 p-0 cursor-pointer"
+                >
+                  Esqueceu a senha? Fale com o suporte
+                </button>
               </div>
             </div>
 

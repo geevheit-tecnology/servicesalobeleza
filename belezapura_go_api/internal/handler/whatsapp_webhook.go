@@ -1,26 +1,59 @@
 package handler
 
 import (
-	"belezapura_go_api/internal/db"
-	"belezapura_go_api/internal/whatsapp"
-	"github.com/gin-gonic/gin"
+	"crypto/subtle"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
+
+	"belezapura_go_api/internal/db"
+	"belezapura_go_api/internal/whatsapp"
 )
+
+func validWhatsAppWebhookSecret(c *gin.Context) bool {
+	expected := strings.TrimSpace(os.Getenv("WHATSAPP_WEBHOOK_SECRET"))
+	if expected == "" {
+		expected = strings.TrimSpace(os.Getenv("WHATSAPP_API_KEY"))
+	}
+	if len(expected) < 16 {
+		return false
+	}
+	provided := strings.TrimSpace(c.GetHeader("X-Webhook-Token"))
+	if provided == "" {
+		provided = strings.TrimSpace(c.GetHeader("apikey"))
+	}
+	if provided == "" {
+		if parts := strings.Fields(c.GetHeader("Authorization")); len(parts) == 2 && strings.EqualFold(parts[0], "Bearer") {
+			provided = strings.TrimSpace(parts[1])
+		}
+	}
+	if provided == "" {
+		return false
+	}
+	return subtle.ConstantTimeCompare([]byte(provided), []byte(expected)) == 1
+}
 
 // WhatsAppWebhookHandler processa respostas de clientes recebidas pelo Evolution API
 func WhatsAppWebhookHandler(c *gin.Context) {
+	if !validWhatsAppWebhookSecret(c) {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Webhook não autorizado."})
+		return
+	}
+
 	var payload struct {
-		Event string `json:"event"`
-		Data  struct {
+		Event   string `json:"event"`
+		SalonID string `json:"salonId"`
+		Data    struct {
 			Key struct {
 				RemoteJid string `json:"remoteJid"`
 				FromMe    bool   `json:"fromMe"`
 			} `json:"key"`
 			Message struct {
-				Conversation string `json:"conversation"`
+				Conversation        string `json:"conversation"`
 				ExtendedTextMessage struct {
 					Text string `json:"text"`
 				} `json:"extendedTextMessage"`
@@ -48,25 +81,36 @@ func WhatsAppWebhookHandler(c *gin.Context) {
 	phone := strings.Split(remote, "@")[0]
 	phone = whatsapp.CleanPhoneNumber(phone)
 
-	if phone == "" || text == "" {
+	if len(phone) < 10 || text == "" {
 		c.JSON(http.StatusOK, gin.H{"status": "ignored"})
 		return
+	}
+
+	salonID := strings.TrimSpace(c.Query("salonId"))
+	if salonID == "" {
+		salonID = strings.TrimSpace(payload.SalonID)
 	}
 
 	lowerText := strings.ToLower(text)
 	log.Printf("[WhatsApp Webhook] Mensagem recebida de %s: %s", phone, text)
 
-	// Busca o cliente pelo telefone
+	// Busca o cliente pelo telefone (restrito ao salão se informado e com WhatsApp ativo)
 	var client db.Client
-	if err := db.DB.Where("phone LIKE ?", "%"+phone[len(phone)-8:]).Order("created_at DESC").First(&client).Error; err != nil {
+	clientQuery := db.DB.Where("phone LIKE ? AND status <> ?", "%"+phone[len(phone)-8:], "deleted")
+	if salonID != "" {
+		clientQuery = clientQuery.Where("salon_id = ?", salonID)
+	} else {
+		clientQuery = clientQuery.Where("salon_id IN (SELECT id FROM salons WHERE whatsapp_enabled = true AND deleted_at IS NULL)")
+	}
+	if err := clientQuery.Order("created_at DESC").First(&client).Error; err != nil {
 		c.JSON(http.StatusOK, gin.H{"status": "ok", "message": "client_not_found"})
 		return
 	}
 
-	// Busca o agendamento mais recente em aberto do cliente
+	// Busca o agendamento mais recente em aberto do cliente naquele salão
 	var appt db.Appointment
 	now := time.Now()
-	if err := db.DB.Where("client_id = ? AND date >= ? AND status IN ('waiting', 'confirmed')", client.ID, now.Add(-2*time.Hour)).Order("date ASC").First(&appt).Error; err != nil {
+	if err := db.DB.Where("salon_id = ? AND client_id = ? AND date >= ? AND status IN ('waiting', 'confirmed')", client.SalonID, client.ID, now.Add(-2*time.Hour)).Order("date ASC").First(&appt).Error; err != nil {
 		c.JSON(http.StatusOK, gin.H{"status": "ok", "message": "no_pending_appointment"})
 		return
 	}
@@ -87,4 +131,3 @@ func WhatsAppWebhookHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"status": "processed"})
 }
-
