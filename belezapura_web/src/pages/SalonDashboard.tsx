@@ -43,6 +43,15 @@ export default function SalonDashboard() {
   const [showUpgradeModal, setShowUpgradeModal] = useState<boolean>(false);
   const [upgradingPlan, setUpgradingPlan] = useState<string | null>(null);
   const [upgradeError, setUpgradeError] = useState<string | null>(null);
+  const [upgradePaymentInfo, setUpgradePaymentInfo] = useState<{
+    planName: string;
+    amount: number;
+    pixCode: string;
+    pixKey: string;
+    pixName: string;
+    message: string;
+  } | null>(null);
+  const [copiedUpgradePix, setCopiedUpgradePix] = useState(false);
 
   useEffect(() => {
     if (token) {
@@ -110,8 +119,14 @@ export default function SalonDashboard() {
         throw new Error(data.message || data.error || 'Erro ao processar assinatura.');
       }
 
-      setShowUpgradeModal(false);
-      alert(data.message || "Solicitação registrada. Aguarde a conferência do pagamento.");
+      setUpgradePaymentInfo({
+        planName: data.planName || selectedPlan,
+        amount: Number(data.amount || 0),
+        pixCode: data.pixCode || "",
+        pixKey: data.pixKey || "",
+        pixName: data.pixName || "BelezaPura",
+        message: data.message || "Solicitação registrada! Realize o pagamento via Pix para ativar seu plano.",
+      });
     } catch (err: any) {
       setUpgradeError(err.message || 'Falha na comunicação com o servidor.');
     } finally {
@@ -494,48 +509,146 @@ export default function SalonDashboard() {
       </div>
 
       {(trialExpired || showUpgradeModal) && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto space-y-5 shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-3xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto space-y-5 shadow-2xl">
             <div className="flex justify-between items-center gap-3">
               <div>
-                <h2 className="font-serif text-xl font-semibold">{trialExpired ? "Regularizar assinatura" : "Escolha o plano ideal para o seu espaço"}</h2>
+                <h2 className="font-serif text-xl sm:text-2xl font-bold">
+                  {upgradePaymentInfo
+                    ? `Pagamento da Assinatura — Plano ${upgradePaymentInfo.planName}`
+                    : trialExpired
+                    ? "Regularizar assinatura"
+                    : "Escolha o plano ideal para o seu espaço"}
+                </h2>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Quanto maior a categoria do plano, mais módulos e benefícios do sistema são liberados.
+                  {upgradePaymentInfo
+                    ? "Pague via PIX Copia e Cola abaixo para liberar seus 30 dias de assinatura."
+                    : "Quanto maior a categoria do plano, mais módulos e benefícios do sistema são liberados."}
                 </p>
               </div>
-              <Button variant="ghost" onClick={() => setShowUpgradeModal(false)} disabled={trialExpired}>Fechar</Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setUpgradePaymentInfo(null);
+                  setShowUpgradeModal(false);
+                }}
+                disabled={trialExpired && !upgradePaymentInfo}
+              >
+                Fechar
+              </Button>
             </div>
+
             {upgradeError && <p role="alert" className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl p-3">{upgradeError}</p>}
-            <div className="grid sm:grid-cols-3 gap-4">
-              {availablePlans.map(p => (
-                <div key={p.id} className={`p-5 border rounded-2xl flex flex-col justify-between space-y-4 ${p.highlight ? "border-2 border-primary shadow-md" : "border-border"}`}>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <Badge variant="outline" className="text-[10px]">{p.category || "Plano Mensal"}</Badge>
-                      {p.highlight && <Badge variant="success" className="text-[10px]">★ Mais Escolhido</Badge>}
-                    </div>
-                    <h3 className="font-serif text-lg font-bold">{p.name}</h3>
-                    <div>
-                      <span className="font-serif text-2xl font-bold">
-                        R$ {Number(p.price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                      </span>
-                      <span className="text-xs text-muted-foreground">/mês</span>
-                    </div>
-                    <ul className="text-xs space-y-2 pt-2 border-t border-border">
-                      {(Array.isArray(p.features) ? p.features : []).map((f: string, idx: number) => (
-                        <li key={idx} className="flex items-start gap-2">
-                          <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-                          <span>{f}</span>
-                        </li>
-                      ))}
-                    </ul>
+
+            {upgradePaymentInfo ? (
+              <div className="bg-muted/30 border border-border rounded-2xl p-5 sm:p-6 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-border">
+                  <div>
+                    <Badge variant="success" className="mb-1">Solicitação Registrada</Badge>
+                    <h3 className="font-serif text-lg font-bold text-foreground">
+                      Plano {upgradePaymentInfo.planName}
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Favorecido: <strong>{upgradePaymentInfo.pixName}</strong>
+                    </p>
                   </div>
-                  <Button className="w-full" disabled={upgradingPlan !== null} onClick={() => handleUpgrade(p.name)}>
-                    {upgradingPlan === p.name ? "Solicitando..." : `Solicitar ${p.name}`}
+                  <div className="text-left sm:text-right">
+                    <span className="text-xs text-muted-foreground block">Valor mensal</span>
+                    <span className="font-serif text-2xl sm:text-3xl font-extrabold text-primary">
+                      R$ {Number(upgradePaymentInfo.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+
+                {upgradePaymentInfo.pixCode ? (
+                  <div className="space-y-3">
+                    <label className="text-xs font-semibold text-foreground block">
+                      Código PIX Copia e Cola (cole no aplicativo do seu banco):
+                    </label>
+                    <div className="p-3 rounded-xl bg-background border border-border font-mono text-xs break-all select-all text-muted-foreground">
+                      {upgradePaymentInfo.pixCode}
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      <Button
+                        onClick={() => {
+                          navigator.clipboard.writeText(upgradePaymentInfo.pixCode);
+                          setCopiedUpgradePix(true);
+                          setTimeout(() => setCopiedUpgradePix(false), 3000);
+                        }}
+                        className="flex-1 min-h-11 font-bold"
+                      >
+                        {copiedUpgradePix ? "✓ Código PIX Copiado!" : "Copiar Código PIX Copia e Cola"}
+                      </Button>
+                    </div>
+                    {upgradePaymentInfo.pixKey && (
+                      <p className="text-xs text-muted-foreground">
+                        Ou pague diretamente para a Chave PIX: <strong className="font-mono text-foreground select-all">{upgradePaymentInfo.pixKey}</strong>
+                      </p>
+                    )}
+                  </div>
+                ) : upgradePaymentInfo.pixKey ? (
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground">Chave PIX oficial para pagamento:</p>
+                    <div className="p-3 rounded-xl bg-background border border-border font-mono text-sm font-bold select-all">
+                      {upgradePaymentInfo.pixKey}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    {upgradePaymentInfo.message}
+                  </p>
+                )}
+
+                <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs leading-relaxed">
+                  Após realizar o PIX, o administrador confere o recebimento e libera automaticamente 30 dias de acesso completo ao plano <strong>{upgradePaymentInfo.planName}</strong>.
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button variant="outline" onClick={() => setUpgradePaymentInfo(null)}>
+                    Escolher outro plano
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setUpgradePaymentInfo(null);
+                      setShowUpgradeModal(false);
+                    }}
+                  >
+                    Concluir
                   </Button>
                 </div>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <div className="grid sm:grid-cols-3 gap-4">
+                {availablePlans.map(p => (
+                  <div key={p.id} className={`p-5 border rounded-2xl flex flex-col justify-between space-y-4 ${p.highlight ? "border-2 border-primary shadow-md" : "border-border"}`}>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <Badge variant="outline" className="text-[10px]">{p.category || "Plano Mensal"}</Badge>
+                        {p.highlight && <Badge variant="success" className="text-[10px]">★ Mais Escolhido</Badge>}
+                      </div>
+                      <h3 className="font-serif text-lg font-bold">{p.name}</h3>
+                      <div>
+                        <span className="font-serif text-2xl font-bold">
+                          R$ {Number(p.price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        </span>
+                        <span className="text-xs text-muted-foreground">/mês</span>
+                      </div>
+                      <ul className="text-xs space-y-2 pt-2 border-t border-border">
+                        {(Array.isArray(p.features) ? p.features : []).map((f: string, idx: number) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                            <span>{f}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <Button className="w-full" disabled={upgradingPlan !== null} onClick={() => handleUpgrade(p.name)}>
+                      {upgradingPlan === p.name ? "Gerando PIX..." : `Assinar ${p.name} via PIX`}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
             {trialExpired && (
               <Button variant="outline" onClick={() => { localStorage.removeItem("token"); window.location.assign("/login"); }}>
                 Encerrar sessão

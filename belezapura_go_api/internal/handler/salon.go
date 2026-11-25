@@ -87,28 +87,35 @@ func GetSalonDetails(c *gin.Context) {
 		daysRemaining = int(time.Until(*sub.TrialEnds).Hours()/24) + 1
 	}
 
+	ensureSystemSettingsColumns()
+	var sysSettings db.SystemSettings
+	_ = db.DB.First(&sysSettings).Error
+
 	resMap := gin.H{
 		"reviewsRaw": salon.ReviewsRaw,
 		"address": salon.Address, "instagram": salon.Instagram, "pixName": salon.PixName,
 		"depositPolicy": salon.DepositPolicy, "depositType": salon.DepositType, "depositValue": salon.DepositValue,
-		"id":             salon.ID,
-		"slug":           salon.Slug,
-		"name":           salon.Name,
-		"document":       salon.Document,
-		"phone":          salon.Phone,
-		"pixKey":         salon.PixKey,
-		"logo":           salon.Logo,
-		"cover":          salon.Cover,
-		"gallery":        salon.Gallery,
-		"mainColor":      salon.MainColor,
-		"scheduleRaw":    salon.ScheduleRaw,
-		"professionals":  salon.Professionals,
-		"services":       salon.Services,
-		"subscriptions":  []db.Subscription{sub},
-		"trialExpired":   trialExpired,
-		"daysRemaining":  daysRemaining,
-		"trialTotalDays": currentTrialDays(),
-		"timezone":       salon.Timezone, "blockedDates": salon.BlockedDates,
+		"id":              salon.ID,
+		"slug":            salon.Slug,
+		"name":            salon.Name,
+		"document":        salon.Document,
+		"phone":           salon.Phone,
+		"pixKey":          salon.PixKey,
+		"logo":            salon.Logo,
+		"cover":           salon.Cover,
+		"gallery":         salon.Gallery,
+		"mainColor":       salon.MainColor,
+		"scheduleRaw":     salon.ScheduleRaw,
+		"professionals":   salon.Professionals,
+		"services":        salon.Services,
+		"subscriptions":   []db.Subscription{sub},
+		"trialExpired":    trialExpired,
+		"daysRemaining":   daysRemaining,
+		"trialTotalDays":  currentTrialDays(),
+		"platformPixKey":  sysSettings.PixKey,
+		"platformPixName": sysSettings.PixName,
+		"supportEmail":    sysSettings.SupportEmail,
+		"timezone":        salon.Timezone, "blockedDates": salon.BlockedDates,
 	}
 	c.JSON(http.StatusOK, resMap)
 }
@@ -303,8 +310,36 @@ func UpgradePlan(c *gin.Context) {
 		c.JSON(503, gin.H{"error": "Não foi possível registrar a solicitação."})
 		return
 	}
+
+	ensureSystemSettingsColumns()
+	var sysSettings db.SystemSettings
+	_ = db.DB.First(&sysSettings).Error
+
+	pixCode := ""
+	pixKey := strings.TrimSpace(sysSettings.PixKey)
+	pixBeneficiaryName := strings.TrimSpace(sysSettings.PixName)
+	if pixBeneficiaryName == "" {
+		pixBeneficiaryName = sysSettings.PlatformName
+	}
+	if pixBeneficiaryName == "" {
+		pixBeneficiaryName = "BELEZAPURA"
+	}
+	if pixKey != "" && plan.Price > 0 {
+		if generated, pErr := generatePix(pixKey, pixBeneficiaryName, plan.Price); pErr == nil {
+			pixCode = generated
+		}
+	}
+
 	writeAuditLog(c, "SUBSCRIPTION_REQUESTED", salonID, "Adesão/renovação solicitada para "+plan.Name, "info")
-	c.JSON(http.StatusAccepted, gin.H{"message": "Solicitação registrada. Aguarde a conferência do pagamento pelo administrador.", "pending": true, "planName": plan.Name})
+	c.JSON(http.StatusAccepted, gin.H{
+		"message":   "Solicitação registrada! Realize o pagamento via Pix abaixo e envie o comprovante para ativação imediata.",
+		"pending":   true,
+		"planName":  plan.Name,
+		"amount":    plan.Price,
+		"pixCode":   pixCode,
+		"pixKey":    pixKey,
+		"pixName":   pixBeneficiaryName,
+	})
 }
 
 // POST /api/salon/clients

@@ -1945,103 +1945,314 @@ function UsuariosView() {
   );
 }
 
-function ConfiguracoesAdminView() {
+function ConfiguracoesAdminView({ onSettingsChanged }: { onSettingsChanged?: () => void }) {
   const [platformData, setPlatformData] = useState({
-    platformName: "",
-    domain: "",
-    supportEmail: ""
+    platformName: "BelezaPura",
+    domain: "servicesalobeleza.vercel.app",
+    supportEmail: "geevheittecnology@gmail.com",
+    pixKey: "",
+    pixName: "Geevheith Technology",
   });
+  const [pixType, setPixType] = useState<"cpf" | "cnpj" | "email" | "celular" | "aleatoria">("cnpj");
 
   const [trialData, setTrialData] = useState({
-    trialDays: 10,
-    defaultPlanId: ""
+    trialDays: 14,
+    defaultPlanId: "studio",
+    applyToActiveTrials: true,
   });
 
+  const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
     setToast(msg);
-    setTimeout(() => setToast(null), 3000);
+    setTimeout(() => setToast(null), 4000);
   };
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/superadmin/settings`, {
-      headers: { 'Authorization': `Bearer ${token}` }
+      headers: { 'Authorization': `Bearer ${token}` },
+      cache: "no-store",
     })
       .then(res => res.json())
       .then(data => {
         setPlatformData({
           platformName: data.platformName || "BelezaPura",
           domain: data.domain || "servicesalobeleza.vercel.app",
-          supportEmail: data.supportEmail || "contato@belezapura.com"
+          supportEmail: data.supportEmail || "geevheittecnology@gmail.com",
+          pixKey: data.pixKey || "",
+          pixName: data.pixName || data.platformName || "BelezaPura",
         });
-        setTrialData({
-          trialDays: data.trialDays || 14,
-          defaultPlanId: data.defaultPlanId || "studio"
-        });
+        setTrialData(prev => ({
+          ...prev,
+          trialDays: typeof data.trialDays === "number" ? data.trialDays : 14,
+          defaultPlanId: data.defaultPlanId || "studio",
+        }));
       })
       .catch(console.error);
   }, []);
 
+  const normalizePixKey = (raw: string) => {
+    const trimmed = raw.trim();
+    if (!trimmed) return "";
+    if (pixType === "cpf" || pixType === "cnpj") {
+      return trimmed.replace(/\D/g, "");
+    }
+    if (pixType === "celular") {
+      const digits = trimmed.replace(/\D/g, "");
+      if (!digits) return "";
+      return digits.startsWith("55") && digits.length >= 12 ? `+${digits}` : `+55${digits}`;
+    }
+    return trimmed;
+  };
+
   const handleSave = async () => {
     const token = localStorage.getItem('token');
+    setSaving(true);
+    setErrorMsg(null);
     try {
-      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/superadmin/settings`, {
+      const cleanPixKey = normalizePixKey(platformData.pixKey);
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3050'}/api/superadmin/settings`, {
         method: 'PUT',
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ ...platformData, ...trialData })
+        body: JSON.stringify({
+          ...platformData,
+          pixKey: cleanPixKey,
+          ...trialData,
+        })
       });
-      showToast("Configurações salvas com sucesso!");
-    } catch (e) {
-      showToast("Erro ao salvar configurações.");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || "Erro ao salvar configurações no banco.");
+      }
+      setPlatformData(prev => ({ ...prev, pixKey: data.pixKey ?? cleanPixKey, pixName: data.pixName ?? prev.pixName }));
+      setTrialData(prev => ({ ...prev, trialDays: typeof data.trialDays === "number" ? data.trialDays : prev.trialDays }));
+      onSettingsChanged?.();
+      showToast(`Configurações gravadas no banco! (Trial: ${data.trialDays ?? trialData.trialDays} dias)`);
+    } catch (e: any) {
+      setErrorMsg(e.message || "Erro ao salvar configurações.");
+    } finally {
+      setSaving(false);
     }
   };
 
   return (
-    <div className="p-3 sm:p-6 space-y-5 relative">
-      <h1 className="font-serif text-2xl font-medium">Configurações da plataforma</h1>
-      <div className="grid lg:grid-cols-2 gap-5 max-w-3xl">
-        <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
-          <h3 className="font-semibold">Dados da plataforma</h3>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground block mb-1">Nome</label>
-            <input value={platformData.platformName} onChange={(e) => setPlatformData({...platformData, platformName: e.target.value})} className="w-full h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-background" />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground block mb-1">Domínio</label>
-            <input value={platformData.domain} onChange={(e) => setPlatformData({...platformData, domain: e.target.value})} className="w-full h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-background" />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground block mb-1">E-mail suporte</label>
-            <input value={platformData.supportEmail} onChange={(e) => setPlatformData({...platformData, supportEmail: e.target.value})} className="w-full h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-background" />
-          </div>
-          <Button size="sm" className="mt-1" onClick={handleSave}>Salvar</Button>
-        </div>
-
-        <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
-          <h3 className="font-semibold">Trial e planos</h3>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground block mb-1">Duração do trial (dias)</label>
-            <input type="number" value={trialData.trialDays} onChange={(e) => setTrialData({...trialData, trialDays: parseInt(e.target.value) || 0})} className="w-full h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-background" />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground block mb-1">ID do Plano padrão</label>
-            <input value={trialData.defaultPlanId} onChange={(e) => setTrialData({...trialData, defaultPlanId: e.target.value})} className="w-full h-10 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary bg-background" />
-          </div>
-          <Button size="sm" className="mt-1" onClick={handleSave}>Salvar</Button>
-        </div>
+    <div className="p-4 sm:p-6 space-y-6 relative max-w-5xl">
+      <div>
+        <h1 className="font-serif text-2xl sm:text-3xl font-bold text-foreground">Configurações Globais & Recebimento PIX</h1>
+        <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+          Defina os dias de teste grátis da plataforma e a sua Chave PIX oficial para receber as mensalidades quando os salões fecharem um plano.
+        </p>
       </div>
-      
-      {toast && (
-        <div className="fixed bottom-10 right-10 bg-primary text-primary-foreground px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-bottom-5 z-50">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-          <span className="text-sm font-medium">{toast}</span>
+
+      {errorMsg && (
+        <div role="alert" className="p-3.5 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm font-medium flex items-center justify-between">
+          <span>{errorMsg}</span>
+          <button onClick={() => setErrorMsg(null)} className="underline text-xs ml-3">Fechar</button>
         </div>
       )}
+
+      {toast && (
+        <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs sm:text-sm font-semibold flex items-center justify-between shadow-sm">
+          <span>✓ {toast}</span>
+          <button onClick={() => setToast(null)} className="underline text-xs ml-3">Fechar</button>
+        </div>
+      )}
+
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Card 1: Chave PIX do SaaS (Recebimento das Assinaturas) */}
+        <div className="bg-card border-2 border-primary/30 rounded-3xl p-6 space-y-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <Badge variant="success" className="mb-1.5">Recebimento de Mensalidades</Badge>
+              <h3 className="font-serif text-lg font-bold text-foreground">Sua Chave PIX para Cobrança dos Planos</h3>
+            </div>
+            <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
+              <CreditCard className="w-5 h-5" />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Quando um salão clicar em <strong>"Assinar Plano"</strong> no painel dele, o sistema gerará automaticamente o código <strong>PIX Copia e Cola</strong> no valor do plano (Essencial, Studio ou Elite) direto para esta chave.
+          </p>
+
+          <div>
+            <label className="text-xs font-semibold text-foreground block mb-1.5">Tipo da sua Chave PIX</label>
+            <div className="grid grid-cols-5 gap-1.5">
+              {([
+                ["cpf", "CPF"],
+                ["cnpj", "CNPJ"],
+                ["email", "E-mail"],
+                ["celular", "Celular"],
+                ["aleatoria", "Aleatória"],
+              ] as const).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setPixType(key)}
+                  className={`py-2 px-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                    pixType === key
+                      ? "bg-primary text-white border-primary shadow-2xs"
+                      : "bg-background text-muted-foreground border-border hover:text-foreground"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-foreground block mb-1">
+              Chave PIX Oficial da Plataforma
+            </label>
+            <input
+              value={platformData.pixKey}
+              onChange={(e) => setPlatformData({ ...platformData, pixKey: e.target.value })}
+              placeholder={
+                pixType === "cpf" ? "Somente os 11 números do CPF" :
+                pixType === "cnpj" ? "Somente os 14 números do CNPJ" :
+                pixType === "email" ? "financeiro@seudominio.com" :
+                pixType === "celular" ? "11999999999" :
+                "Chave aleatória UUID (36 caracteres)"
+              }
+              className="w-full h-11 rounded-xl border border-border px-3.5 text-sm font-mono outline-none focus:border-primary bg-background"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-foreground block mb-1">
+              Nome do Favorecido (como aparece no banco)
+            </label>
+            <input
+              value={platformData.pixName}
+              onChange={(e) => setPlatformData({ ...platformData, pixName: e.target.value })}
+              placeholder="Ex: Geevheith Technology"
+              className="w-full h-11 rounded-xl border border-border px-3.5 text-sm outline-none focus:border-primary bg-background"
+            />
+          </div>
+
+          <Button className="w-full h-11 font-bold" onClick={handleSave} disabled={saving}>
+            {saving ? "Gravando no banco..." : "Salvar Chave PIX da Plataforma"}
+          </Button>
+        </div>
+
+        {/* Card 2: Duração do Teste Grátis (Trial) */}
+        <div className="bg-card border border-border rounded-3xl p-6 space-y-4 shadow-2xs flex flex-col justify-between">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Badge variant="outline" className="mb-1.5">Regras de Onboarding & Trial</Badge>
+                <h3 className="font-serif text-lg font-bold text-foreground">Dias de Teste Grátis (Trial Global)</h3>
+              </div>
+              <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
+                <Clock className="w-5 h-5" />
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Altera automaticamente o número de dias grátis na Landing Page, no Cadastro de novos salões e nos textos dos planos para todos os aparelhos.
+            </p>
+
+            <div>
+              <label className="text-xs font-semibold text-foreground block mb-1.5">Duração do Trial (em dias)</label>
+              <input
+                type="number"
+                min={0}
+                max={365}
+                value={trialData.trialDays}
+                onChange={(e) => setTrialData({ ...trialData, trialDays: Math.max(0, parseInt(e.target.value, 10) || 0) })}
+                className="w-full h-11 rounded-xl border border-border px-3.5 text-base font-bold outline-none focus:border-primary bg-background"
+              />
+              <div className="flex flex-wrap gap-2 mt-2.5">
+                {[3, 7, 10, 14, 30].map(d => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setTrialData({ ...trialData, trialDays: d })}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                      trialData.trialDays === d
+                        ? "bg-primary text-white border-primary"
+                        : "bg-secondary text-muted-foreground border-border hover:text-foreground"
+                    }`}
+                  >
+                    {d} dias
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <label className="flex items-start gap-2.5 p-3 rounded-2xl bg-muted/40 border border-border text-xs cursor-pointer">
+              <input
+                type="checkbox"
+                checked={trialData.applyToActiveTrials}
+                onChange={e => setTrialData({ ...trialData, applyToActiveTrials: e.target.checked })}
+                className="mt-0.5 rounded border-border accent-primary"
+              />
+              <span className="text-muted-foreground leading-relaxed">
+                <strong className="text-foreground">Aplicar também aos salões que já estão em Trial hoje</strong> (recalcula o vencimento dos salões em teste a partir de hoje com {trialData.trialDays} dias).
+              </span>
+            </label>
+
+            <div>
+              <label className="text-xs font-semibold text-foreground block mb-1">Plano padrão pré-selecionado no cadastro</label>
+              <select
+                value={trialData.defaultPlanId}
+                onChange={(e) => setTrialData({ ...trialData, defaultPlanId: e.target.value })}
+                className="w-full h-11 rounded-xl border border-border px-3 text-sm outline-none focus:border-primary bg-background"
+              >
+                <option value="essencial">Essencial (Inicial / Autônoma)</option>
+                <option value="studio">Studio (Intermediário / Equipe)</option>
+                <option value="elite">Elite (Completo / VIP)</option>
+              </select>
+            </div>
+          </div>
+
+          <Button className="w-full h-11 font-bold mt-4" onClick={handleSave} disabled={saving}>
+            {saving ? "Gravando no banco..." : `Salvar Trial de ${trialData.trialDays} Dias no Banco`}
+          </Button>
+        </div>
+      </div>
+
+      {/* Card 3: Dados Institucionais da Plataforma */}
+      <div className="bg-card border border-border rounded-3xl p-6 space-y-4 shadow-2xs">
+        <h3 className="font-serif text-lg font-bold text-foreground">Dados Institucionais da Plataforma</h3>
+        <div className="grid sm:grid-cols-3 gap-4">
+          <div>
+            <label className="text-xs font-medium text-muted-foreground block mb-1">Nome da Plataforma</label>
+            <input
+              value={platformData.platformName}
+              onChange={(e) => setPlatformData({ ...platformData, platformName: e.target.value })}
+              className="w-full h-10 rounded-xl border border-border px-3 text-sm outline-none focus:border-primary bg-background"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground block mb-1">Domínio Oficial</label>
+            <input
+              value={platformData.domain}
+              onChange={(e) => setPlatformData({ ...platformData, domain: e.target.value })}
+              className="w-full h-10 rounded-xl border border-border px-3 text-sm outline-none focus:border-primary bg-background"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground block mb-1">E-mail de Suporte / Comprovantes</label>
+            <input
+              value={platformData.supportEmail}
+              onChange={(e) => setPlatformData({ ...platformData, supportEmail: e.target.value })}
+              className="w-full h-10 rounded-xl border border-border px-3 text-sm outline-none focus:border-primary bg-background"
+            />
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <Button size="sm" onClick={handleSave} disabled={saving}>
+            {saving ? "Salvando..." : "Salvar Dados Institucionais"}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -2370,7 +2581,7 @@ export default function SuperAdmin() {
       case "auditoria": return <AuditoriaView />;
       case "suporte": return <SuporteView />;
       case "comunicacao": return <ComunicacaoView />;
-      case "configuracoes": return <ConfiguracoesAdminView />;
+      case "configuracoes": return <ConfiguracoesAdminView onSettingsChanged={refreshAllData} />;
       default: return null;
     }
   };

@@ -241,6 +241,8 @@ type SystemSettings struct {
 	SupportEmail  string    `gorm:"default:geevheittecnology@gmail.com" json:"supportEmail"`
 	TrialDays     int       `gorm:"default:14" json:"trialDays"`
 	DefaultPlanID *string   `json:"defaultPlanId"`
+	PixKey        string    `gorm:"column:pix_key;default:''" json:"pixKey"`
+	PixName       string    `gorm:"column:pix_name;default:''" json:"pixName"`
 	UpdatedAt     time.Time `json:"updatedAt"`
 }
 

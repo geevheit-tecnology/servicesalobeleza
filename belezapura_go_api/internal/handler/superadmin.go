@@ -420,35 +420,117 @@ func syncPlanTrialFeatureText(trialDays int) {
 	}
 }
 
+func ensureSystemSettingsColumns() {
+	if db.DB == nil {
+		return
+	}
+	_ = db.DB.Exec("ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS pix_key text NOT NULL DEFAULT ''").Error
+	_ = db.DB.Exec("ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS pix_name text NOT NULL DEFAULT ''").Error
+}
+
 func GetSettings(c *gin.Context) {
+	ensureSystemSettingsColumns()
 	var settings db.SystemSettings
 	if err := db.DB.First(&settings).Error; err != nil {
 		// create defaults
-		settings = db.SystemSettings{}
+		settings = db.SystemSettings{
+			PlatformName: "BelezaPura",
+			Domain:       "servicesalobeleza.vercel.app",
+			SupportEmail: "geevheittecnology@gmail.com",
+			TrialDays:    14,
+		}
 		db.DB.Create(&settings)
 	}
+	c.Header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
 	c.JSON(http.StatusOK, settings)
 }
 
 func UpdateSettings(c *gin.Context) {
-	var body map[string]interface{}
+	ensureSystemSettingsColumns()
+	var body struct {
+		PlatformName        *string `json:"platformName"`
+		Domain              *string `json:"domain"`
+		SupportEmail        *string `json:"supportEmail"`
+		TrialDays           *int    `json:"trialDays"`
+		DefaultPlanID       *string `json:"defaultPlanId"`
+		PixKey              *string `json:"pixKey"`
+		PixName             *string `json:"pixName"`
+		ApplyToActiveTrials *bool   `json:"applyToActiveTrials"`
+	}
 	if err := c.ShouldBindJSON(&body); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados de configuração inválidos."})
 		return
 	}
 
 	var settings db.SystemSettings
 	if err := db.DB.First(&settings).Error; err != nil {
-		settings = db.SystemSettings{}
+		settings = db.SystemSettings{
+			PlatformName: "BelezaPura",
+			Domain:       "servicesalobeleza.vercel.app",
+			SupportEmail: "geevheittecnology@gmail.com",
+			TrialDays:    14,
+		}
 		db.DB.Create(&settings)
 	}
 
-	db.DB.Model(&settings).Updates(body)
+	updates := map[string]interface{}{
+		"updated_at": time.Now(),
+	}
+	if body.PlatformName != nil && strings.TrimSpace(*body.PlatformName) != "" {
+		updates["platform_name"] = strings.TrimSpace(*body.PlatformName)
+	}
+	if body.Domain != nil && strings.TrimSpace(*body.Domain) != "" {
+		updates["domain"] = strings.TrimSpace(*body.Domain)
+	}
+	if body.SupportEmail != nil && strings.TrimSpace(*body.SupportEmail) != "" {
+		updates["support_email"] = strings.TrimSpace(*body.SupportEmail)
+	}
+	if body.DefaultPlanID != nil {
+		cleanPlan := strings.TrimSpace(*body.DefaultPlanID)
+		updates["default_plan_id"] = cleanPlan
+	}
+	if body.TrialDays != nil {
+		td := *body.TrialDays
+		if td < 0 || td > 365 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "A duração do teste grátis deve ser entre 0 e 365 dias."})
+			return
+		}
+		updates["trial_days"] = td
+	}
+	if body.PixName != nil {
+		updates["pix_name"] = strings.TrimSpace(*body.PixName)
+	}
+	if body.PixKey != nil {
+		cleanKey := strings.TrimSpace(*body.PixKey)
+		if cleanKey != "" {
+			beneficiary := settings.PixName
+			if body.PixName != nil && strings.TrimSpace(*body.PixName) != "" {
+				beneficiary = strings.TrimSpace(*body.PixName)
+			}
+			if beneficiary == "" {
+				beneficiary = "BELEZAPURA"
+			}
+			if _, err := generatePix(cleanKey, beneficiary, 10); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Chave Pix inválida. Use CPF (11 dígitos), CNPJ (14 dígitos), e-mail, telefone (+55...) ou chave aleatória UUID."})
+				return
+			}
+		}
+		updates["pix_key"] = cleanKey
+	}
+
+	if err := db.DB.Model(&settings).Updates(updates).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao salvar configurações no banco."})
+		return
+	}
 	db.DB.First(&settings, "id = ?", settings.ID)
 	if settings.TrialDays > 0 {
 		syncPlanTrialFeatureText(settings.TrialDays)
+		if body.ApplyToActiveTrials != nil && *body.ApplyToActiveTrials {
+			newEnds := time.Now().Add(time.Duration(settings.TrialDays) * 24 * time.Hour)
+			_ = db.DB.Model(&db.Subscription{}).Where("status = ?", "TRIAL").Update("trial_ends", newEnds).Error
+		}
 	}
-	writeAuditLog(c, "SETTINGS_UPDATE", "Configurações", "Configurações da plataforma atualizadas.", "info")
+	writeAuditLog(c, "SETTINGS_UPDATE", "Configurações", fmt.Sprintf("Configurações atualizadas (Trial: %d dias).", settings.TrialDays), "info")
 	c.JSON(http.StatusOK, settings)
 }
 

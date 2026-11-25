@@ -6,9 +6,11 @@ BEGIN;
 SET LOCAL search_path = public;
 SELECT pg_advisory_xact_lock(7300411);
 
--- 1. Colunas da migração 006_reviews_commission.sql
+-- 1. Colunas da migração 006_reviews_commission.sql + PIX da Plataforma em system_settings
 ALTER TABLE salons ADD COLUMN IF NOT EXISTS reviews_raw text NOT NULL DEFAULT '[]';
 ALTER TABLE professionals ADD COLUMN IF NOT EXISTS commission decimal(5,2) NOT NULL DEFAULT 0;
+ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS pix_key text NOT NULL DEFAULT '';
+ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS pix_name text NOT NULL DEFAULT '';
 
 INSERT INTO schema_migrations(version)
 VALUES ('006_reviews_commission.sql')
