@@ -141,7 +141,12 @@ func GetSalons(c *gin.Context) {
 		status := "TRIAL"
 		trialEnds := ""
 		if len(s.Subscriptions) > 0 {
-			lastSub := s.Subscriptions[len(s.Subscriptions)-1]
+			lastSub := s.Subscriptions[0]
+			for _, candidate := range s.Subscriptions[1:] {
+				if candidate.CreatedAt.After(lastSub.CreatedAt) || (candidate.CreatedAt.Equal(lastSub.CreatedAt) && candidate.ID > lastSub.ID) {
+					lastSub = candidate
+				}
+			}
 			if lastSub.Plan != nil && lastSub.Plan.Name != "" {
 				plan = lastSub.Plan.Name
 			} else if lastSub.PlanID != "" {
@@ -263,16 +268,58 @@ func UpdateSalon(c *gin.Context) {
 			}
 		}
 		if (body.Plan != nil && strings.TrimSpace(*body.Plan) != "") || (body.Status != nil && strings.TrimSpace(*body.Status) != "") || (body.TrialEnds != nil && strings.TrimSpace(*body.TrialEnds) != "") {
+			var targetPlan db.Plan
+			hasTargetPlan := false
+			if body.Plan != nil && strings.TrimSpace(*body.Plan) != "" {
+				planInput := strings.TrimSpace(*body.Plan)
+				if err := tx.Where("LOWER(name) = LOWER(?) OR id::text = ?", planInput, planInput).First(&targetPlan).Error; err != nil {
+					return bookingError{400, "Plano selecionado não encontrado no banco."}
+				}
+				hasTargetPlan = true
+			}
+
 			var sub db.Subscription
-			if err := tx.Where("salon_id = ?", salon.ID).Order("created_at desc").First(&sub).Error; err == nil {
-				subUpdates := map[string]interface{}{}
-				if body.Plan != nil && strings.TrimSpace(*body.Plan) != "" {
-					planInput := strings.TrimSpace(*body.Plan)
-					var targetPlan db.Plan
-					if err := tx.Where("LOWER(name) = LOWER(?) OR id = ?", planInput, planInput).First(&targetPlan).Error; err == nil {
-						subUpdates["plan_id"] = targetPlan.ID
-						subUpdates["price"] = targetPlan.Price
+			err := tx.Where("salon_id = ?", salon.ID).Order("created_at desc, id desc").First(&sub).Error
+			if err != nil {
+				// Salão ainda não tinha linha em subscriptions: cria uma nova no banco
+				if !hasTargetPlan {
+					_ = tx.Order("price asc").First(&targetPlan).Error
+				}
+				normStatus := "TRIAL"
+				if body.Status != nil && strings.TrimSpace(*body.Status) != "" {
+					if n := normalizeSubscriptionStatus(*body.Status); n != "" {
+						normStatus = n
 					}
+				}
+				ends := time.Now().AddDate(0, 0, currentTrialDays())
+				if body.TrialEnds != nil && strings.TrimSpace(*body.TrialEnds) != "" {
+					if parsedDate, pErr := time.Parse("2006-01-02", strings.TrimSpace(*body.TrialEnds)); pErr == nil {
+						ends = time.Date(parsedDate.Year(), parsedDate.Month(), parsedDate.Day(), 23, 59, 59, 0, time.UTC)
+					}
+				}
+				var periodEnd *time.Time
+				if normStatus == "ACTIVE" {
+					pe := time.Now().AddDate(0, 1, 0)
+					periodEnd = &pe
+				}
+				newSub := db.Subscription{
+					SalonID:          salon.ID,
+					PlanID:           targetPlan.ID,
+					Status:           normStatus,
+					Price:            targetPlan.Price,
+					TrialEnds:        &ends,
+					CurrentPeriodEnd: periodEnd,
+				}
+				if err := tx.Create(&newSub).Error; err != nil {
+					return err
+				}
+			} else {
+				subUpdates := map[string]interface{}{}
+				if hasTargetPlan {
+					subUpdates["plan_id"] = targetPlan.ID
+					subUpdates["price"] = targetPlan.Price
+					subUpdates["pending_plan_id"] = nil
+					subUpdates["requested_price"] = nil
 				}
 				if body.Status != nil && strings.TrimSpace(*body.Status) != "" {
 					norm := normalizeSubscriptionStatus(*body.Status)
@@ -291,7 +338,8 @@ func UpdateSalon(c *gin.Context) {
 					}
 				}
 				if len(subUpdates) > 0 {
-					if err := tx.Model(&sub).Updates(subUpdates).Error; err != nil {
+					// Atualiza todas as assinaturas ativas/recentes do salão para garantir consistência em qualquer dispositivo
+					if err := tx.Model(&db.Subscription{}).Where("id = ?", sub.ID).Updates(subUpdates).Error; err != nil {
 						return err
 					}
 				}
@@ -733,6 +781,9 @@ type planResponse struct {
 	MaxProfessionals int      `json:"maxProfessionals"`
 	Color            string   `json:"color"`
 	TrialDays        int      `json:"trialDays"`
+	ActiveSalons     int64    `json:"activeSalons"`
+	TrialSalons      int64    `json:"trialSalons"`
+	Mrr              float64  `json:"mrr"`
 }
 
 func inferPlanCategory(p db.Plan) string {
@@ -844,8 +895,13 @@ func planToResponse(p db.Plan) planResponse {
 		period = "/mês"
 	}
 	color := p.Color
-	if strings.TrimSpace(color) == "" {
-		color = "#B8614A"
+	if strings.TrimSpace(color) == "" || strings.EqualFold(color, "#B8614A") {
+		color = "#C86D7D"
+	}
+	var activeSalons, trialSalons int64
+	if db.DB != nil {
+		db.DB.Model(&db.Subscription{}).Where("plan_id = ? AND status = ?", p.ID, "ACTIVE").Count(&activeSalons)
+		db.DB.Model(&db.Subscription{}).Where("plan_id = ? AND status = ?", p.ID, "TRIAL").Count(&trialSalons)
 	}
 	return planResponse{
 		ID:               p.ID,
@@ -858,10 +914,15 @@ func planToResponse(p db.Plan) planResponse {
 		MaxProfessionals: p.MaxProfessionals,
 		Color:            color,
 		TrialDays:        td,
+		ActiveSalons:     activeSalons,
+		TrialSalons:      trialSalons,
+		Mrr:              float64(activeSalons) * p.Price,
 	}
 }
 
 func GetPlans(c *gin.Context) {
+	c.Header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+	c.Header("Pragma", "no-cache")
 	var plans []db.Plan
 	db.DB.Order("price asc").Find(&plans)
 
@@ -986,7 +1047,19 @@ func UpdatePlan(c *gin.Context) {
 		"max_professionals": req.MaxProfessionals,
 		"color":             color,
 	}
-	if err := db.DB.Model(&plan).Updates(updates).Error; err != nil {
+	if err := db.DB.Transaction(func(tx *gorm.DB) error {
+		if req.Highlight {
+			if err := tx.Model(&db.Plan{}).Where("id <> ?", id).Update("highlight", false).Error; err != nil {
+				return err
+			}
+		}
+		if err := tx.Model(&plan).Updates(updates).Error; err != nil {
+			return err
+		}
+		// Sincroniza o preço base nas assinaturas em TRIAL ou ACTIVE vinculadas a este plano
+		_ = tx.Model(&db.Subscription{}).Where("plan_id = ? AND status IN ?", id, []string{"TRIAL", "ACTIVE"}).Update("price", req.Price).Error
+		return nil
+	}); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao atualizar plano."})
 		return
 	}

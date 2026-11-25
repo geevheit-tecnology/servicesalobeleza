@@ -97,8 +97,14 @@ const statusBadge = (status?: string) => {
   return statusConfig[normalized] || { label: status || "Sem status", variant: "outline" as const };
 };
 
-function OverviewView({ overviewData }: { overviewData: any }) {
-  if (!overviewData) return <div className="p-6 text-sm text-muted-foreground">Carregando indicadores...</div>;
+function OverviewView({ overviewData, salonsData, plansData, onNavigate, onRefresh }: {
+  overviewData: any;
+  salonsData: any[];
+  plansData: any[];
+  onNavigate: (section: string) => void;
+  onRefresh: () => void;
+}) {
+  if (!overviewData) return <div className="p-6 text-sm text-muted-foreground">Carregando indicadores da plataforma...</div>;
   if (overviewData.error) return <div className="p-6 text-red-500 font-medium">Erro ao carregar os dados: {overviewData.error}. Verifique o banco de dados.</div>;
   
   const {
@@ -114,158 +120,200 @@ function OverviewView({ overviewData }: { overviewData: any }) {
     pendingRevenue,
   } = overviewData;
 
-  const exportCohortCsv = () => {
-    const csv = "Mes,Saloes,Mes1,Mes2,Mes3,Mes4,Mes5,Mes6\nJan 2026,120,100%,95%,90%,85%,80%,78%\nFev 2026,145,100%,96%,92%,88%,85%,-\n";
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "retencao-belezapura.csv";
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+  const recentSalons = Array.isArray(salonsData) ? salonsData.slice(0, 6) : [];
+  const activePlans = Array.isArray(plansData) ? plansData : [];
 
   return (
-    <div className="p-3 sm:p-6 space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-serif text-2xl font-medium">Visão geral da plataforma & Finanças</h1>
-          <p className="text-muted-foreground text-sm">Controle central do Super Admin atualizado em tempo real</p>
+    <div className="p-4 sm:p-6 space-y-6">
+      {/* Banner Executivo do Centro de Controle */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#FFF7F8] via-white to-[#FAF0F2] border border-rose-200/80 p-6 sm:p-7 shadow-sm">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              Sincronizado com Supabase em Tempo Real
+            </div>
+            <h1 className="font-serif text-2xl sm:text-3xl font-bold text-foreground">
+              Centro de Comando • BelezaPura SaaS
+            </h1>
+            <p className="text-muted-foreground text-xs sm:text-sm max-w-2xl">
+              Qualquer alteração em planos, preços, trials ou status de salões é gravada diretamente no banco de dados e refletida em todos os aparelhos imediatamente.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            <Button variant="outline" size="sm" onClick={onRefresh} className="bg-white">
+              ↻ Sincronizar Dados Agora
+            </Button>
+            <Button size="sm" onClick={() => onNavigate("planos")}>
+              <Package className="w-4 h-4 mr-1.5" /> Gerenciar Planos
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => onNavigate("assinaturas")} className="bg-white">
+              <CreditCard className="w-4 h-4 mr-1.5" /> Conferir PIX
+            </Button>
+          </div>
         </div>
-        <Badge variant="success" className="text-sm px-3 py-1">✓ Poder Supremo & Finanças Alinhadas</Badge>
       </div>
 
+      {/* KPIs Principais */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard 
           label="MRR (Receita Recorrente)" 
           value={`R$ ${(Number(mrrValue ?? 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
           sub="Assinaturas ativas no mês" 
           icon={TrendingUp} 
-          trend={9} 
           color="emerald" 
         />
         <StatCard 
-          label="Caixa Total Recebido" 
+          label="Caixa Total Confirmado" 
           value={`R$ ${(Number(totalRevenueReceived ?? 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
-          sub="Pagamentos Pix confirmados" 
+          sub="Pagamentos Pix aprovados" 
           icon={CreditCard} 
           color="purple" 
         />
         <StatCard 
           label="A Receber (Em análise)" 
           value={`R$ ${(Number(pendingRevenue ?? 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
-          sub="Solicitações aguardando conferência" 
+          sub="Aguardando conferência de Pix" 
           icon={Clock} 
           color="amber" 
         />
-        <StatCard label="Salões cadastrados" value={String(totalSalons ?? 0)} sub={`${activeSubscriptions ?? 0} ativos · ${trialSubscriptions ?? 0} em trial`} icon={Store} trend={21} color="primary" />
-        <StatCard label="Assinaturas ativas" value={String(activeSubscriptions ?? 0)} icon={CheckCircle} trend={8} color="emerald" />
-        <StatCard label="Inadimplentes / Bloq." value={String(lateSubscriptions ?? 0)} icon={AlertCircle} trend={0} color="rose" />
-        <StatCard label="Agendamentos totais" value={String(totalAppointments ?? 0)} icon={Sparkles} trend={14} color="sky" />
-        <StatCard label="Clientes finais atendidos" value={String(totalClients ?? 0)} icon={Users} trend={18} color="amber" />
+        <StatCard
+          label="Salões na Plataforma"
+          value={String(totalSalons ?? 0)}
+          sub={`${activeSubscriptions ?? 0} ativos · ${trialSubscriptions ?? 0} em trial`}
+          icon={Store}
+          color="primary"
+        />
+        <StatCard label="Assinaturas Ativas" value={String(activeSubscriptions ?? 0)} sub="Salões pagantes em dia" icon={CheckCircle} color="emerald" />
+        <StatCard label="Em Trial Gratuito" value={String(trialSubscriptions ?? 0)} sub="Testando a plataforma" icon={Sparkles} color="sky" />
+        <StatCard label="Inadimplentes / Bloq." value={String(lateSubscriptions ?? 0)} sub="Acesso suspenso" icon={AlertCircle} color="rose" />
+        <StatCard label="Agendamentos & Clientes" value={`${totalAppointments ?? 0} / ${totalClients ?? 0}`} sub="Reservas e clientes atendidos" icon={Users} color="amber" />
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-card border border-border rounded-2xl p-5">
+      {/* Distribuição Real por Plano + Evolução MRR */}
+      <div className="grid lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-7 bg-card border border-border rounded-3xl p-5 sm:p-6 shadow-2xs">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold">MRR — Crescimento</h3>
-            <Badge variant="success">↑ 9% mês a mês</Badge>
+            <div>
+              <h3 className="font-serif font-bold text-lg">Desempenho por Plano no Banco</h3>
+              <p className="text-xs text-muted-foreground">Preços e distribuição real de salões por plano cadastrado</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => onNavigate("planos")}>
+              Editar Planos
+            </Button>
           </div>
-          <ResponsiveContainer width="100%" height={220}>
+
+          <div className="space-y-3">
+            {activePlans.map((p: any) => (
+              <div key={p.id} className="p-4 rounded-2xl border border-border bg-muted/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="w-3.5 h-3.5 rounded-full shrink-0" style={{ backgroundColor: p.color || "#C86D7D" }} />
+                  <div>
+                    <div className="font-bold text-sm text-foreground flex items-center gap-2">
+                      <span>{p.name}</span>
+                      <span className="text-xs font-mono text-primary">
+                        R$ {Number(p.price || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}/mês
+                      </span>
+                      {p.highlight && <Badge variant="success" className="text-[10px]">Destaque</Badge>}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {p.category} • {Number(p.maxProfessionals) > 0 ? `Até ${p.maxProfessionals} prof.` : "Profissionais ilimitados"}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 text-xs">
+                  <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">
+                    {p.activeSalons ?? 0} ativos
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg bg-sky-50 text-sky-700 border border-sky-200 font-semibold">
+                    {p.trialSalons ?? 0} em trial
+                  </span>
+                  <span className="font-mono font-bold text-foreground">
+                    MRR: R$ {Number(p.mrr ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              </div>
+            ))}
+            {activePlans.length === 0 && (
+              <p className="text-xs text-muted-foreground py-4 text-center">Nenhum plano carregado.</p>
+            )}
+          </div>
+        </div>
+
+        <div className="lg:col-span-5 bg-card border border-border rounded-3xl p-5 sm:p-6 shadow-2xs">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-serif font-bold text-lg">Evolução de MRR</h3>
+            <Badge variant="success">Tempo Real</Badge>
+          </div>
+          <ResponsiveContainer width="100%" height={230}>
             <AreaChart data={mrrData}>
               <defs>
                 <linearGradient id="mrrGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#B8614A" stopOpacity={0.15} />
-                  <stop offset="95%" stopColor="#B8614A" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#C86D7D" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#C86D7D" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E8E0D8" />
-              <XAxis dataKey="name" tick={{ fontSize: 12, fill: "#7C6F65" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 12, fill: "#7C6F65" }} axisLine={false} tickLine={false} tickFormatter={v => `R$${(v/1000).toFixed(0)}k`} />
-              <Tooltip formatter={(v: any) => [`R$ ${v.toLocaleString("pt-BR")}`, "MRR"]} />
-              <Area type="monotone" dataKey="value" stroke="#B8614A" strokeWidth={2.5} fill="url(#mrrGrad)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#EFE4E6" />
+              <XAxis dataKey="name" tick={{ fontSize: 12, fill: "#6E6266" }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 12, fill: "#6E6266" }} axisLine={false} tickLine={false} tickFormatter={v => `R$${v}`} />
+              <Tooltip formatter={(v: any) => [`R$ ${Number(v).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, "MRR"]} />
+              <Area type="monotone" dataKey="value" stroke="#C86D7D" strokeWidth={2.5} fill="url(#mrrGrad)" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
-
-        <div className="bg-card border border-border rounded-2xl p-5">
-          <h3 className="font-semibold mb-4">Novos vs. Cancelados</h3>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={churnData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E8E0D8" />
-              <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#7C6F65" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: "#7C6F65" }} axisLine={false} tickLine={false} />
-              <Tooltip />
-              <Bar dataKey="novos" fill="#7DC198" radius={[4, 4, 0, 0]} name="Novos" />
-              <Bar dataKey="cancelados" fill="#F87171" radius={[4, 4, 0, 0]} name="Cancelados" />
-            </BarChart>
-          </ResponsiveContainer>
-          <div className="flex gap-4 mt-2 text-xs text-muted-foreground justify-center">
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" /> Novos</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-400 inline-block" /> Cancelados</span>
-          </div>
-        </div>
       </div>
 
-      <div className="bg-card border border-border rounded-2xl p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold">Base de salões — crescimento</h3>
-        </div>
-        <ResponsiveContainer width="100%" height={160}>
-          <LineChart data={growthData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#E8E0D8" />
-            <XAxis dataKey="name" tick={{ fontSize: 12, fill: "#7C6F65" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 12, fill: "#7C6F65" }} axisLine={false} tickLine={false} />
-            <Tooltip />
-            <Line type="monotone" dataKey="saloes" stroke="#9B7EA8" strokeWidth={2.5} dot={{ fill: "#9B7EA8", r: 4 }} name="Salões" />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-
-      <div className="bg-card border border-border rounded-2xl p-5">
+      {/* Últimos Salões Cadastrados (Controle Rápido) */}
+      <div className="bg-card border border-border rounded-3xl p-5 sm:p-6 shadow-2xs">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="font-semibold">Análise de Cohort (Retenção)</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">Comportamento de retenção por mês de ativação</p>
+            <h3 className="font-serif font-bold text-lg">Salões Recentes na Plataforma</h3>
+            <p className="text-xs text-muted-foreground">Visão direta do banco de dados de produção</p>
           </div>
-          <Button variant="outline" size="sm"><Download className="w-4 h-4 mr-2" />Exportar CSV</Button>
+          <Button variant="outline" size="sm" onClick={() => onNavigate("saloes")}>
+            Ver Todos os Salões ({recentSalons.length})
+          </Button>
         </div>
+
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border">
-                <th className="py-2 text-left font-medium text-muted-foreground w-32">Mês (Ativação)</th>
-                <th className="py-2 text-left font-medium text-muted-foreground w-20">Salões</th>
-                {[1, 2, 3, 4, 5, 6].map(m => (
-                  <th key={m} className="py-2 text-center font-medium text-muted-foreground w-16">Mês {m}</th>
-                ))}
+              <tr className="border-b border-border text-xs text-muted-foreground">
+                <th className="py-2.5 text-left font-semibold">Salão</th>
+                <th className="py-2.5 text-left font-semibold">Responsável</th>
+                <th className="py-2.5 text-left font-semibold">Plano no Banco</th>
+                <th className="py-2.5 text-left font-semibold">Status</th>
+                <th className="py-2.5 text-left font-semibold">Agendamentos</th>
+                <th className="py-2.5 text-right font-semibold">Ação</th>
               </tr>
             </thead>
             <tbody>
-              {[
-                { month: "Jan 2024", total: 120, data: [100, 95, 90, 85, 80, 78] },
-                { month: "Fev 2024", total: 145, data: [100, 96, 92, 88, 85, "-"] },
-                { month: "Mar 2024", total: 180, data: [100, 98, 93, 90, "-", "-"] },
-                { month: "Abr 2024", total: 210, data: [100, 94, 91, "-", "-", "-"] },
-              ].map(row => (
-                <tr key={row.month} className="border-b border-border/50 last:border-0">
-                  <td className="py-2.5 font-medium">{row.month}</td>
-                  <td className="py-2.5 text-muted-foreground">{row.total}</td>
-                  {row.data.map((val, idx) => {
-                    const isNum = typeof val === "number";
-                    const bgOpacity = isNum ? Math.max(0.1, (val - 70) / 30) : 0;
-                    return (
-                      <td key={idx} className="py-2.5 px-1 text-center">
-                        {isNum ? (
-                          <div className="py-1 rounded font-medium text-emerald-800" style={{ backgroundColor: `rgba(16, 185, 129, ${bgOpacity})` }}>
-                            {val}%
-                          </div>
-                        ) : <span className="text-muted-foreground/30">{val}</span>}
-                      </td>
-                    );
-                  })}
+              {recentSalons.map((s: any) => (
+                <tr key={s.id} className="border-b border-border/50 last:border-0 hover:bg-muted/20">
+                  <td className="py-3 font-medium">{s.name}</td>
+                  <td className="py-3 text-muted-foreground">{s.owner}</td>
+                  <td className="py-3"><Badge variant="outline">{s.plan}</Badge></td>
+                  <td className="py-3">
+                    <Badge variant={statusBadge(s.status).variant}>{statusBadge(s.status).label}</Badge>
+                  </td>
+                  <td className="py-3 font-mono text-xs">{s.appointments ?? 0}</td>
+                  <td className="py-3 text-right">
+                    <button
+                      onClick={() => onNavigate("saloes")}
+                      className="text-xs font-semibold text-primary hover:underline cursor-pointer"
+                    >
+                      Gerenciar &rarr;
+                    </button>
+                  </td>
                 </tr>
               ))}
+              {recentSalons.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-muted-foreground text-xs">
+                    Nenhum salão cadastrado ainda.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -274,10 +322,11 @@ function OverviewView({ overviewData }: { overviewData: any }) {
   );
 }
 
-function SaloesView({ salonsData }: { salonsData: any }) {
+function SaloesView({ salonsData, plansData, onRefresh }: { salonsData: any; plansData: any[]; onRefresh: () => void }) {
   const [filter, setFilter] = useState("Todos");
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [drawerInfo, setDrawerInfo] = useState<{ salonName: string, type: 'history' | 'edit' } | null>(null);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   const initialData = Array.isArray(salonsData) ? salonsData : [];
   const [localSalons, setLocalSalons] = useState<any[]>(initialData);
@@ -285,6 +334,10 @@ function SaloesView({ salonsData }: { salonsData: any }) {
   useEffect(() => {
     setLocalSalons(Array.isArray(salonsData) ? salonsData : []);
   }, [salonsData]);
+
+  const availablePlanNames = Array.isArray(plansData) && plansData.length > 0
+    ? plansData.map((p: any) => p.name)
+    : ["Essencial", "Studio", "Elite"];
 
   const [editSalonForm, setEditSalonForm] = useState({
     id: '', name: '', owner: '', plan: 'Studio', status: 'TRIAL', trialEnds: '',
@@ -304,7 +357,7 @@ function SaloesView({ salonsData }: { salonsData: any }) {
           method: 'PUT',
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
-        setLocalSalons(prev => prev.map(s => s.id === salon.id ? { ...s, status: 'BLOCKED' } : s));
+        onRefresh();
       }
     } else if (action === 'unblock') {
       const res = await fetch(`${API_BASE}/api/superadmin/salons/${salon.id}`, {
@@ -312,7 +365,7 @@ function SaloesView({ salonsData }: { salonsData: any }) {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
         body: JSON.stringify({ status: 'ACTIVE' })
       });
-      if (res.ok) setLocalSalons(prev => prev.map(s => s.id === salon.id ? { ...s, status: 'ACTIVE' } : s));
+      if (res.ok) onRefresh();
       else alert("Não foi possível desbloquear o salão.");
     } else if (action === 'delete') {
       if (window.confirm(`Tem certeza que deseja excluir permanentemente o salão ${salon.name}?`)) {
@@ -320,7 +373,7 @@ function SaloesView({ salonsData }: { salonsData: any }) {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
-        setLocalSalons(prev => prev.filter(s => s.id !== salon.id));
+        onRefresh();
       }
     } else if (action === 'edit') {
       setEditSalonForm({
@@ -365,20 +418,15 @@ function SaloesView({ salonsData }: { salonsData: any }) {
           whatsappMonthlyLimit: customLimit,
         })
       });
-      if (!res.ok) throw new Error("Erro ao salvar alterações");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Erro ao salvar alterações no banco");
+      }
 
-      setLocalSalons(prev => prev.map(s => s.id === editSalonForm.id ? {
-        ...s,
-        name: editSalonForm.name,
-        owner: editSalonForm.owner,
-        plan: editSalonForm.plan,
-        status: editSalonForm.status,
-        trialEnds: editSalonForm.trialEnds,
-        whatsappEnabled: editSalonForm.whatsappEnabled,
-        whatsappMonthlyLimit: customLimit,
-        whatsappLimit: customLimit > 0 ? customLimit : s.whatsappPlanLimit,
-      } : s));
+      await onRefresh();
       setDrawerInfo(null);
+      setToastMsg(`Plano e dados de "${editSalonForm.name}" gravados no banco para todos os dispositivos!`);
+      setTimeout(() => setToastMsg(null), 4000);
     } catch (e: any) {
       alert(e.message || "Erro ao salvar dados do salão");
     } finally {
@@ -420,8 +468,17 @@ function SaloesView({ salonsData }: { salonsData: any }) {
 
   return (
     <div className="p-3 sm:p-6 space-y-4">
+      {toastMsg && (
+        <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs sm:text-sm font-semibold flex items-center justify-between shadow-sm">
+          <span>✓ {toastMsg}</span>
+          <button onClick={() => setToastMsg(null)} className="text-xs underline ml-3">Fechar</button>
+        </div>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-serif text-2xl font-medium">Salões</h1>
+        <div>
+          <h1 className="font-serif text-2xl font-medium">Salões Cadastrados</h1>
+          <p className="text-xs text-muted-foreground">Gerencie plano, período de trial, status e franquia de WhatsApp de cada salão</p>
+        </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 bg-card border border-border rounded-lg px-3 h-9 text-sm text-muted-foreground">
             <Search className="w-4 h-4" />
@@ -564,7 +621,7 @@ function SaloesView({ salonsData }: { salonsData: any }) {
                         onChange={e => setEditSalonForm({ ...editSalonForm, plan: e.target.value })}
                         className="w-full h-10 rounded-lg border border-border px-3 text-sm bg-background outline-none focus:border-primary"
                       >
-                        {Array.from(new Set(["Essencial", "Studio", "Elite", editSalonForm.plan].filter(Boolean))).map(p => (
+                        {Array.from(new Set([...availablePlanNames, editSalonForm.plan].filter(Boolean))).map(p => (
                           <option key={p} value={p}>{p}</option>
                         ))}
                       </select>
@@ -942,7 +999,7 @@ const ALL_SYSTEM_BENEFITS = [
   ]},
 ];
 
-function PlanosView() {
+function PlanosView({ onPlansChanged }: { onPlansChanged?: () => void }) {
   const [plansList, setPlansList] = useState<any[]>([]);
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
@@ -963,11 +1020,14 @@ function PlanosView() {
     price: "",
     maxProfessionals: "1",
     highlight: false,
-    color: "#B8614A",
+    color: "#C86D7D",
     features: [...CATALOG_BENEFITS_BY_TIER["Inicial / Autônoma"].benefits],
   });
 
-  const load = () => api<any[]>("/superadmin/plans").then(setPlansList);
+  const load = () => api<any[]>("/superadmin/plans").then(data => {
+    setPlansList(data);
+    onPlansChanged?.();
+  });
   useEffect(() => {
     load().catch(err => setError(err.message));
   }, []);
@@ -1176,6 +1236,14 @@ function PlanosView() {
                     <strong className="text-foreground">
                       {Number(plan.maxProfessionals) > 0 ? `Até ${plan.maxProfessionals} profissional(is)` : "Profissionais ilimitados"}
                     </strong>
+                  </div>
+                  <div className="flex items-center gap-2 mt-2.5">
+                    <span className="text-[11px] px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">
+                      {plan.activeSalons ?? 0} salões ativos
+                    </span>
+                    <span className="text-[11px] px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200 font-semibold">
+                      {plan.trialSalons ?? 0} em trial
+                    </span>
                   </div>
                 </div>
 
@@ -2218,6 +2286,7 @@ export default function SuperAdmin() {
   const [activeSection, setActiveSection] = useState("overview");
   const [overviewData, setOverviewData] = useState<any>(null);
   const [salonsData, setSalonsData] = useState<any[]>([]);
+  const [plansData, setPlansData] = useState<any[]>([]);
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains("dark"));
   const [adminName, setAdminName] = useState("Administrador");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -2229,6 +2298,36 @@ export default function SuperAdmin() {
     } else {
       document.documentElement.classList.add("dark");
       setIsDark(true);
+    }
+  };
+
+  const refreshAllData = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const headers = { 'Authorization': `Bearer ${token}` };
+    const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3050';
+
+    try {
+      const [ovRes, salRes, plRes] = await Promise.all([
+        fetch(`${apiBase}/api/superadmin/overview`, { headers, cache: "no-store" }),
+        fetch(`${apiBase}/api/superadmin/salons`, { headers, cache: "no-store" }),
+        fetch(`${apiBase}/api/superadmin/plans`, { headers, cache: "no-store" }),
+      ]);
+      if (ovRes.status === 401 || ovRes.status === 403) {
+        navigate('/login-admin', { replace: true });
+        return;
+      }
+      if (ovRes.ok) setOverviewData(await ovRes.json());
+      if (salRes.ok) {
+        const sData = await salRes.json();
+        setSalonsData(Array.isArray(sData) ? sData : []);
+      }
+      if (plRes.ok) {
+        const pData = await plRes.json();
+        setPlansData(Array.isArray(pData) ? pData : []);
+      }
+    } catch (err: any) {
+      console.error(err);
     }
   };
 
@@ -2246,31 +2345,26 @@ export default function SuperAdmin() {
     const decoded = decodeToken(token);
     if (decoded?.name) setAdminName(decoded.name);
 
-    // ── Data fetching ────────────────────────────────────
-    const headers = { 'Authorization': `Bearer ${token}` };
-    const api = import.meta.env.VITE_API_URL || 'http://localhost:3050';
-
-    fetch(`${api}/api/superadmin/overview`, { headers })
-      .then(res => { if (!res.ok) throw new Error('Unauthorized'); return res.json(); })
-      .then(data => setOverviewData(data))
-      .catch(err => {
-        if (err.message === 'Unauthorized') { navigate('/login-admin', { replace: true }); }
-        else { setOverviewData({ error: err.message }); }
-      });
-
-    fetch(`${api}/api/superadmin/salons`, { headers })
-      .then(res => res.json())
-      .then(data => setSalonsData(Array.isArray(data) ? data : []))
-      .catch(console.error);
+    refreshAllData();
   }, [navigate]);
 
   const renderContent = () => {
     switch (activeSection) {
-      case "overview": return <OverviewView overviewData={overviewData} />;
-      case "saloes": return <SaloesView salonsData={salonsData} />;
+      case "overview":
+        return (
+          <OverviewView
+            overviewData={overviewData}
+            salonsData={salonsData}
+            plansData={plansData}
+            onNavigate={setActiveSection}
+            onRefresh={refreshAllData}
+          />
+        );
+      case "saloes":
+        return <SaloesView salonsData={salonsData} plansData={plansData} onRefresh={refreshAllData} />;
       case "unidades": return <UnidadesView />;
       case "assinaturas": return <AssinaturasView />;
-      case "planos": return <PlanosView />;
+      case "planos": return <PlanosView onPlansChanged={refreshAllData} />;
       case "pagamentos": return <PagamentosView />;
       case "usuarios": return <UsuariosView />;
       case "auditoria": return <AuditoriaView />;
@@ -2286,31 +2380,31 @@ export default function SuperAdmin() {
       {/* Mobile Backdrop */}
       {mobileMenuOpen && (
         <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden transition-opacity"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden transition-opacity"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
 
-      {/* Mobile Drawer */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#1C1917] flex flex-col md:hidden transition-transform duration-300 ${
+      {/* Mobile Drawer Delicado & Sofisticado */}
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border flex flex-col md:hidden transition-transform duration-300 ${
         mobileMenuOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
       }`}>
-        <div className="h-14 flex items-center justify-between px-5 border-b border-white/10">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-              <Sparkles className="w-3.5 h-3.5 text-white" />
+        <div className="h-16 flex items-center justify-between px-5 border-b border-border">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#D98A98] to-[#B55969] flex items-center justify-center shadow-sm">
+              <Sparkles className="w-4 h-4 text-white" />
             </div>
             <div>
-              <div className="text-white font-serif text-sm font-medium">BelezaPura</div>
-              <div className="text-white/40 text-xs">Super Admin</div>
+              <div className="text-foreground font-serif text-sm font-bold">BelezaPura</div>
+              <div className="text-primary text-[11px] font-semibold">Centro de Controle</div>
             </div>
           </div>
-          <button onClick={() => setMobileMenuOpen(false)} className="p-1.5 rounded-lg text-white/60 hover:text-white">
+          <button onClick={() => setMobileMenuOpen(false)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground">
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <nav className="flex-1 py-3 overflow-y-auto">
+        <nav className="flex-1 py-3 px-2 space-y-1 overflow-y-auto">
           {NAV.map(item => (
             <button
               key={item.id}
@@ -2318,10 +2412,10 @@ export default function SuperAdmin() {
                 setActiveSection(item.id);
                 setMobileMenuOpen(false);
               }}
-              className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-all ${
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
                 activeSection === item.id
-                  ? "bg-white/15 text-white border-r-2 border-primary"
-                  : "text-white/50 hover:bg-white/8 hover:text-white/80"
+                  ? "bg-primary/12 text-primary font-semibold shadow-2xs"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
               <item.icon className="w-4 h-4 shrink-0" />
@@ -2330,38 +2424,38 @@ export default function SuperAdmin() {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-white/10">
-          <div className="flex items-center gap-2">
+        <div className="p-4 border-t border-border bg-muted/20">
+          <div className="flex items-center gap-2.5">
             <Avatar name={adminName} size="sm" className="shrink-0" />
             <div className="min-w-0 flex-1">
-              <div className="text-white text-xs font-medium truncate">{adminName}</div>
-              <div className="text-white/40 text-xs">Super Administrador</div>
+              <div className="text-foreground text-xs font-semibold truncate">{adminName}</div>
+              <div className="text-muted-foreground text-[11px]">Super Administrador</div>
             </div>
           </div>
         </div>
       </aside>
 
-      {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-60 shrink-0 bg-[#1C1917] flex-col">
-        <div className="h-14 flex items-center gap-2 px-5 border-b border-white/10">
-          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-            <Sparkles className="w-3.5 h-3.5 text-white" />
+      {/* Desktop Sidebar Suave & Editorial */}
+      <aside className="hidden md:flex w-64 shrink-0 bg-card border-r border-border flex-col">
+        <div className="h-16 flex items-center gap-2.5 px-5 border-b border-border">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#D98A98] to-[#B55969] flex items-center justify-center shadow-sm">
+            <Sparkles className="w-4 h-4 text-white" />
           </div>
           <div>
-            <div className="text-white font-serif text-sm font-medium">BelezaPura</div>
-            <div className="text-white/40 text-xs">Super Admin</div>
+            <div className="text-foreground font-serif text-base font-bold leading-tight">BelezaPura</div>
+            <div className="text-primary text-[11px] font-semibold">Centro de Controle</div>
           </div>
         </div>
 
-        <nav className="flex-1 py-3 overflow-y-auto">
+        <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
           {NAV.map(item => (
             <button
               key={item.id}
               onClick={() => setActiveSection(item.id)}
-              className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-all ${
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
                 activeSection === item.id
-                  ? "bg-white/15 text-white border-r-2 border-primary"
-                  : "text-white/50 hover:bg-white/8 hover:text-white/80"
+                  ? "bg-primary/12 text-primary font-semibold shadow-2xs"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
               <item.icon className="w-4 h-4 shrink-0" />
@@ -2370,12 +2464,12 @@ export default function SuperAdmin() {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-white/10">
-          <div className="flex items-center gap-2">
+        <div className="p-4 border-t border-border bg-muted/20">
+          <div className="flex items-center gap-2.5">
             <Avatar name={adminName} size="sm" className="shrink-0" />
             <div className="min-w-0 flex-1">
-              <div className="text-white text-xs font-medium truncate">{adminName}</div>
-              <div className="text-white/40 text-xs">Super Administrador</div>
+              <div className="text-foreground text-xs font-semibold truncate">{adminName}</div>
+              <div className="text-muted-foreground text-[11px]">Super Administrador</div>
             </div>
           </div>
         </div>

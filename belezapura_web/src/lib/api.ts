@@ -1,6 +1,7 @@
 export async function api<T = any>(path: string, init: RequestInit = {}): Promise<T> {
   const token = localStorage.getItem("token");
   const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3050"}/api${path}`, {
+    cache: "no-store",
     ...init,
     headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...init.headers },
   });

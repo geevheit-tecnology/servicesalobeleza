@@ -72,12 +72,16 @@ export default function SalonDashboard() {
           }
           if (data.subscriptions && data.subscriptions.length > 0) {
             const sub = data.subscriptions.find((s: any) => s.status === "ACTIVE" || s.status === "TRIAL") || data.subscriptions[0];
-            if (sub?.plan?.name) {
-              setPlanName(`Plano ${sub.plan.name}`);
-            }
+            const pName = sub?.plan?.name || "";
             if (sub?.status === "ACTIVE" && !data.trialExpired) {
               setIsTrial(false);
               setTrialExpired(false);
+              if (pName) setPlanName(`Plano ${pName}`);
+            } else if (sub?.status === "TRIAL" && !data.trialExpired) {
+              setIsTrial(true);
+              if (pName) setPlanName(`${pName} (Trial)`);
+            } else if (pName) {
+              setPlanName(`Plano ${pName}`);
             }
           }
         }
@@ -128,10 +132,10 @@ export default function SalonDashboard() {
   const currentPlanTier = useMemo(() => {
     const lower = planName.toLowerCase();
     if (lower.includes("elite") || lower.includes("vip") || role === "superadmin") return 3;
-    if (lower.includes("studio") || lower.includes("trial") || isTrial) return 2;
     if (lower.includes("essencial") || lower.includes("básico") || lower.includes("basico")) return 1;
+    if (lower.includes("studio") || lower.includes("equipe") || lower.includes("trial")) return 2;
     return 2;
-  }, [planName, isTrial, role]);
+  }, [planName, role]);
 
   const requiredTierForSection = (sectionId: string): { tier: number; planLabel: string; reason: string } | null => {
     if (["comissoes", "estoque", "relatorios", "financeiro"].includes(sectionId)) {
