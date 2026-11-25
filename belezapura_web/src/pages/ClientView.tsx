@@ -436,8 +436,9 @@ export default function ClientView() {
     ];
   })();
 
-  // Cor tema personalizada do salão
-  const mainColor = salonData.mainColor || "#B8614A";
+  // Cor tema personalizada do salão (default Rose Quartz delicado em vez de marrom)
+  const rawMainColor = salonData.mainColor || "#C86D7D";
+  const mainColor = rawMainColor.toUpperCase() === "#B8614A" ? "#C86D7D" : rawMainColor;
   const dynamicBgStyle = { backgroundColor: mainColor };
   const dynamicTextStyle = { color: mainColor };
 
@@ -625,46 +626,48 @@ export default function ClientView() {
         </header>
 
         {/* ======================================================== */}
-        {/* 2. HERO SECTION COM CAPA DE ALTO IMPACTO & AURORA GLOW    */}
+        {/* 2. HERO SECTION SUAVE, DELICADA & LUMINOSA               */}
         {/* ======================================================== */}
-        <section className="relative overflow-hidden bg-zinc-950 text-white">
-          {/* Imagem de Fundo / Capa + Orbes Dinâmicas */}
+        <section className="relative overflow-hidden bg-gradient-to-b from-[#FFF9FA] via-[#FDF4F6] to-[#FDFBF9] text-[#1F1A1C] border-b border-rose-100">
+          {/* Imagem de Fundo / Capa Suavizada + Orbes Pastel */}
           <div className="absolute inset-0 z-0 overflow-hidden">
             {salonData.cover ? (
-              <img 
-                src={salonData.cover} 
-                alt={salonData.name} 
-                className="w-full h-full object-cover object-center opacity-35 transform scale-105 animate-pulse-soft" 
-              />
+              <>
+                <img 
+                  src={salonData.cover} 
+                  alt={salonData.name} 
+                  className="w-full h-full object-cover object-center opacity-18 transform scale-105 animate-pulse-soft" 
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-[#FFF9FA]/95 via-[#FFF9FA]/85 to-[#FFF9FA]/75" />
+              </>
             ) : (
               <div 
-                className="w-full h-full opacity-40"
-                style={{ background: `radial-gradient(circle at 20% 20%, ${mainColor} 0%, #09090b 75%)` }}
+                className="w-full h-full opacity-20"
+                style={{ background: `radial-gradient(circle at 20% 20%, ${mainColor}40 0%, transparent 70%)` }}
               />
             )}
             <div 
-              className="absolute -top-28 -right-24 w-96 h-96 rounded-full blur-[120px] opacity-45 animate-aurora pointer-events-none"
+              className="absolute -top-28 -right-24 w-96 h-96 rounded-full blur-[130px] opacity-25 animate-aurora pointer-events-none"
               style={{ background: mainColor }}
             />
             <div 
-              className="absolute -bottom-32 left-1/4 w-96 h-96 rounded-full blur-[130px] opacity-30 animate-aurora-reverse pointer-events-none"
+              className="absolute -bottom-32 left-1/4 w-96 h-96 rounded-full blur-[135px] opacity-20 animate-aurora-reverse pointer-events-none"
               style={{ background: mainColor }}
             />
-            <div className="absolute inset-0 hero-vignette" />
           </div>
 
-          <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-20 lg:py-24">
+          <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-18 lg:py-22">
             <div className="grid lg:grid-cols-12 gap-10 items-center">
               
               {/* Coluna Esquerda: Identidade + CTAs */}
               <div className="lg:col-span-7 animate-fade-up">
-                {/* Badges de Destaque */}
+                {/* Badges de Destaque Delicados */}
                 <div className="flex flex-wrap items-center gap-2.5 mb-5">
-                  <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md text-white border border-white/20 text-xs font-semibold py-1.5 px-3.5 rounded-full shadow-lg">
-                    <span className={`w-2 h-2 rounded-full ${openStatus.isOpen ? 'bg-emerald-400 beacon-dot' : 'bg-amber-400'}`} />
+                  <div className="inline-flex items-center gap-2 bg-white/90 backdrop-blur-md text-[#1F1A1C] border border-rose-200/70 text-xs font-semibold py-1.5 px-3.5 rounded-full shadow-2xs">
+                    <span className={`w-2 h-2 rounded-full ${openStatus.isOpen ? 'bg-emerald-500 beacon-dot' : 'bg-amber-400'}`} />
                     <span>{openStatus.text}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 bg-amber-500/20 text-amber-300 px-3 py-1.5 rounded-full font-bold text-xs border border-amber-400/30 backdrop-blur-md">
+                  <div className="flex items-center gap-1.5 bg-amber-50/90 text-amber-700 px-3 py-1.5 rounded-full font-bold text-xs border border-amber-200/80 shadow-2xs">
                     <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                     <span>5.0 • Espaço Verificado</span>
                   </div>
@@ -673,7 +676,7 @@ export default function ClientView() {
                       href={`https://instagram.com/${String(salonData.instagram).replace(/^@/, "")}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-zinc-200 px-3 py-1.5 rounded-full text-xs font-semibold border border-white/15 transition-all"
+                      className="inline-flex items-center gap-1.5 bg-white/90 hover:bg-rose-50 text-[#9F4356] px-3 py-1.5 rounded-full text-xs font-semibold border border-rose-200/70 transition-all shadow-2xs"
                     >
                       <span>@{String(salonData.instagram).replace(/^@/, "")}</span>
                       <ExternalLink className="w-3 h-3" />
@@ -687,22 +690,22 @@ export default function ClientView() {
                     <img
                       src={salonData.logo}
                       alt={salonData.name}
-                      className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-contain bg-white p-1.5 shadow-2xl border-2 border-white/30 shrink-0 hidden sm:block animate-float-gentle"
+                      className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-contain bg-white p-1.5 shadow-lg shadow-rose-200/50 border border-rose-100 shrink-0 hidden sm:block animate-float-gentle"
                     />
                   )}
-                  <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-[1.1] drop-shadow-sm">
+                  <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-[#1F1A1C] leading-[1.1]">
                     {salonData.name}
                   </h1>
                 </div>
 
                 {/* Descrição / Sobre */}
-                <p className="mt-3 text-sm sm:text-base lg:text-lg text-zinc-200/90 leading-relaxed max-w-2xl">
-                  {salonData.about || "Experiência exclusiva em beleza, estética e bem-estar. Escolha seu procedimento abaixo e garanta seu horário online em poucos segundos, sem fila de espera."}
+                <p className="mt-3 text-sm sm:text-base lg:text-lg text-[#5E5054] leading-relaxed max-w-2xl">
+                  {salonData.about || "Experiência exclusiva em beleza, estética e autocuidado. Escolha seu procedimento abaixo e reserve seu horário online com tranquilidade e sem fila de espera."}
                 </p>
 
                 {/* Endereço Resumido */}
                 {addressText && (
-                  <div className="inline-flex items-center gap-2 mt-5 px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm text-xs sm:text-sm text-zinc-200">
+                  <div className="inline-flex items-center gap-2 mt-5 px-3.5 py-2 rounded-xl bg-white/85 border border-rose-100 shadow-2xs text-xs sm:text-sm text-[#5E5054]">
                     <MapPin className="w-4 h-4 shrink-0" style={{ color: mainColor }} />
                     <span className="truncate">{addressText}</span>
                   </div>
@@ -712,10 +715,10 @@ export default function ClientView() {
                 <div className="mt-8 flex flex-wrap items-center gap-3.5">
                   <a
                     href="#servicos"
-                    className="btn-sheen inline-flex items-center justify-center gap-2.5 px-7 py-4 rounded-2xl text-sm sm:text-base font-extrabold text-white shadow-2xl hover:scale-[1.03] active:scale-[0.98] transition-all cursor-pointer"
-                    style={{ background: mainColor, boxShadow: `0 18px 40px -10px ${mainColor}90` }}
+                    className="btn-sheen inline-flex items-center justify-center gap-2.5 px-7 py-4 rounded-2xl text-sm sm:text-base font-bold text-white shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+                    style={{ background: mainColor, boxShadow: `0 14px 32px -10px ${mainColor}65` }}
                   >
-                    <Calendar className="w-4 h-4" /> Agendar Meu Horário Agora
+                    <Calendar className="w-4 h-4" /> Agendar Meu Horário
                     <ArrowRight className="w-4 h-4" />
                   </a>
 
@@ -724,9 +727,9 @@ export default function ClientView() {
                       href={waUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center justify-center gap-2 px-5 py-4 rounded-2xl text-sm font-bold bg-emerald-600/90 hover:bg-emerald-600 text-white border border-emerald-400/30 shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer backdrop-blur-md"
+                      className="inline-flex items-center justify-center gap-2 px-5 py-4 rounded-2xl text-sm font-bold bg-white hover:bg-emerald-50/70 text-emerald-700 border border-emerald-200 shadow-2xs hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
                     >
-                      <MessageCircle className="w-4 h-4" /> WhatsApp
+                      <MessageCircle className="w-4 h-4 text-emerald-600" /> WhatsApp
                     </a>
                   )}
 
@@ -735,29 +738,29 @@ export default function ClientView() {
                       href={mapsUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center justify-center gap-2 px-4 py-4 rounded-2xl text-sm font-semibold bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-md transition-all cursor-pointer"
+                      className="inline-flex items-center justify-center gap-2 px-4 py-4 rounded-2xl text-sm font-semibold bg-white/90 hover:bg-rose-50/60 text-[#5E5054] border border-rose-200/70 shadow-2xs transition-all cursor-pointer"
                     >
-                      <MapPin className="w-4 h-4" /> Como Chegar
+                      <MapPin className="w-4 h-4" style={{ color: mainColor }} /> Como Chegar
                     </a>
                   )}
                 </div>
               </div>
 
-              {/* Coluna Direita: Card Flutuante Glassmorphism de Reserva Rápida */}
+              {/* Coluna Direita: Card Flutuante Glassmorphism Claro & Delicado */}
               <div className="lg:col-span-5 hidden lg:block animate-fade-up">
                 <div className="relative mx-auto max-w-sm">
                   <div
-                    className="absolute -inset-1 rounded-[2rem] blur-xl opacity-50 animate-pulse-soft"
+                    className="absolute -inset-2 rounded-[2.2rem] blur-2xl opacity-25 animate-pulse-soft"
                     style={{ background: `linear-gradient(135deg, ${mainColor}, transparent)` }}
                   />
-                  <div className="relative rounded-[1.85rem] bg-zinc-900/80 backdrop-blur-xl border border-white/15 p-6 shadow-2xl space-y-5 animate-float-gentle">
-                    <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                  <div className="relative rounded-[1.85rem] bg-white/90 backdrop-blur-xl border border-rose-200/70 p-6 shadow-xl shadow-rose-100/70 space-y-5 animate-float-gentle">
+                    <div className="flex items-center justify-between border-b border-rose-100 pb-4">
                       <div>
-                        <span className="text-[11px] uppercase tracking-wider text-zinc-400 font-bold block">Agendamento Rápido</span>
-                        <h3 className="font-serif text-lg font-bold text-white mt-0.5">Destaques da Agenda</h3>
+                        <span className="text-[11px] uppercase tracking-wider text-[#9F4356] font-bold block">Reserva Rápida</span>
+                        <h3 className="font-serif text-lg font-bold text-[#1F1A1C] mt-0.5">Procedimentos em Destaque</h3>
                       </div>
                       <div
-                        className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg"
+                        className="w-10 h-10 rounded-2xl flex items-center justify-center text-white shadow-sm"
                         style={{ background: mainColor }}
                       >
                         <Sparkles className="w-5 h-5" />
@@ -776,20 +779,20 @@ export default function ClientView() {
                             setStep("booking");
                             window.scrollTo({ top: 0, behavior: "smooth" });
                           }}
-                          className="w-full text-left p-3.5 rounded-2xl bg-white/5 hover:bg-white/15 border border-white/10 hover:border-white/30 transition-all flex items-center justify-between gap-3 group cursor-pointer"
+                          className="w-full text-left p-3.5 rounded-2xl bg-[#FDFBF9] hover:bg-rose-50/60 border border-rose-100 hover:border-rose-300 transition-all flex items-center justify-between gap-3 group cursor-pointer"
                         >
                           <div className="min-w-0">
-                            <div className="text-xs font-bold text-white truncate group-hover:text-amber-200 transition-colors">
+                            <div className="text-xs font-bold text-[#1F1A1C] truncate group-hover:text-[#9F4356] transition-colors">
                               {srv.name}
                             </div>
-                            <div className="text-[11px] text-zinc-400 flex items-center gap-2 mt-0.5">
+                            <div className="text-[11px] text-[#6E6266] flex items-center gap-2 mt-0.5">
                               <span><Clock className="w-3 h-3 inline mr-1" />{srv.duration} min</span>
                               <span>•</span>
-                              <span className="font-semibold text-zinc-200">R$ {Number(srv.price || 0).toFixed(2).replace(".", ",")}</span>
+                              <span className="font-bold text-[#1F1A1C]">R$ {Number(srv.price || 0).toFixed(2).replace(".", ",")}</span>
                             </div>
                           </div>
                           <div
-                            className="w-8 h-8 rounded-xl flex items-center justify-center text-white shrink-0 group-hover:translate-x-0.5 transition-transform"
+                            className="w-8 h-8 rounded-xl flex items-center justify-center text-white shrink-0 group-hover:translate-x-0.5 transition-transform shadow-2xs"
                             style={{ background: mainColor }}
                           >
                             <ArrowRight className="w-4 h-4" />
@@ -798,11 +801,11 @@ export default function ClientView() {
                       ))}
                     </div>
 
-                    <div className="pt-2 flex items-center justify-between text-[11px] text-zinc-300">
+                    <div className="pt-2 flex items-center justify-between text-[11px] text-[#6E6266]">
                       <span className="flex items-center gap-1.5">
-                        <ShieldCheck className="w-4 h-4 text-emerald-400" /> Confirmação imediata
+                        <ShieldCheck className="w-4 h-4 text-emerald-600" /> Horário garantido
                       </span>
-                      <span className="font-semibold text-amber-300">{services.length} procedimentos</span>
+                      <span className="font-semibold" style={{ color: mainColor }}>{services.length} procedimentos</span>
                     </div>
                   </div>
                 </div>
@@ -813,9 +816,9 @@ export default function ClientView() {
         </section>
 
         {/* ======================================================== */}
-        {/* 2.5 FAIXA DINÂMICA (MARQUEE) DE PROCEDIMENTOS             */}
+        {/* 2.5 FAIXA DINÂMICA (MARQUEE) SUAVE DE PROCEDIMENTOS       */}
         {/* ======================================================== */}
-        <div className="bg-zinc-900 text-zinc-200 border-b border-zinc-800 py-3 overflow-hidden">
+        <div className="bg-gradient-to-r from-[#FAF0F2] via-[#FFF7F8] to-[#FAF0F2] text-[#6E2F3B] border-b border-rose-200/60 py-3 overflow-hidden">
           <div className="flex items-center gap-8 whitespace-nowrap animate-marquee text-xs font-semibold tracking-wide">
             {[...services, ...services, ...services].slice(0, 12).map((srv: any, idx: number) => (
               <button
@@ -828,12 +831,12 @@ export default function ClientView() {
                   setStep("booking");
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
-                className="inline-flex items-center gap-2.5 hover:text-white transition-colors cursor-pointer"
+                className="inline-flex items-center gap-2.5 hover:opacity-75 transition-opacity cursor-pointer"
               >
                 <Sparkles className="w-3.5 h-3.5 shrink-0" style={{ color: mainColor }} />
-                <span>{srv.name}</span>
-                <span className="text-zinc-400 font-mono">R$ {Number(srv.price || 0).toFixed(2).replace(".", ",")}</span>
-                <span className="text-zinc-600 ml-4">•</span>
+                <span className="text-[#1F1A1C]">{srv.name}</span>
+                <span className="text-[#9F4356] font-mono">R$ {Number(srv.price || 0).toFixed(2).replace(".", ",")}</span>
+                <span className="text-rose-300 ml-4">•</span>
               </button>
             ))}
           </div>

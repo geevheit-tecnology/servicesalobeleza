@@ -157,16 +157,16 @@ export function PlanCatalog({ onTrialDaysLoaded }: { onTrialDaysLoaded?: (days: 
   }, []);
 
   return (
-    <section id="planos" className="relative py-20 px-5 bg-[#FAFAFA] border-t border-[#E5E7EB]">
+    <section id="planos" className="relative py-20 px-5 bg-gradient-to-b from-[#FDFBF9] to-[#FAF3F4]/60 border-t border-[#EFE4E6]">
       <div className="max-w-6xl mx-auto space-y-10">
         <div className="text-center space-y-3">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#E5A991]/15 border border-[#E5A991]/40 text-[#9C5A42] text-xs font-semibold shadow-xs">
-            <Sparkles className="w-3.5 h-3.5 text-[#C47F65]" /> Planos Transparentes
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-rose-50 border border-rose-200/70 text-[#9F4356] text-xs font-semibold shadow-2xs">
+            <Sparkles className="w-3.5 h-3.5 text-[#C86D7D]" /> Planos Transparentes
           </div>
-          <h2 className="font-serif text-3xl sm:text-5xl font-bold tracking-tight text-[#111827]">
+          <h2 className="font-serif text-3xl sm:text-5xl font-bold tracking-tight text-[#1F1A1C]">
             Escolha o plano ideal para o seu espaço
           </h2>
-          <p className="text-[#6B7280] text-base max-w-xl mx-auto">
+          <p className="text-[#6E6266] text-base max-w-xl mx-auto">
             {trialDays} dias de teste sem cartão. Comece a receber agendamentos com sinal hoje mesmo.
           </p>
         </div>
@@ -179,13 +179,13 @@ export function PlanCatalog({ onTrialDaysLoaded }: { onTrialDaysLoaded?: (days: 
               key={p.id} 
               className={`rounded-3xl p-7 flex flex-col justify-between transition-all duration-300 relative ${
                 p.highlight 
-                  ? "bg-[#111827] text-white border-2 border-[#E5A991] shadow-2xl md:scale-[1.03]" 
-                  : "bg-white text-[#111827] border border-[#E5E7EB] shadow-xs hover:shadow-md"
+                  ? "bg-gradient-to-b from-white via-[#FFF9FA] to-[#FDF2F4] text-[#1F1A1C] border-2 border-[#D98A98] shadow-xl shadow-rose-200/40 md:scale-[1.03]" 
+                  : "bg-white/95 text-[#1F1A1C] border border-[#EFE4E6] shadow-xs hover:shadow-md hover:border-rose-200"
               }`}
             >
               {p.badge && (
                 <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                  <Badge className="bg-[#E5A991] text-[#111827] font-extrabold text-[10px] px-3 py-1 shadow-md">
+                  <Badge className="bg-gradient-to-r from-[#C86D7D] to-[#D98A98] text-white border-0 font-bold text-[10px] px-3.5 py-1 shadow-sm">
                     {p.badge}
                   </Badge>
                 </div>
@@ -193,18 +193,18 @@ export function PlanCatalog({ onTrialDaysLoaded }: { onTrialDaysLoaded?: (days: 
 
               <div>
                 <div className="mb-4">
-                  <h3 className={`font-bold text-2xl ${p.highlight ? "text-white" : "text-[#111827]"}`}>{p.name}</h3>
-                  <p className={`text-xs mt-1 ${p.highlight ? "text-stone-300" : "text-[#6B7280]"}`}>{p.desc}</p>
+                  <h3 className="font-serif font-bold text-2xl text-[#1F1A1C]">{p.name}</h3>
+                  <p className="text-xs mt-1 text-[#6E6266]">{p.desc}</p>
                 </div>
 
-                <div className="mb-6 pb-6 border-b border-border/40">
+                <div className="mb-6 pb-6 border-b border-[#EFE4E6]">
                   <div className="flex items-baseline gap-1">
-                    <span className="font-serif text-4xl sm:text-5xl font-extrabold tracking-tight">
+                    <span className="font-serif text-4xl sm:text-5xl font-extrabold tracking-tight text-[#1F1A1C]">
                       {Number(p.price).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                     </span>
-                    <span className={`text-sm ${p.highlight ? "text-stone-300" : "text-[#6B7280]"}`}>/mês</span>
+                    <span className="text-sm text-[#6E6266]">/mês</span>
                   </div>
-                  <span className={`text-[11px] block mt-1 font-medium ${p.highlight ? "text-[#E5A991]" : "text-emerald-700"}`}>
+                  <span className="text-[11px] block mt-1.5 font-semibold text-[#9F4356]">
                     🎁 {trialDays} dias de teste grátis
                   </span>
                 </div>
@@ -212,8 +212,8 @@ export function PlanCatalog({ onTrialDaysLoaded }: { onTrialDaysLoaded?: (days: 
                 <ul className="space-y-3.5 text-sm mb-8">
                   {p.features.map((f, i) => (
                     <li key={i} className="flex items-start gap-2.5">
-                      <Check className={`w-4 h-4 mt-0.5 shrink-0 ${p.highlight ? "text-[#E5A991]" : "text-emerald-700"} stroke-[3]`} />
-                      <span className={p.highlight ? "text-stone-200" : "text-[#4B5563]"}>{f}</span>
+                      <Check className="w-4 h-4 mt-0.5 shrink-0 text-[#C86D7D] stroke-[2.5]" />
+                      <span className="text-[#4E4347]">{f}</span>
                     </li>
                   ))}
                 </ul>
@@ -223,8 +223,8 @@ export function PlanCatalog({ onTrialDaysLoaded }: { onTrialDaysLoaded?: (days: 
                 onClick={() => navigate(`/onboarding?planId=${p.id}`)}
                 className={`w-full h-12 font-bold rounded-xl transition-all cursor-pointer ${
                   p.highlight
-                    ? "bg-[#E5A991] hover:bg-[#D89981] text-[#111827] shadow-lg hover-lift"
-                    : "bg-[#111827] hover:bg-[#1F2937] text-white"
+                    ? "bg-gradient-to-r from-[#C86D7D] to-[#B55969] hover:opacity-95 text-white shadow-md shadow-rose-300/40 hover-lift border-0"
+                    : "bg-[#FAF3F4] hover:bg-[#F3E5E8] text-[#9F4356] border border-rose-200/70"
                 }`}
               >
                 Testar {p.name}
@@ -233,7 +233,7 @@ export function PlanCatalog({ onTrialDaysLoaded }: { onTrialDaysLoaded?: (days: 
           ))}
         </div>
 
-        <p className="text-xs text-center text-[#6B7280]">
+        <p className="text-xs text-center text-[#6E6266]">
           Automação de WhatsApp e Bot IA dependem de plano compatível, ativação técnica prévia com o suporte e estão sujeitos à franquia contratada. Repasses bancários automatizados e multiunidades não estão incluídos nesta versão.
         </p>
       </div>

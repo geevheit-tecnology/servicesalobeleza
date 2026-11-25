@@ -44,21 +44,21 @@ div[id*="vercel-live-feedback"] {
 }
 
 :root {
-  --background: #FAFAFA;
-  --foreground: #111827;
+  --background: #FDFBF9;
+  --foreground: #1F1A1C;
   --card: #FFFFFF;
-  --card-foreground: #111827;
-  --primary: #111827;
+  --card-foreground: #1F1A1C;
+  --primary: #C86D7D;
   --primary-foreground: #FFFFFF;
-  --secondary: #F3F4F6;
-  --secondary-foreground: #111827;
-  --muted: #F3F4F6;
-  --muted-foreground: #6B7280;
-  --accent: #E5A991;
-  --accent-foreground: #111827;
-  --border: #E5E7EB;
-  --ring: #E5A991;
-  --radius: 0.85rem;
+  --secondary: #FAF3F4;
+  --secondary-foreground: #1F1A1C;
+  --muted: #F8F1F2;
+  --muted-foreground: #6E6266;
+  --accent: #F2C6CE;
+  --accent-foreground: #6E2F3B;
+  --border: #EFE4E6;
+  --ring: #D98A98;
+  --radius: 0.9rem;
 }
 
 .dark {
@@ -239,13 +239,13 @@ html, body, #root {
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  background-image: linear-gradient(135deg, #111827 0%, #C47F65 60%, #E5A991 100%);
+  background-image: linear-gradient(135deg, #9F4356 0%, #C86D7D 50%, #E091A0 100%);
 }
 
 .brand-badge {
-  background: rgba(229, 169, 145, 0.15);
-  border: 1px solid rgba(229, 169, 145, 0.4);
-  color: #9C5A42;
+  background: rgba(242, 198, 206, 0.25);
+  border: 1px solid rgba(200, 109, 125, 0.28);
+  color: #9F4356;
 }
 
 .mask-fade {
@@ -363,16 +363,16 @@ html, body, #root {
 }
 
 .card-spotlight:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 22px 45px -12px rgba(17, 24, 39, 0.14),
-              0 8px 18px -8px rgba(229, 169, 145, 0.22);
+  transform: translateY(-5px);
+  box-shadow: 0 20px 42px -12px rgba(200, 109, 125, 0.14),
+              0 8px 18px -8px rgba(242, 198, 206, 0.28);
 }
 
 .card-spotlight::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(500px circle at var(--mouse-x, 85%) var(--mouse-y, 15%), rgba(229, 169, 145, 0.14), transparent 55%);
+  background: radial-gradient(500px circle at var(--mouse-x, 85%) var(--mouse-y, 15%), rgba(242, 198, 206, 0.25), transparent 55%);
   opacity: 0;
   transition: opacity 0.4s ease;
   pointer-events: none;
